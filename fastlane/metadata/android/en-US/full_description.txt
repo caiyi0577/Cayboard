@@ -1,0 +1,1 @@
+Cayboard is an open-source Android keyboard based on CyIME and Rime. It focuses on nine-key Chinese input and also supports full Pinyin, double Pinyin, and English. Bundled dictionaries, handwriting, speech recognition, camera OCR, and multilingual translation run on the device.

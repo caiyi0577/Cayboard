@@ -1,0 +1,20 @@
+{
+  "repository": "fxsjy/jieba",
+  "branch": "master",
+  "commit": "67fa2e36e72f69d9134b8a1037b83fbb070b9775",
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit",
+    "node_id": "MDc6TGljZW5zZTEz"
+  },
+  "format": "CSG1 / little endian CSR trie + HMM",
+  "words": 348974,
+  "nodes": 497974,
+  "edges": 497973,
+  "hmmCharacters": 14632,
+  "maxWordLength": 16,
+  "bytes": 10252224,
+  "sha256": "edd8d46494bf7267e4ba3d0adaa696fef925e1bc3469ec81d9dfea8a6fbb5bd6"
+}

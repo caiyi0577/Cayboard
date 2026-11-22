@@ -1,0 +1,252 @@
+package com.cayboard.ui.keyboard
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cayboard.keyboard.GestureAction
+import com.cayboard.keyboard.OverlayRoute
+import com.cayboard.rime.T9InputController
+import com.cayboard.service.CandidateState
+import com.cayboard.settings.KeysConfigHelper
+import com.cayboard.ui.theme.KeyboardThemes
+import com.cayboard.util.FileLogger
+import com.cayboard.viewmodel.KeyboardUiState
+import com.cayboard.viewmodel.KeyboardViewModel
+
+@Composable
+fun KeyboardLayoutScreen(
+    keyboardState: KeyboardLayoutState,
+    uiState: KeyboardUiState,
+    viewModel: KeyboardViewModel,
+    callbacks: KeyboardCallbacks,
+    onKeyPress: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    t9Controller: T9InputController? = null,
+    candidateState: State<CandidateState> = remember { mutableStateOf(CandidateState()) },
+) {
+    var lastLoggedKb by remember { mutableStateOf<KeyboardLayoutState?>(null) }
+    if (keyboardState != lastLoggedKb) {
+        lastLoggedKb = keyboardState
+        FileLogger.d("CayboardKeyboard", "render keyboard: $keyboardState, ui ascii=${uiState.isAsciiMode}")
+    }
+    // 只在「有没有编码」变化时重组整块键盘，每打一个假名只重组候选栏。
+    val hasKanaInput by remember(candidateState) {
+        androidx.compose.runtime.derivedStateOf { candidateState.value.inputText.isNotEmpty() }
+    }
+    val kbColors = KeysConfigHelper.getKeyboardColors()
+    val longToColor: (Long) -> Color = { if (it > 0xFFFFFF) Color(it) else Color(0xFF000000 or it) }
+    val themeScheme = KeyboardThemes.getRenderingScheme(uiState.themeId)
+    val keyboardBgColor = KeyboardThemes.getKeyboardBackgroundColor(uiState.themeId, uiState.isDarkTheme)
+    val themeSpecialKeyColor =
+        KeyboardThemes.getSpecialKeyColor(uiState.themeId, uiState.isDarkTheme)
+    val keyBgColor = KeyboardThemes.getKeyBgColorOverride(uiState.themeId, uiState.isDarkTheme)
+        ?: if (uiState.isDarkTheme) longToColor(kbColors.keyBgColorDark) else longToColor(kbColors.keyBgColor)
+    val keyTextColor = KeyboardThemes.getKeyTextColorOverride(uiState.themeId, uiState.isDarkTheme)
+        ?: if (uiState.isDarkTheme) longToColor(kbColors.keyTextColorDark) else longToColor(kbColors.keyTextColor)
+    val specialKeyBgColor = com.cayboard.ui.theme.resolvedSpecialKeyColor(
+        themeScheme, uiState.isDarkTheme,
+        (if (uiState.isDarkTheme) kbColors.specialKeyBgColorDark else kbColors.specialKeyBgColor)?.let(longToColor)
+    )
+    val specialKeyTextColor = if (uiState.isDarkTheme) Color.White
+    else KeyboardThemes.getSpecialKeyTextColor(uiState.themeId, false)
+    val kbShadow = KeysConfigHelper.getKeyboardShadow()
+    val kbKey = KeysConfigHelper.getKeyboardKeyConfig()
+    val accentColor = KeyboardThemes.getAccentColor(uiState.themeId, uiState.isDarkTheme)
+
+
+    val onGestureAction: (GestureAction, String) -> Unit = { action, value ->
+        when (action) {
+            GestureAction.SWITCH_ROUTE -> {
+                val overlayRoute = when (value) {
+                    "emoji" -> OverlayRoute.Emoji
+                    "symbol" -> OverlayRoute.Symbol
+                    "clipboard" -> OverlayRoute.Clipboard(0)
+                    else -> null
+                }
+                overlayRoute?.let { viewModel.showOverlay(it) }
+            }
+
+            GestureAction.TOGGLE_ASCII -> {
+                FileLogger.i("CayboardKeyboard", "earth key toggle_ascii tapped, ui ascii=${uiState.isAsciiMode}")
+                viewModel.resetShift()
+                callbacks.onKeyPress("ime_switch", uiState.isAsciiMode)
+            }
+
+            GestureAction.TOGGLE_SHIFT -> {
+                viewModel.toggleShift()
+            }
+
+            else -> callbacks.onGestureAction?.invoke(action, value) ?: Unit
+        }
+    }
+
+// 系统手势（如三指截图）截走触摸流时，Compose 手势检测器不会被 ACTION_CANCEL 取消，
+    // 键内部的长按/按下协程会继续执行并继续上报，导致气泡/按下状态残留。
+    // 这里用 key() 让整个活动键盘在 cancel（epoch 变化）时 remount：
+    // 所有键的 remember 状态重置、所有进行中手势协程被 Compose 取消，彻底清干净。
+    key(keyboardState) {
+        key(uiState.swipeCancelEpoch) {
+            when (keyboardState) {
+            is KeyboardLayoutState.Chinese -> {
+                if (uiState.inputProfile.layout.kind == com.cayboard.settings.LayoutKind.KANA_KEYPAD) {
+                    JapaneseKanaKeyboardLayout(
+                        hasKanaInput = hasKanaInput,
+                        onKanaAction = { callbacks.onJapaneseKanaAction?.invoke(it) },
+                        onKeyPress = onKeyPress,
+                        keyBackgroundColor = keyBgColor,
+                        keyTextColor = keyTextColor,
+                        specialKeyBackgroundColor = specialKeyBgColor,
+                        specialKeyTextColor = specialKeyTextColor,
+                        keyboardBackgroundColor = keyboardBgColor,
+                        onKeyPressDown = callbacks.onKeyPressDown,
+                        shadowEnabled = kbShadow.enabled,
+                        shadowElevation = kbShadow.elevation.dp,
+                        shadowShapeRadius = kbShadow.shapeRadius.dp,
+                        keyCornerRadius = kbKey.cornerRadius.dp,
+                        keySpacingX = kbKey.spacingFor("japanese_kana").first?.dp,
+                        keySpacingY = kbKey.spacingFor("japanese_kana").second?.dp,
+                        isFloatingMode = uiState.isFloatingMode,
+                        modifier = modifier,
+                        enterKeyText = uiState.enterKeyText,
+                        onGestureAction = onGestureAction,
+                        accentColor = accentColor,
+                    )
+                } else {
+                    KeyboardLayout(
+                        onKeyPress = onKeyPress,
+                        viewModel = viewModel,
+                        callbacks = callbacks,
+                        uiState = uiState,
+                        isAsciiMode = false,
+                        modifier = modifier,
+                        candidateState = candidateState,
+                    )
+                }
+            }
+
+            is KeyboardLayoutState.English -> {
+                KeyboardLayout(
+                    onKeyPress = onKeyPress,
+                    viewModel = viewModel,
+                    callbacks = callbacks,
+                    uiState = uiState,
+                    isAsciiMode = true,
+                    modifier = modifier,
+                )
+            }
+
+            is KeyboardLayoutState.Number -> {
+                val isJapaneseKana = !uiState.isAsciiMode &&
+                    uiState.inputProfile.layout.kind == com.cayboard.settings.LayoutKind.KANA_KEYPAD
+                val spacing = kbKey.spacingFor(numberKeyboardSpacingSection(uiState.inputProfile, uiState.isAsciiMode))
+                NumberKeyboardLayout(
+                    onKeyPress = onKeyPress,
+                    keyBackgroundColor = keyBgColor,
+                    keyTextColor = keyTextColor,
+                    specialKeyBackgroundColor = specialKeyBgColor,
+                    bubbleBackgroundColor = themeSpecialKeyColor,
+                    keyboardBackgroundColor = keyboardBgColor,
+                    shadowEnabled = kbShadow.enabled,
+                    shadowElevation = kbShadow.elevation.dp,
+                    shadowShapeRadius = kbShadow.shapeRadius.dp,
+                    keyCornerRadius = kbKey.cornerRadius.dp,
+                    keySpacingX = spacing.first?.dp,
+                    keySpacingY = spacing.second?.dp,
+                    modifier = modifier,
+                    onKeyPressDown = callbacks.onKeyPressDown,
+                    isFloatingMode = uiState.isFloatingMode,
+                    specialKeyTextColor = specialKeyTextColor,
+                    isJapaneseKana = isJapaneseKana,
+                    enterKeyText = uiState.enterKeyText,
+                )
+            }
+
+            is KeyboardLayoutState.CommonSymbol -> {
+                CommonSymbolKeyboardLayout(
+                    onKeyPress = onKeyPress,
+                    isAsciiMode = uiState.isAsciiMode,
+                    enterKeyText = uiState.enterKeyText,
+                    keyBackgroundColor = keyBgColor,
+                    keyTextColor = keyTextColor,
+                    specialKeyBackgroundColor = specialKeyBgColor,
+                    bubbleBackgroundColor = themeSpecialKeyColor,
+                    keyboardBackgroundColor = keyboardBgColor,
+                    shadowEnabled = kbShadow.enabled,
+                    shadowElevation = kbShadow.elevation.dp,
+                    shadowShapeRadius = kbShadow.shapeRadius.dp,
+                    keyCornerRadius = kbKey.cornerRadius.dp,
+                    keySpacingX = kbKey.spacingFor("symbol").first?.dp,
+                    keySpacingY = kbKey.spacingFor("symbol").second?.dp,
+                    modifier = modifier,
+                    onKeyPressDown = callbacks.onKeyPressDown,
+                    isFloatingMode = uiState.isFloatingMode,
+                    specialKeyTextColor = specialKeyTextColor,
+                )
+            }
+
+            is KeyboardLayoutState.Stroke -> {
+                StrokeKeyboardLayout(
+                    onKeyPress = onKeyPress,
+                    keyBackgroundColor = keyBgColor,
+                    keyTextColor = keyTextColor,
+                    specialKeyBackgroundColor = specialKeyBgColor,
+                    bubbleBackgroundColor = themeSpecialKeyColor,
+                    keyboardBackgroundColor = keyboardBgColor,
+                    shadowEnabled = kbShadow.enabled,
+                    shadowElevation = kbShadow.elevation.dp,
+                    shadowShapeRadius = kbShadow.shapeRadius.dp,
+                    keyCornerRadius = kbKey.cornerRadius.dp,
+                    keySpacingX = kbKey.spacingFor("stroke").first?.dp,
+                    keySpacingY = kbKey.spacingFor("stroke").second?.dp,
+                    modifier = modifier,
+                    onKeyPressDown = callbacks.onKeyPressDown,
+                    isFloatingMode = uiState.isFloatingMode,
+                    specialKeyTextColor = specialKeyTextColor,
+                    onGestureAction = onGestureAction,
+                )
+            }
+
+            is KeyboardLayoutState.T9Pinyin -> {
+                if (t9Controller != null) {
+                    T9KeyboardLayout(
+                        onKeyPress = onKeyPress,
+                        callbacks = callbacks,
+                        uiState = uiState,
+                        t9Controller = t9Controller,
+                        candidateState = candidateState,
+                        keyBackgroundColor = keyBgColor,
+                        keyTextColor = keyTextColor,
+                        specialKeyBackgroundColor = specialKeyBgColor,
+                        bubbleBackgroundColor = themeSpecialKeyColor,
+                        accentColor = accentColor,
+                        keyboardBackgroundColor = keyboardBgColor,
+                        shadowEnabled = kbShadow.enabled,
+                        shadowElevation = kbShadow.elevation.dp,
+                        shadowShapeRadius = kbShadow.shapeRadius.dp,
+                        keyCornerRadius = kbKey.cornerRadius.dp,
+                        keySpacingX = kbKey.spacingFor("t9").first?.dp,
+                        keySpacingY = kbKey.spacingFor("t9").second?.dp,
+                        modifier = modifier,
+                        onKeyPressDown = callbacks.onKeyPressDown,
+                        isFloatingMode = uiState.isFloatingMode,
+                        specialKeyTextColor = specialKeyTextColor,
+                        onGestureAction = onGestureAction,
+                    )
+                }
+            }
+
+            is KeyboardLayoutState.Symbol -> {
+                // 符号键盘已改为路由，此处不应到达
+            }
+        }
+        }
+    }
+}

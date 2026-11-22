@@ -1,0 +1,26 @@
+package com.cayboard.service;
+
+import com.cayboard.service.IInferenceAsrCallback;
+
+interface IInferenceAsrService {
+    /** 加载 ASR 模型并开始识别（返回 false 表示模型缺失/加载失败） */
+    boolean startAsr(String modelId, IInferenceAsrCallback callback);
+    /** 推送 PCM 音频数据（16k/16bit/mono），服务端内部流式识别 */
+    void pushAsrAudio(IBinder session, in byte[] audioData);
+    /** 结束识别，返回最终识别文本 */
+    String stopAsr(IBinder session);
+    /** 取消当前识别会话 */
+    void cancelAsr(IBinder session);
+    /** 释放 ASR 模型 */
+    void releaseAsr(IBinder session);
+    /** Current input language is part of the recognition session and model cache identity. */
+    boolean startAsrForLanguage(String modelId, String languageId, IInferenceAsrCallback callback);
+    /** 空闲多少秒后释放 X-ASR。0 表示关闭空闲回收。 */
+    oneway void setEngineIdleSeconds(int seconds);
+    /** 键盘收起：系统缺内存时卸掉空闲的语音模型（常驻设置也卸），见 AsrMemoryPressure。 */
+    oneway void onKeyboardHidden();
+    /** 设置 › 存储空间 点「释放」：没在说话时立刻卸掉全部语音模型；卸了返回 true。 */
+    boolean releaseIdleModelsNow();
+    /** 语音进程自己的 PSS（kB）：正式包里别的进程读不到它的 /proc，存储空间页靠这个显示；读不到返回 0。 */
+    long memoryKb();
+}

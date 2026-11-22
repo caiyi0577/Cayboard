@@ -1,0 +1,5 @@
+Android: Google Noto Color Emoji, SIL OFL 1.1.
+Catalog and Chinese annotations: Unicode Emoji 18.0 / CLDR, Unicode License.
+iOS: Apple Color Emoji artwork, Apple Inc. Proprietary assets; NOT covered by converter MIT license.
+Converted by samuelngs/apple-emoji-ttf; this local build retains the 96 ppem strike.
+Do not publish the Apple font as open-source or redistribute without appropriate rights.

@@ -1,0 +1,19 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.Xime" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">#B8D5E0</item>
+        <item name="colorPrimaryVariant">#2C414D</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">#B8D5E0</item>
+        <item name="colorSecondaryVariant">#B8D5E0</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorAccent">#B8D5E0</item>
+        <item name="android:colorAccent">#B8D5E0</item>
+        <item name="android:textColorHighlight">#99416879</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <!-- Customize your theme here. -->
+    </style>
+</resources>

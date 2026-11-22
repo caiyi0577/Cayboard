@@ -1,0 +1,22 @@
+Fixed dictionary bundle, revision 20261116.1
+
+CyIME's original 19 built-in dictionaries and its complete 37-item online catalogue were acquired first.
+Original CyIME source: https://github.com/Cyletix/CyIME/tree/1.15.89
+Online SCEL sources and their individual links/hashes are recorded in sources.json. Downloaded SCEL files
+were parsed by CyIME's original validated ScelDictionary implementation; source data was not executed.
+
+Additional dictionary sources:
+- iDvel/rime-ice, commit 927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6 (GPL-3.0-only).
+  https://github.com/iDvel/rime-ice/tree/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6
+  License text: LICENSE-rime-ice.txt. Original headers and source files retained in the preparation archive.
+- felixonmars/fcitx5-pinyin-zhwiki, release 0.3.1, zhwiki/web-slang snapshot 20261018.
+  https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/tag/0.3.1
+  Generator project: Unlicense (LICENSE-zhwiki-generator.txt).
+  Underlying word data derives from Chinese Wikipedia and Wikimedia projects/community web slang:
+  https://zh.wikipedia.org/ ; https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use
+  Wikimedia text reuse terms include CC BY-SA 4.0; the generator license does not replace source-data terms.
+
+Local modifications: validate pinyin, discard malformed/untypeable rows, remove duplicates against the
+existing core vocabulary, combine source lists, and assign new supplemental Chinese entries weight 1.
+Core dictionary entries, readings and frequencies are preserved. Existing English frequency order is
+preserved, with additional literal spellings appended. Sources, hashes and row counts: sources.json.

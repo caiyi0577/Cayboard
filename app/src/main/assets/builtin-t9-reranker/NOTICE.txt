@@ -1,0 +1,4 @@
+chinese-ime-lm 6x256 keystroke reranker, rerank-v2
+Upstream: https://github.com/metasequoiaime/chinese-ime-lm/releases/tag/rerank-v2
+Model weights and model metadata are distributed under Apache License 2.0.
+The original attribution is retained in model.json and the model metadata.

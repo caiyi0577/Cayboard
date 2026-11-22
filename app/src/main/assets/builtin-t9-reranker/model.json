@@ -1,0 +1,25 @@
+{
+  "layers": 6,
+  "heads": 4,
+  "head_dim": 64,
+  "width": 256,
+  "max_positions": 256,
+  "context_chars": 64,
+  "bos": 2,
+  "unk": 1,
+  "self_normalized": true,
+  "attribution": "Trained on the Chinese portion of C4 (ODC-BY, https://huggingface.co/datasets/allenai/c4), FineWeb-2 (cmn_Hani) (ODC-BY, https://huggingface.co/datasets/HuggingFaceFW/fineweb-2), LCCC (MIT, https://github.com/thu-coai/CDial-GPT) and synthetic one-sided chat messages written by DeepSeek deepseek-v4-pro for this project (neural/teacher/gen_chat.py) (DeepSeek Terms of Use, outputs assigned to the user and usable to train other models, https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html).",
+  "license": "Apache-2.0",
+  "config": {
+    "vocab": 12288,
+    "n_layer": 6,
+    "n_head": 4,
+    "n_embd": 256,
+    "max_positions": 256,
+    "dropout": 0.0,
+    "lm_term": false,
+    "ngram_buckets": 0,
+    "gelu_tanh": true,
+    "self_normalized": true
+  }
+}

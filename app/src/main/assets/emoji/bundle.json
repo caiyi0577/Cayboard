@@ -1,0 +1,27 @@
+{
+  "unicode": "18.0",
+  "emoji_count": 3972,
+  "groups": {
+    "Smileys & Emotion": 172,
+    "People & Body": 2430,
+    "Component": 9,
+    "Animals & Nature": 161,
+    "Food & Drink": 132,
+    "Travel & Places": 221,
+    "Activities": 85,
+    "Objects": 268,
+    "Symbols": 224,
+    "Flags": 270
+  },
+  "keyword_count": 7550,
+  "font_outputs": {
+    "Android.ttf": {
+      "bytes": 10730124,
+      "sha256": "15671215ab769fdc7162a045d56fd7d7e477c51b04e6b3c761d914d8fdd6cc44"
+    },
+    "iOS.ttf": {
+      "bytes": 38368352,
+      "sha256": "f175f39b7c167d3d3a8dc18229a52f005092ba72dabaefd4ae0c8e97ce20cd3f"
+    }
+  }
+}

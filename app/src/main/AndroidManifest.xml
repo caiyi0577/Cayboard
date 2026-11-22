@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 联系人联想：仅启用功能时申请权限 -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="image/*" />
+        </intent>
+    </queries>
+    <application
+        android:name="com.cayboard.CayboardApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/cayboard_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/cayboard_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Xime"
+        tools:targetApi="31">
+        
+        <!-- Developer tool for test scripts (does nothing outside 装到我的设备 builds); only adb (DUMP) may send it. -->
+
+        <receiver
+            android:name="com.cayboard.service.PackageReplacedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="com.cayboard.clipboard.VerificationCodeSmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+        <!-- 同拍照识字：自己单独一个任务。原来落进设置那个任务，从键盘添加图片会把设置带到前台，
+             选完图停在设置，不回当前输入框。 -->
+        <!-- 自己单独一个任务（taskAffinity 为空）：Cayboard 设置开在后台时，拍照识字原来会落进设置那个任务，
+             把设置带到前台、结束后停在设置，不回当前输入框（GitHub #64）。 -->
+        <activity android:name="com.cayboard.ocr.DocumentOcrActivity"
+            android:exported="false" android:excludeFromRecents="true" android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <service android:name="com.cayboard.ocr.OcrRecognitionService"
+            android:exported="false" android:process=":ocr" />
+        <!-- 主Activity -->
+        <activity
+            android:name="com.cayboard.MainActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true"
+            android:theme="@style/Theme.Xime">
+
+            <!-- 接收其他应用分享的 .yaml / .zip 文件 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+        
+
+        <activity-alias android:name="com.cayboard.launcher.IconOriginal"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="true" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconNeon"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_neon" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconGlass"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_glass" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconFacet"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_facet" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconFrost"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_frost" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name="com.cayboard.launcher.IconOriginalBare"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@drawable/cayboard_launcher_bare_facet" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name="com.cayboard.launcher.IconNeonBare"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@drawable/cayboard_launcher_bare_neon" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name="com.cayboard.launcher.IconGlassBare"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@drawable/cayboard_launcher_bare_glass" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name="com.cayboard.launcher.IconFacetBare"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@drawable/cayboard_launcher_bare_facet" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias android:name="com.cayboard.launcher.IconFrostBare"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@drawable/cayboard_launcher_bare_frost" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- “桌面图标跟随主题色”：每个主题色一个入口，换主题时只启用对应的一个（IconAppearance.followTheme） -->
+        <activity-alias android:name="com.cayboard.launcher.IconThemeLavender"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_lavender" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeSoftblue"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_softblue" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeSakura"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_sakura" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeSunset"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_sunset" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeAurora"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_aurora" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeMint"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_mint" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeCream"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_cream" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeDesert"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_desert" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias android:name="com.cayboard.launcher.IconThemeMono"
+            android:targetActivity="com.cayboard.MainActivity"
+            android:enabled="false" android:exported="true"
+            android:icon="@mipmap/cayboard_launcher_theme_mono" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity android:name="com.cayboard.CustomLayoutActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <!-- 输入法服务。名字直接写字面量：系统设置在应用更新途中读不到资源时会退回显示类名（2026-10-19 平板“默认键盘”显示成 CayboardInputMethodService），打包器检查。 -->
+        <service
+            android:name="com.cayboard.service.CayboardInputMethodService"
+            android:exported="true"
+            android:label="Cayboard"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+        
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+        
+        <!-- AI 模型推理服务（独立进程，crash 不影响 IME） -->
+        <service
+            android:name="com.cayboard.service.InferenceService"
+            android:exported="false"
+            android:process=":inference" />
+        
+        <!-- 离线语音识别服务（独立进程，模型推理不占用输入法进程内存） -->
+        <service
+            android:name="com.cayboard.service.AsrInferenceService"
+            android:exported="false"
+            android:process=":asr" />
+        
+    </application>
+
+</manifest>

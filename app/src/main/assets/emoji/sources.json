@@ -1,0 +1,42 @@
+{
+  "emoji-test.txt": {
+    "url": "https://www.unicode.org/Public/18.0.0/emoji/emoji-test.txt",
+    "sha256": "8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a",
+    "bytes": 671655
+  },
+  "zh.xml": {
+    "url": "https://raw.githubusercontent.com/unicode-org/cldr/61b92234f9f2b43567a76de08a2ec537a9c5e333/common/annotations/zh.xml",
+    "sha256": "820de5034133077d2baa31464de0c91e748ae3c659880c2918bf6a55e560a282",
+    "bytes": 292459
+  },
+  "zh-derived.xml": {
+    "url": "https://raw.githubusercontent.com/unicode-org/cldr/61b92234f9f2b43567a76de08a2ec537a9c5e333/common/annotationsDerived/zh.xml",
+    "sha256": "4fff4592df54051e4b8ebe49f17e3b6bd9c951303f99abeb989446b80ef64a1f",
+    "bytes": 504416
+  },
+  "Android.ttf": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/2D/fonts/NotoColorEmoji.ttf",
+    "sha256": "15671215ab769fdc7162a045d56fd7d7e477c51b04e6b3c761d914d8fdd6cc44",
+    "bytes": 10730124
+  },
+  "Noto-OFL.txt": {
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-emoji/e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e/LICENSE",
+    "sha256": "500bb1ccf43df7bbb522112f9133a52b16e1c35e809632f5d8609b179152de5b",
+    "bytes": 4330
+  },
+  "iOS.ttf": {
+    "url": "https://github.com/samuelngs/apple-emoji-ttf/releases/download/macos-26-20260722-484daf4e/AppleColorEmoji-Linux.ttf",
+    "sha256": "e37c7af6265ac4a0af6d57bc65e86109a776d9966e8343334557f63da482516f",
+    "bytes": 115969256
+  },
+  "Apple-README.md": {
+    "url": "https://raw.githubusercontent.com/samuelngs/apple-emoji-ttf/macos-26-20260722-484daf4e/README.md",
+    "sha256": "71142fd77788d7bda8c779497b6dfdeae050867e4ad432bca644c3c69a7a1e23",
+    "bytes": 7114
+  },
+  "Unicode-LICENSE.txt": {
+    "url": "https://www.unicode.org/license.txt",
+    "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+    "bytes": 1995
+  }
+}

@@ -1,0 +1,68 @@
+package com.cayboard.ui.settings
+
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Devices
+import androidx.compose.material.icons.twotone.Sms
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.cayboard.settings.SettingsPreferences
+
+@Composable
+internal fun VerificationCodeSettings() {
+    val context = LocalContext.current
+    fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+    var enabled by remember { mutableStateOf(SettingsPreferences.isSmsCodeEnabled(context) && hasPermission()) }
+    var denied by rememberSaveable { mutableStateOf(false) }
+    fun setEnabled(value: Boolean) {
+        SettingsPreferences.setSmsCodeEnabled(context, value)
+        enabled = value
+    }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        denied = !granted
+        setEnabled(granted)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        val granted = hasPermission()
+        if (denied && granted) {
+            // The user requested this feature, then granted access in system settings.
+            denied = false
+            setEnabled(true)
+        } else {
+            enabled = granted && SettingsPreferences.isSmsCodeEnabled(context)
+        }
+    }
+    VerificationCodeSettingsCard(enabled, denied, onToggle = { checked ->
+        denied = false
+        if (checked && !hasPermission()) launcher.launch(Manifest.permission.RECEIVE_SMS)
+        else setEnabled(checked)
+    })
+}
+
+@Composable
+internal fun VerificationCodeSettingsCard(enabled: Boolean, denied: Boolean,
+    onToggle: (Boolean) -> Unit) {
+    SettingsSection(title = "验证码", content = {
+        Column {
+            SettingsToggleItem(Icons.TwoTone.Sms, "新短信验证码自动复制",
+                "需授权接收短信。新短信到了只把验证码数字复制到剪贴板，不读取历史短信，不加入历史，10 分钟后自动删除。",
+                enabled, onToggle)
+            if (denied) Text("未获得短信权限。请在系统设置 → 应用 → Cayboard → 权限中允许接收短信，然后返回此页。如果没有短信权限选项，可以手动复制验证码数字。",
+                modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+
+        }
+    })
+}

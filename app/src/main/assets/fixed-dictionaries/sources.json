@@ -1,0 +1,712 @@
+{
+  "revision": "20261117.2",
+  "core_unique_pairs": 910989,
+  "core_words": 1696939,
+  "supplement_weight": 1,
+  "cy_builtin_files": 19,
+  "cy_online_files": 37,
+  "groups": {
+    "fixed_cy": {
+      "entries": 265457,
+      "sha256": "ab5579f6ce53515f243f9d9c6f54b412eb9b731bb034c342ddb267bd249d8141"
+    },
+    "fixed_ice": {
+      "entries": 3336,
+      "sha256": "df3d3866418b69b89ca6eb521ccb0a0e1e63231c3016533582dc8f84383c2b35"
+    },
+    "fixed_zhwiki": {
+      "entries": 1476903,
+      "sha256": "d02b5627dc0448d53de356915cff3316bf47153cd5e053782328d08be8d28147"
+    },
+    "fixed_baidu": {
+      "entries": 7455188,
+      "sha256": "a84e742bb857113d63f05e46dde6df3ace0ca5e1b1d6f8ae30051d6d098d24e4"
+    }
+  },
+  "sources": [
+    {
+      "id": "sogou_807",
+      "name": "全国省市区县地名",
+      "category": "城市信息大全",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=807&name=sogou_807",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/807",
+      "bytes": 77674,
+      "sha256": "36616f7d53582559be94cd66ceeb4bd4a2c98f2e93664d550d986f0fc72b8eb8",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_11508",
+      "name": "风景名胜精选",
+      "category": "城市信息大全",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=11508&name=sogou_11508",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/11508",
+      "bytes": 53140,
+      "sha256": "48a7feaa26672b9f5ea2571732e21d6ed8f40f95a95dba5c4538723fc86a0fd7",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_73918",
+      "name": "王者荣耀",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=73918&name=sogou_73918",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/73918",
+      "bytes": 33810,
+      "sha256": "cba33a9f4d67ef1e7cd9b5dc128b600d50bb9754a1df7d7e1206e7689a8e6f34",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_53593",
+      "name": "英雄联盟",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=53593&name=sogou_53593",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/53593",
+      "bytes": 45970,
+      "sha256": "8bab4338b3606b44a4a5b0783c0a7d7ba1868da63a8ca71d532e58671c13f02b",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_78390",
+      "name": "碧蓝航线",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=78390&name=sogou_78390",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/78390",
+      "bytes": 128008,
+      "sha256": "d660b160bab2fdf3760bc2086eeeee8a7f32f60e0850ea07fbf21fb21411adb7",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_83081",
+      "name": "少女前线",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=83081&name=sogou_83081",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/83081",
+      "bytes": 23892,
+      "sha256": "584fb6b6df37166275e4f363498c3c9cef6f5be9260c36d3041847db242a003a",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_169094",
+      "name": "恋与深空",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=169094&name=sogou_169094",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/169094",
+      "bytes": 22206,
+      "sha256": "c278ea12c0142bd403dfa09b569ad664bcf9dd06a61a5d7e40e31e061c30022f",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_171456",
+      "name": "无限暖暖",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=171456&name=sogou_171456",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/171456",
+      "bytes": 44810,
+      "sha256": "eea6067de5c3b4aac467833c2b6939695e3d9f31e47d9a4f0e21d7b1e395faee",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_158615",
+      "name": "光·遇",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=158615&name=sogou_158615",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/158615",
+      "bytes": 21480,
+      "sha256": "b0b31b3eeb1ea52f86ee3056aeb9af512d3ada0b1749d2655a92b6527003bdc2",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_83711",
+      "name": "第五人格",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=83711&name=sogou_83711",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/83711",
+      "bytes": 19556,
+      "sha256": "ea6c7d1efe9ab343ac74c5d211eca10e896f61f5a5b907f58482fb07545c67ab",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_135643",
+      "name": "永劫无间",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=135643&name=sogou_135643",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/135643",
+      "bytes": 13178,
+      "sha256": "9e97e58b1e46ce85336b819ee3fac5521da778d6c207e0611c7d54f2a3f7cc80",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_177368",
+      "name": "三角洲行动",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=177368&name=sogou_177368",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/177368",
+      "bytes": 19484,
+      "sha256": "43a3ff409a8bd08e780dc26b15437ea9654985809d0cd86e2271dceeab4e0b13",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_174142",
+      "name": "守望先锋：归来",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=174142&name=sogou_174142",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/174142",
+      "bytes": 29308,
+      "sha256": "d19e1ecc9eebd631c045c385bf3f03f0adc04bc877658deb8e3cff0e14fdaaf9",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_172302",
+      "name": "金铲铲之战",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=172302&name=sogou_172302",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/172302",
+      "bytes": 25162,
+      "sha256": "9ef77048ccfb58373c1f4351da45a13d161830d3237829c95f0033e94b91d1e0",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_72606",
+      "name": "炉石传说",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=72606&name=sogou_72606",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/72606",
+      "bytes": 80850,
+      "sha256": "eaf867f98b2f3116a57a8e678abe2015cf66bd192fb8a018210d9eb4c20928f9",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_171005",
+      "name": "魔兽世界",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=171005&name=sogou_171005",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/171005",
+      "bytes": 1796992,
+      "sha256": "f4b8acf11c64fda95b8b7f95eea22c3efe63e5aed3ceba046631d535ff9eee26",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_61481",
+      "name": "我的世界（Minecraft）",
+      "category": "电子游戏",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=61481&name=sogou_61481",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/61481",
+      "bytes": 64688,
+      "sha256": "0ec0593e024ef5b258129de80069c8685f4d1a08e7e0a1532c8bef0870bfcc4a",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15203",
+      "name": "物理词汇大全",
+      "category": "自然科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15203&name=sogou_15203",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15203",
+      "bytes": 455528,
+      "sha256": "3868e47937fd1de44d93dd16ee5b916a2ad50c4d314d2878a992faf9b40daa84",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15205",
+      "name": "化学化工词汇大全",
+      "category": "自然科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15205&name=sogou_15205",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15205",
+      "bytes": 479284,
+      "sha256": "22f012e9e8cfda52c82e7edd3fc79614210c0b601cc085e5dea00986af9abfed",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15097",
+      "name": "成语俗语",
+      "category": "人文科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15097&name=sogou_15097",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15097",
+      "bytes": 1645056,
+      "sha256": "2771996628fd9d5aebe2b64b0622b6e54587a7f1e53f66b68cbd1ea356b4a182",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_2",
+      "name": "古诗词名句",
+      "category": "人文科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=2&name=sogou_2",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/2",
+      "bytes": 632054,
+      "sha256": "285aab6f6083aa472470dd35be1b3a6060c7fcfb4b45697757d032bee056a41f",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15128",
+      "name": "法律词汇大全",
+      "category": "社会科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15128&name=sogou_15128",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15128",
+      "bytes": 171542,
+      "sha256": "def62afb74a2e0929a0d511928c8ce4a44946bdb2933c4b85925ec8735863067",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15127",
+      "name": "财经金融词汇大全",
+      "category": "社会科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15127&name=sogou_15127",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15127",
+      "bytes": 408968,
+      "sha256": "26e709494bf0a6097962b6d69b07dea4afd0b76922826dfde1694e546a9644ca",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15117",
+      "name": "计算机词汇大全",
+      "category": "工程与应用科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15117&name=sogou_15117",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15117",
+      "bytes": 363014,
+      "sha256": "fdcf190279b4621738f76a575b472dfa56609aab060dbba7ca1df54adae0c391",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15118",
+      "name": "建筑词汇大全",
+      "category": "工程与应用科学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15118&name=sogou_15118",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15118",
+      "bytes": 260250,
+      "sha256": "4e0fd12deeb1303b888a274d7fe6d82fdd0e93cb784ff4d75e7d614f8b29bc7e",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15149",
+      "name": "农业词汇大全",
+      "category": "农林渔畜",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15149&name=sogou_15149",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15149",
+      "bytes": 289030,
+      "sha256": "209a43496d8364b595f90536ac1032a79d11d00db745e43eba48d85de073eff9",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_1345",
+      "name": "林业树种名词库",
+      "category": "农林渔畜",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=1345&name=sogou_1345",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/1345",
+      "bytes": 143186,
+      "sha256": "9fbd61f51287b9f0f318c700e180152cab89c57d9f9e8009ca143f7558d15273",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15125",
+      "name": "医学词汇大全",
+      "category": "医学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15125&name=sogou_15125",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15125",
+      "bytes": 3747198,
+      "sha256": "5870fbe34907afbab7d037f8087be5dc267fd19c2150339c54663a774d7f5ab2",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_20664",
+      "name": "中医中药大全",
+      "category": "医学",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=20664&name=sogou_20664",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/20664",
+      "bytes": 994272,
+      "sha256": "40888e5b92a24cc388d93a460ba7dad0bf984cbdd59c8875c0fbd45d267b29c0",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15141",
+      "name": "绘画美术词汇大全",
+      "category": "艺术",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15141&name=sogou_15141",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15141",
+      "bytes": 199374,
+      "sha256": "c7789c666a5e6a054df80e7bb0eb2748c8b880f1bed56c73522aac6cd5967075",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_20649",
+      "name": "摄影大全",
+      "category": "艺术",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=20649&name=sogou_20649",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/20649",
+      "bytes": 711412,
+      "sha256": "96ecff7084192b5c7309a05524eadad2b189079881e341a89a1ef6ef8d85c18a",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15191",
+      "name": "篮球",
+      "category": "运动休闲",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15191&name=sogou_15191",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15191",
+      "bytes": 89004,
+      "sha256": "7fe2aa6787d20fc33fc7969e225a7bcc623a8828708f0144a6efc9d7dd45e509",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15188",
+      "name": "足球",
+      "category": "运动休闲",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15188&name=sogou_15188",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15188",
+      "bytes": 333554,
+      "sha256": "3331f20c28437107b3795128b4d5bb26764675598f4682ffa5cc5b26b456ec4f",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15201",
+      "name": "饮食大全",
+      "category": "生活",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15201&name=sogou_15201",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15201",
+      "bytes": 251884,
+      "sha256": "ce4e98c85b6c544e6a9f7e296b1c009db270ec6df923a8433e926fed63079cce",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15183",
+      "name": "旅游词汇大全",
+      "category": "生活",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15183&name=sogou_15183",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15183",
+      "bytes": 110862,
+      "sha256": "08f75188a287d2404984b3e5d60815717957a8f83892fde41c599a8a891974b8",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_20656",
+      "name": "日剧、动漫大全",
+      "category": "娱乐",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=20656&name=sogou_20656",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/20656",
+      "bytes": 539902,
+      "sha256": "4bb949e0476121a3385d78c3e8f375cc41b975fffc70d8e287d5406541399292",
+      "status": "downloaded"
+    },
+    {
+      "id": "sogou_15153",
+      "name": "汽车词汇大全",
+      "category": "娱乐",
+      "url": "https://pinyin.sogou.com/d/dict/download_cell.php?id=15153&name=sogou_15153",
+      "source_url": "https://pinyin.sogou.com/dict/detail/index/15153",
+      "bytes": 93744,
+      "sha256": "d0b3f0fd01f46edc9ffe631996d8f59968cadb8f39c641839fb912cf9e7758b6",
+      "status": "downloaded"
+    },
+    {
+      "id": "ice-base",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/cn_dicts/base.dict.yaml",
+      "bytes": 16609062,
+      "sha256": "c1f07daa4680a437a04169211e4a80b19923fd61cff322753d3ee98a7e1bffc8"
+    },
+    {
+      "id": "ice-ext",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/cn_dicts/ext.dict.yaml",
+      "bytes": 11923503,
+      "sha256": "f713d82f5a3c38bf955fef631353c6bd08c3e1ae6674d7db0c4f286480d760a1"
+    },
+    {
+      "id": "ice-others",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/cn_dicts/others.dict.yaml",
+      "bytes": 17454,
+      "sha256": "c7475d773e619f61b88d47fa8ec789aba02aa0d1c98edaed309e53487b048b32"
+    },
+    {
+      "id": "ice-en",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/en_dicts/en.dict.yaml",
+      "bytes": 371066,
+      "sha256": "1049164da983c1c5a933d6401df9a8e5f8a378b0c67b102e0f75f0a65226ec44"
+    },
+    {
+      "id": "ice-en-ext",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/en_dicts/en_ext.dict.yaml",
+      "bytes": 52724,
+      "sha256": "c8648c1dc1ad691c77ef29525244d42482b2e8bcabe08355baec241f563306a2"
+    },
+    {
+      "id": "ice-license",
+      "url": "https://raw.githubusercontent.com/iDvel/rime-ice/927e1cf1d3eeb9bf4be85e3f684dba4dd485b6f6/LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "id": "web-slang",
+      "url": "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.3.1/web-slang-20261018.dict.yaml",
+      "bytes": 9092,
+      "sha256": "ca606427524e49ef67c2acf288677a0a43dcb67b3845e509039bc12dc15f0205"
+    },
+    {
+      "id": "zhwiki",
+      "url": "https://github.com/felixonmars/fcitx5-pinyin-zhwiki/releases/download/0.3.1/zhwiki-20261018.dict.yaml",
+      "bytes": 57688941,
+      "sha256": "5d8cc276aa9febb68ce1b95cfde07fdf2e21dfd2e89b8992f465aad95bed5241"
+    },
+    {
+      "id": "baidu_official_20261117",
+      "name": "百度输入法官网词库（查重后新增部分）",
+      "category": "中文拼音",
+      "url": "https://shurufa.baidu.com/dict_list",
+      "source_url": "https://shurufa.baidu.com/dict_list",
+      "bytes": 267692881,
+      "sha256": "a84e742bb857113d63f05e46dde6df3ace0ca5e1b1d6f8ae30051d6d098d24e4",
+      "status": "downloaded-and-deduplicated",
+      "valid_bdict_files": 4150,
+      "unavailable_ids": 20,
+      "duplicate_word_pinyin_pairs": 781972,
+      "new_word_pinyin_pairs": 7455188,
+      "legacy_text_words_excluded_without_pinyin": 20480
+    }
+  ],
+  "per_file": {
+    "cell_builtin_anime.dict.yaml": {
+      "valid_rows": 927,
+      "new_rows": 347
+    },
+    "cell_builtin_arknights.dict.yaml": {
+      "valid_rows": 5646,
+      "new_rows": 4775
+    },
+    "cell_builtin_bluearchive.dict.yaml": {
+      "valid_rows": 386,
+      "new_rows": 268
+    },
+    "cell_builtin_cs2.dict.yaml": {
+      "valid_rows": 730,
+      "new_rows": 505
+    },
+    "cell_builtin_dota2.dict.yaml": {
+      "valid_rows": 1599,
+      "new_rows": 1035
+    },
+    "cell_builtin_endfield.dict.yaml": {
+      "valid_rows": 389,
+      "new_rows": 287
+    },
+    "cell_builtin_gacha.dict.yaml": {
+      "valid_rows": 407,
+      "new_rows": 184
+    },
+    "cell_builtin_genshin.dict.yaml": {
+      "valid_rows": 507,
+      "new_rows": 299
+    },
+    "cell_builtin_honkai3.dict.yaml": {
+      "valid_rows": 438,
+      "new_rows": 274
+    },
+    "cell_builtin_hsr.dict.yaml": {
+      "valid_rows": 425,
+      "new_rows": 313
+    },
+    "cell_builtin_llm.dict.yaml": {
+      "valid_rows": 1101,
+      "new_rows": 909
+    },
+    "cell_builtin_math.dict.yaml": {
+      "valid_rows": 2234,
+      "new_rows": 1611
+    },
+    "cell_builtin_ml.dict.yaml": {
+      "valid_rows": 1755,
+      "new_rows": 977
+    },
+    "cell_builtin_movie.dict.yaml": {
+      "valid_rows": 1319,
+      "new_rows": 291
+    },
+    "cell_builtin_onmyoji.dict.yaml": {
+      "valid_rows": 366,
+      "new_rows": 186
+    },
+    "cell_builtin_programming.dict.yaml": {
+      "valid_rows": 1530,
+      "new_rows": 620
+    },
+    "cell_builtin_wenshi.dict.yaml": {
+      "valid_rows": 1780,
+      "new_rows": 439
+    },
+    "cell_builtin_wuwa.dict.yaml": {
+      "valid_rows": 409,
+      "new_rows": 341
+    },
+    "cell_builtin_zzz.dict.yaml": {
+      "valid_rows": 288,
+      "new_rows": 181
+    },
+    "cell_sogou_11508.dict.yaml": {
+      "valid_rows": 1279,
+      "new_rows": 819
+    },
+    "cell_sogou_1345.dict.yaml": {
+      "valid_rows": 4111,
+      "new_rows": 3498
+    },
+    "cell_sogou_135643.dict.yaml": {
+      "valid_rows": 119,
+      "new_rows": 70
+    },
+    "cell_sogou_15097.dict.yaml": {
+      "valid_rows": 46785,
+      "new_rows": 10580
+    },
+    "cell_sogou_15117.dict.yaml": {
+      "valid_rows": 10300,
+      "new_rows": 3825
+    },
+    "cell_sogou_15118.dict.yaml": {
+      "valid_rows": 7479,
+      "new_rows": 4458
+    },
+    "cell_sogou_15125.dict.yaml": {
+      "valid_rows": 90047,
+      "new_rows": 76510
+    },
+    "cell_sogou_15127.dict.yaml": {
+      "valid_rows": 11379,
+      "new_rows": 5069
+    },
+    "cell_sogou_15128.dict.yaml": {
+      "valid_rows": 4560,
+      "new_rows": 1567
+    },
+    "cell_sogou_15141.dict.yaml": {
+      "valid_rows": 6317,
+      "new_rows": 5926
+    },
+    "cell_sogou_15149.dict.yaml": {
+      "valid_rows": 8874,
+      "new_rows": 5512
+    },
+    "cell_sogou_15153.dict.yaml": {
+      "valid_rows": 2401,
+      "new_rows": 1396
+    },
+    "cell_sogou_15183.dict.yaml": {
+      "valid_rows": 2902,
+      "new_rows": 1012
+    },
+    "cell_sogou_15188.dict.yaml": {
+      "valid_rows": 8929,
+      "new_rows": 7239
+    },
+    "cell_sogou_15191.dict.yaml": {
+      "valid_rows": 2237,
+      "new_rows": 1543
+    },
+    "cell_sogou_15201.dict.yaml": {
+      "valid_rows": 6918,
+      "new_rows": 1869
+    },
+    "cell_sogou_15203.dict.yaml": {
+      "valid_rows": 13107,
+      "new_rows": 10143
+    },
+    "cell_sogou_15205.dict.yaml": {
+      "valid_rows": 13264,
+      "new_rows": 10709
+    },
+    "cell_sogou_158615.dict.yaml": {
+      "valid_rows": 378,
+      "new_rows": 189
+    },
+    "cell_sogou_169094.dict.yaml": {
+      "valid_rows": 385,
+      "new_rows": 326
+    },
+    "cell_sogou_171005.dict.yaml": {
+      "valid_rows": 48686,
+      "new_rows": 41989
+    },
+    "cell_sogou_171456.dict.yaml": {
+      "valid_rows": 961,
+      "new_rows": 901
+    },
+    "cell_sogou_172302.dict.yaml": {
+      "valid_rows": 461,
+      "new_rows": 322
+    },
+    "cell_sogou_174142.dict.yaml": {
+      "valid_rows": 592,
+      "new_rows": 367
+    },
+    "cell_sogou_177368.dict.yaml": {
+      "valid_rows": 318,
+      "new_rows": 175
+    },
+    "cell_sogou_2.dict.yaml": {
+      "valid_rows": 16948,
+      "new_rows": 11786
+    },
+    "cell_sogou_20649.dict.yaml": {
+      "valid_rows": 19627,
+      "new_rows": 14862
+    },
+    "cell_sogou_20656.dict.yaml": {
+      "valid_rows": 15544,
+      "new_rows": 12935
+    },
+    "cell_sogou_20664.dict.yaml": {
+      "valid_rows": 28428,
+      "new_rows": 9417
+    },
+    "cell_sogou_53593.dict.yaml": {
+      "valid_rows": 1173,
+      "new_rows": 409
+    },
+    "cell_sogou_61481.dict.yaml": {
+      "valid_rows": 1576,
+      "new_rows": 1093
+    },
+    "cell_sogou_72606.dict.yaml": {
+      "valid_rows": 2031,
+      "new_rows": 1271
+    },
+    "cell_sogou_73918.dict.yaml": {
+      "valid_rows": 740,
+      "new_rows": 308
+    },
+    "cell_sogou_78390.dict.yaml": {
+      "valid_rows": 3374,
+      "new_rows": 2606
+    },
+    "cell_sogou_807.dict.yaml": {
+      "valid_rows": 2595,
+      "new_rows": 485
+    },
+    "cell_sogou_83081.dict.yaml": {
+      "valid_rows": 433,
+      "new_rows": 293
+    },
+    "cell_sogou_83711.dict.yaml": {
+      "valid_rows": 326,
+      "new_rows": 135
+    },
+    "ice-base": {
+      "valid_rows": 543423,
+      "new_rows": 657
+    },
+    "ice-ext": {
+      "valid_rows": 339214,
+      "new_rows": 2679
+    },
+    "ice-others": {
+      "valid_rows": 633,
+      "new_rows": 0
+    },
+    "zhwiki": {
+      "valid_rows": 1734068,
+      "new_rows": 1476798
+    },
+    "web-slang": {
+      "valid_rows": 423,
+      "new_rows": 105
+    }
+  },
+  "english": {
+    "baseline": 9894,
+    "added": 14838,
+    "total": 24732
+  }
+}

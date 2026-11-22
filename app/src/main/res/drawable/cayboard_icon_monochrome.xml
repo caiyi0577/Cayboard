@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Map the 1024 px artwork into the centered 72 dp visible area. -->
+    <group android:scaleX="0.0703125" android:scaleY="0.0703125"
+        android:translateX="18" android:translateY="18">
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M216,181 H359 A35,35 0 0,1 394,216 V359 A35,35 0 0,1 359,394 H216 A35,35 0 0,1 181,359 V216 A35,35 0 0,1 216,181 Z
+                M440,181 H583 A35,35 0 0,1 618,216 V359 A35,35 0 0,1 583,394 H440 A35,35 0 0,1 405,359 V216 A35,35 0 0,1 440,181 Z
+                M664,181 H807 A35,35 0 0,1 842,216 V359 A35,35 0 0,1 807,394 H664 A35,35 0 0,1 629,359 V216 A35,35 0 0,1 664,181 Z" />
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M216,405 H359 A35,35 0 0,1 394,440 V583 A35,35 0 0,1 359,618 H216 A35,35 0 0,1 181,583 V440 A35,35 0 0,1 216,405 Z" />
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M216,629 H359 A35,35 0 0,1 394,664 V807 A35,35 0 0,1 359,842 H216 A35,35 0 0,1 181,807 V664 A35,35 0 0,1 216,629 Z
+                M440,629 H583 A35,35 0 0,1 618,664 V807 A35,35 0 0,1 583,842 H440 A35,35 0 0,1 405,807 V664 A35,35 0 0,1 440,629 Z
+                M664,629 H807 A35,35 0 0,1 842,664 V807 A35,35 0 0,1 807,842 H664 A35,35 0 0,1 629,807 V664 A35,35 0 0,1 664,629 Z" />
+    </group>
+</vector>

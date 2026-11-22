@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ochwpro",
+    "version": "v1.2",
+    "files": [
+      {
+        "name": "ochwpro.onnx",
+        "url": "https://www.modelscope.cn/models/Cyletix/cyime-model/resolve/master/ochwpro-v1.2-ochwpro.onnx",
+        "sha256": "8a6095f9ccd222fa391d4e98e2795f478d3d88daaa62d4844677fac18c7acb02",
+        "size": 7001270
+      },
+      {
+        "name": "char_index.json",
+        "url": "https://www.modelscope.cn/models/bikeand/ochwpro/resolve/master/char_index.json",
+        "sha256": "171cf2ac23731428ac9dd28f64be82dece5f66a0ca3d674ffb3b567b51532176",
+        "size": 51317
+      }
+    ]
+  },
+  {
+    "id": "handwriting-formula",
+    "version": "v1",
+    "files": [
+      {
+        "name": "formula_encoder.onnx",
+        "url": "https://github.com/Cyletix/CyIME/releases/download/models/formula-handwriting-v1-encoder.onnx",
+        "sha256": "c2c55f14e8d3bc892c7f86ec9b237e54f46997300550a5c76501c54b7344b6dd",
+        "size": 21137800
+      },
+      {
+        "name": "formula_decoder.onnx",
+        "url": "https://github.com/Cyletix/CyIME/releases/download/models/formula-handwriting-v1-decoder.onnx",
+        "sha256": "ab11c1ceb4cb58b044be89b77c71eb32fcbc53ff1ddfc136c51444b002bdb2a9",
+        "size": 13346580
+      },
+      {
+        "name": "formula_vocab.json",
+        "url": "https://github.com/Cyletix/CyIME/releases/download/models/formula-handwriting-v1-vocab.json",
+        "sha256": "73653abb6993d5f2451501c804fb66671c05f86b4165bbe10cb3ef6ef96ec92c",
+        "size": 2003
+      },
+      {
+        "name": "formula_meta.json",
+        "url": "https://github.com/Cyletix/CyIME/releases/download/models/formula-handwriting-v1-meta.json",
+        "sha256": "2ad149afaa9f3872f872e1d4bf9560dfb67be21d08d69ec1a0fa05441cff7541",
+        "size": 205
+      }
+    ]
+  },
+  {
+    "id": "candidate-gloss",
+    "version": "v12",
+    "files": [
+      {
+        "name": "cyime_gloss-v12.tsv",
+        "url": "https://github.com/Cyletix/CyIME/releases/download/models/cyime_gloss-v12.tsv",
+        "sha256": "46ad175c5ea63cf1d9de5999aa615dbaf09a5689e71dc7d20c17e177fd22e761",
+        "size": 2747059
+      }
+    ]
+  }
+]
