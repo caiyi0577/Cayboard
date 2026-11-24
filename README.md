@@ -1,42 +1,35 @@
 # Cayboard
 
-Cayboard 是基于 CyIME 改造的 Android 中文输入法，面向后续 iOS 风格键盘体验的开发。
+Cayboard 是一个基于 CyIME 与 Rime 改造的 Android 输入法项目，主要面向中文输入，并提供英文输入及本地化的键盘工具。项目当前仅支持 Android；iOS 和桌面端移植尚未提供。
 
-当前版本重点：
+## 功能
 
 - 中文九键、中文 26 键和英文键盘
-- iOS 风格深色键盘皮肤
-- 统一的长按字符选择盘
-- 离线词库、九键候选模型、手写、语音和翻译模型支持
-- 模型管理：显示模型名称、版本和容量；支持本机导入新版本并保留旧版本
-- 全量用户数据备份与恢复：通过坚果云 WebDAV 保存设置、词库、模型、布局、剪贴板和应用数据
-- 备份账号使用坚果云“第三方应用密码”，不会使用网页登录密码
+- 基于本地词库与 Rime 引擎的离线拼音输入
+- 候选选择后的九键使用习惯记忆
+- 剪贴板历史、字符选择盘、表情和语音输入
+- 本地语音识别及离线翻译模型
+- 本机模型信息与版本管理
+- 坚果云 WebDAV 用户数据备份与恢复
+
+功能及模型组合会随构建版本变化。发布包的具体内容以对应 GitHub Release 说明为准。输入法只在用户启用相应功能时访问所需系统能力；语音识别与翻译使用本机模型。坚果云备份需要用户主动配置 WebDAV 账号和应用密码。
+
+## 获取应用
+
+从 [GitHub Releases](https://github.com/caiyi0577/Cayboard/releases) 下载与设备架构匹配的 APK。请以最新公开 Release 的资产和说明为准；仓库中的本地调试 APK 不作为正式发布文件。
 
 ## 构建
 
-仓库需要 Android SDK、NDK、CMake、JDK 21 和网络可用的 Gradle 依赖缓存。
+构建需要 JDK、Android SDK、Android NDK、CMake，以及 Gradle 下载依赖所需的网络连接。使用仓库包装器构建 Android 调试版：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\work\build-cyime.ps1
+./gradlew.bat assembleDebug
 ```
 
-构建脚本会生成 arm64-v8a APK。构建前请确保磁盘有足够空间，源码中的模型和词库资源体积较大。
+输出位于 `app/build/outputs/apk/`。要构建签名发布版，需要配置 `app/keystore.properties` 中的发布签名。完整构建与发布流程请参阅仓库内的开发文档和 GitHub Actions 工作流。
 
-## 版本说明
+## 上游与许可
 
-Cayboard 当前使用两个方向：
+Cayboard 保留 CyIME/Rime 的输入引擎及相关方案基础，并包含其他上游依赖、词库和模型。请遵守各组件原有许可证与署名要求；项目许可证及第三方声明见 [LICENSE](LICENSE)、[NOTICE](app/src/main/assets/NOTICE.txt) 和 `app/src/main/assets/licenses/`。
 
-- 普通调试/联网版本：用于坚果云 WebDAV 全量备份与恢复。
-- 离线模型版本：内置模型和词库，适合不需要云备份的设备环境。
-
-坚果云配置：在坚果云【第三方应用管理】中新建应用密码，然后在 Cayboard 的【设置 → 备份与恢复】填写：
-
-- WebDAV 目录：`https://dav.jianguoyun.com/dav/`
-- 坚果云注册邮箱
-- 第三方应用密码
-
-大备份会自动分片上传，避免超过坚果云的单文件限制。账号和应用密码使用 Android Keystore 加密保存。
-
-## 开源与许可
-
-本项目基于 CyIME 继续开发。请同时遵守上游项目、Rime、模型、词库、字体和第三方依赖各自的许可证与署名要求。模型和词库的许可证文件位于 `app/src/main/assets/licenses/` 及相关资源目录。
+本项目与 CyIME 上游及其中列出的第三方项目保持各自名称和商标归属；Cayboard 名称不表示对上游商标的所有权。
