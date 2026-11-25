@@ -32,8 +32,6 @@ object StorageHousekeeping {
      */
     fun findLeftovers(cacheDir: File, modelsDir: File, rimeDir: File): List<File> =
         cacheDir.listFiles { file -> CACHE_TEMP.matches(file.name) }.orEmpty().toList() +
-            // 文字识别请求的截图，识别完即删；进程被杀时留下。
-            File(cacheDir, "ocr-frames").listFiles { file -> file.isFile }.orEmpty() +
             modelsDir.listFiles { file -> MODEL_PREVIOUS.matches(file.name) || MODEL_STAGING.matches(file.name) ||
                 file.name in RETIRED_MODELS }.orEmpty() +
             rimeDir.listFiles { file -> file.isFile && RUNTIME_INSTALLING.matches(file.name) }.orEmpty()
@@ -56,9 +54,7 @@ object StorageHousekeeping {
     /** 主进程启动时调用：同步列出残留（很快），后台删除。 */
     fun sweepAtStartup(context: Context, scope: CoroutineScope) {
         val leftovers = runCatching {
-            findLeftovers(context.cacheDir, StorageStats.modelsDir(context), StorageStats.rimeDir(context)) +
-                // 拍照识别模型改为直接映射安装包后，以前解出来的副本（约 21 MB）。
-                listOfNotNull(com.cayboard.ocr.OcrModelFiles.obsoleteExtractedDir(context))
+            findLeftovers(context.cacheDir, StorageStats.modelsDir(context), StorageStats.rimeDir(context))
         }.getOrDefault(emptyList())
         if (leftovers.isEmpty()) return
         scope.launch {

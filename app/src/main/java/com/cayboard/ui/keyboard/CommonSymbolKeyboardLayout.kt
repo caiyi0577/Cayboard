@@ -258,7 +258,7 @@ fun CommonSymbolKeyboardLayout(
                                 )
                             }
                             SwipeableIconKeyButton(
-                                icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                                icon = deleteIconPainter(),
                                 onClick = { onKeyPress("delete") },
                                 backgroundColor = specialKeyBackgroundColor,
                                 iconColor = specialKeyTextColor,
@@ -588,7 +588,7 @@ internal fun CommonSymbolLandscapeContent(
                         )
                     }
                     SwipeableIconKeyButton(
-                        icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                        icon = deleteIconPainter(),
                         onClick = { onKeyPress("delete") },
                         backgroundColor = specialKeyBackgroundColor,
                         iconColor = specialKeyTextColor,
@@ -654,3 +654,4 @@ internal fun CommonSymbolLandscapeContent(
         }
     }
 }
+

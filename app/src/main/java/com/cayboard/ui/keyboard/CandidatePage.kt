@@ -469,7 +469,7 @@ private fun CandidatePageContent(
                         LocalKeyboardKeyContentScale provides if (matchKeyboard) LocalKeyboardKeyContentScale.current else 1f,
                     ) {
                         SwipeableIconKeyButton(
-                            icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                            icon = deleteIconPainter(),
                             onClick = { callbacks.onDelete?.invoke() },
                             onLongClick = callbacks.onDelete,
                             onPress = { callbacks.onKeyPressDown?.invoke("delete") },
@@ -928,3 +928,4 @@ private fun SizedExpandedLeftRail(state: CandidatePageState, callbacks: Candidat
             modifier = Modifier.weight(1f).fillMaxWidth().testTag("expanded-filter-key"), shadowEnabled = false)
     }
 }
+

@@ -220,24 +220,9 @@ private fun T9KeyboardSwipeOverlay(
     val dragSpace = LocalKeyDragSpace.current
     var dragArea by remember { mutableStateOf(Rect.Zero) }
     val input = LocalKeyboardInputPreferences.current
-    val glide = input.t9GlideTyping && input.cursorGesture != CursorGestureMode.KEYBOARD
-    val glideKeys = remember(glide, controller, uiState.inputProfile) { if (glide) mutableMapOf<Char, Rect>() else null }
-    val trail = remember(glideKeys, controller) { GlideTrail() }
-    val glideScope = rememberCoroutineScope()
-    val glideContext = LocalContext.current.applicationContext
-    // 全拼、双拼九键按词表比对整条线（别的用户 11-03：路过的键都算进去，正确率低）；其他九键方案只取起点、拐弯和终点。
-    val glideProfile = uiState.inputProfile
-    val glideDoublePinyin = if (glideProfile.scheme == com.cayboard.settings.InputScheme.DOUBLE_PINYIN)
-        com.cayboard.settings.DoublePinyinSchemes.find(uiState.currentSchemaId) else null
-    val glideDictionary = glideProfile.language == com.cayboard.settings.InputLanguage.CHINESE &&
-        (glideProfile.scheme == com.cayboard.settings.InputScheme.PINYIN || glideDoublePinyin != null)
-    // 提前读入词表，第一次滑行少等一点。
-    androidx.compose.runtime.LaunchedEffect(glide, glideDictionary) {
-        if (glide && glideDictionary) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching { com.cayboard.glide.GlideLexicon.pinyin(glideContext) }
-        }
-    }
-
+    // 连续滑行输入已移除；保留普通九键点按、拂动与候选拖动。
+    val glide = false
+    val glideKeys: MutableMap<Char, Rect>? = null
     fun processSwipeState(state: SwipeState, bounds: Rect) {
         // 按键和键盘都按这一刻的位置算，见 [LiveBounds]。
         val origin = liveKeyboardBounds.current(keyboardBounds, "keyboard")
@@ -265,35 +250,9 @@ private fun T9KeyboardSwipeOverlay(
     // 键缝动效的光层（默认关，关着时是 null）。
     // 按住 !@# 当 Ctrl、中英或语言切换：和 26 键一样从按的那个键扩开（用户 11-14）。
 
-    CompositionLocalProvider(LocalKeyCornerRadius provides keyCornerRadius, LocalT9GlideKeys provides glideKeys) {
+    CompositionLocalProvider(LocalKeyCornerRadius provides keyCornerRadius) {
     Box(
         modifier = modifier
-            // 键位与轨迹原点同用键盘卡片坐标：旋转的悬浮键盘滑行落在手指下的键（未旋转时与 boundsInRoot 相同）。
-            .t9GlideTyping(glideKeys, trail, { dragArea.topLeft }, callbacks.inputAdmissionTicket) { xs, ys ->
-                val keys = glideKeys?.mapValues { (_, rect) ->
-                    com.cayboard.keyboard.LetterKeyRect(rect.left, rect.top, rect.width, rect.height)
-                } ?: return@t9GlideTyping
-                if (keys.isEmpty()) return@t9GlideTyping
-                // 输入框归属在抬手时确定；识别完成前换了输入框则作废（与 26 键滑行相同）。
-                val inputContext = runCatching { callbacks.captureInputContext() }.getOrNull() ?: return@t9GlideTyping
-                val dictionary = glideDictionary
-                val doublePinyin = glideDoublePinyin
-                glideScope.launch {
-                    // 很短又认不出：快打时手指一抖被当成了滑行，按点了起点那个键算，不吞这一下（用户 11-11）。
-                    val digits = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                        runCatching {
-                            com.cayboard.glide.GlideLexicon.t9Digits(glideContext, keys, xs, ys, dictionary, doublePinyin)
-                        }.getOrDefault("")
-                    }.ifEmpty { com.cayboard.glide.shortGlideTapKey(keys, xs, ys)?.toString().orEmpty() }
-                    if (digits.isEmpty()) return@launch
-                    kotlinx.coroutines.withContext(inputContext) {
-                        for (digit in digits) {
-                            val key = digit.toString()
-                            if (callbacks.onPreeditKeyInput?.invoke(key) != true) controller.onDigitPressed(key)
-                        }
-                    }
-                }
-            }
             .onGloballyPositioned { coordinates ->
                 keyboardBounds = coordinates.boundsInRoot()
                 liveKeyboardBounds.coordinates = coordinates
@@ -382,7 +341,6 @@ private fun T9KeyboardSwipeOverlay(
             KeyboardThemes.getAccentColor(uiState.themeId, uiState.isDarkTheme), Modifier.matchParentSize())
         ShiftSlideLine(ctrlTargets, { dragArea.topLeft },
             KeyboardThemes.getAccentColor(uiState.themeId, uiState.isDarkTheme), Modifier.matchParentSize())
-        if (glide) GlideTrailOverlay(trail, accentColor, Modifier.matchParentSize())
     }
     }
 }
@@ -719,12 +677,13 @@ private fun T9KeyboardContent(
                 }
             }
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                KeyboardModeKey(
-                    slot = 2, onKeyPress = onKeyPress,
-                    backgroundColor = specialKeyBackgroundColor, textColor = specialKeyTextColor,
-                    modifier = Modifier.weight(0.8f), onKeyPressDown = onKeyPressDown,
+                LanguageKeyButton(
+                    icon = rememberVectorPainter(Icons.Default.Language),
+                    onClick = { onKeyPress("ime_switch") },
+                    backgroundColor = specialKeyBackgroundColor, iconColor = specialKeyTextColor,
+                    modifier = Modifier.weight(0.8f),
+                    onPress = { onKeyPressDown?.invoke("ime_switch") },
                     shadowEnabled = shadowEnabled, shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius,
-                    ctrlTargets = ctrlTargets, onCtrlShortcut = onCtrlShortcut,
                 )
                 T9SpaceKey(
                     schemaName = "拼音", isSttEnabled = uiState.isSttEnabled,
@@ -735,13 +694,12 @@ private fun T9KeyboardContent(
                     modifier = Modifier.weight(1.8f),
                     shadowEnabled = shadowEnabled, shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius,
                 )
-                LanguageKeyButton(
-                    icon = rememberVectorPainter(Icons.Default.Language),
-                    onClick = { onKeyPress("ime_switch") },
-                    backgroundColor = specialKeyBackgroundColor, iconColor = specialKeyTextColor,
-                    modifier = Modifier.weight(0.8f),
-                    onPress = { onKeyPressDown?.invoke("ime_switch") },
+                KeyboardModeKey(
+                    slot = 2, onKeyPress = onKeyPress,
+                    backgroundColor = specialKeyBackgroundColor, textColor = specialKeyTextColor,
+                    modifier = Modifier.weight(0.8f), onKeyPressDown = onKeyPressDown,
                     shadowEnabled = shadowEnabled, shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius,
+                    ctrlTargets = ctrlTargets, onCtrlShortcut = onCtrlShortcut,
                 )
             }
         }
@@ -758,7 +716,7 @@ private fun T9KeyboardContent(
                 if (composing || !ctrlTargets.ctrlBackspace()) onDelete()
             }
             SwipeableIconKeyButton(
-                icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                icon = deleteIconPainter(),
                 onClick = ctrlDelete,
                 onLongClick = ctrlDelete,
                 backgroundColor = specialKeyBackgroundColor,
@@ -920,7 +878,6 @@ private fun T9DigitKey(
     val currentOnPress by rememberUpdatedState(onPress)
     val currentSwipes by rememberUpdatedState(swipes)
     val inputPreferences = LocalKeyboardInputPreferences.current
-    val glideKeys = LocalT9GlideKeys.current
     val dragSpace = LocalKeyDragSpace.current
 
     SwipeableKeyButton(
@@ -929,9 +886,7 @@ private fun T9DigitKey(
         backgroundColor = backgroundColor,
         textColor = textColor,
         fontSize = fontSize,
-        modifier = if (glideKeys == null) modifier else modifier.onGloballyPositioned {
-            glideKeys[digit.single()] = dragSpace.bounds(it)
-        },
+        modifier = modifier,
         onPress = { currentOnPress?.invoke() },
         // 长按弹字母气泡和 26/14 键共用“长按弹出字母气泡”开关，默认关（用户 10-21）；拂动模式长按出数字，不受影响。
         longPressItems = shownItems,
@@ -1202,3 +1157,4 @@ private fun T9SpaceKey(
         isSttEnabled = isSttEnabled, onVoiceModeChange = onVoiceModeChange,
         shadowEnabled = shadowEnabled, shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius)
 }
+

@@ -4,7 +4,7 @@ import android.content.Context
 import java.io.File
 
 /**
- * 这个进程实际跑的 ABI，按需下载的原生库（拍照识别引擎、日语转换引擎）按它选文件。
+ * 这个进程实际跑的 ABI，按需下载的日语转换引擎按它选文件。
  * 不用 Build.SUPPORTED_ABIS 的第一个：64 位手机上装 32 位安装包时，进程是 32 位的，要 armeabi-v7a 的库。
  */
 object NativeAbi {
@@ -25,6 +25,5 @@ object NativeAbi {
  */
 internal fun packagedPacks(context: Context): Set<String> = buildSet {
     val libraries = context.applicationInfo.nativeLibraryDir?.let(::File)
-    if (libraries != null && File(libraries, "libopencv_java4.so").isFile) add(BuiltinModelCatalog.OCR_ENGINE)
     if (libraries != null && File(libraries, "libCyAzooKey.so").isFile) add(BuiltinModelCatalog.JAPANESE_ENGINE)
 }

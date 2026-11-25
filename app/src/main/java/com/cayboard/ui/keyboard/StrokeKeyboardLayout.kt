@@ -577,7 +577,7 @@ private fun StrokeKeyboardContent(
             modifier = Modifier.fillMaxHeight().weight(0.8f),
         ) {
             SwipeableIconKeyButton(
-                icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                icon = deleteIconPainter(),
                 onClick = { onKeyPress("delete") },
                 onLongClick = { onKeyPress("delete") },
                 backgroundColor = specialKeyBackgroundColor,
@@ -781,3 +781,4 @@ private fun StrokeSpaceButton(
         onPress = { onKeyPressDown?.invoke("space") }, shadowEnabled = shadowEnabled,
         shadowElevation = shadowElevation, shadowShapeRadius = shadowShapeRadius)
 }
+

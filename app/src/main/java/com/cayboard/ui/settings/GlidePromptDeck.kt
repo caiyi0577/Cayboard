@@ -100,3 +100,4 @@ internal object GlidePromptDeck {
             letters?.let { GlidePrompt(it, cols[1].trim()) }
         }.distinctBy { it.letters }.toList(), seed)
 }
+

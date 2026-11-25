@@ -82,3 +82,4 @@ internal fun SettingsJumpText(text: String, jumps: List<String>, style: TextStyl
                               modifier: Modifier = Modifier) {
     Text(settingsJumpText(text, jumps, MaterialTheme.colorScheme.primary), style = style, color = color, modifier = modifier)
 }
+

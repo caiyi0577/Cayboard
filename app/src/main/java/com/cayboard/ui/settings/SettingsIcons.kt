@@ -51,3 +51,4 @@ private fun PathBuilder.roundRect(left: Float, top: Float, right: Float, bottom:
     arcTo(corner, corner, 0f, false, true, left + corner, top)
     close()
 }
+

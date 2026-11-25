@@ -416,3 +416,4 @@ internal fun InputExperienceSettings(
 /** 0.3、0.25、1：去掉多余的 0。 */
 internal fun symbolLongPressLabel(seconds: Float): String =
     String.format(java.util.Locale.ROOT, "%.2f", normalizeSymbolLongPressSeconds(seconds)).trimEnd('0').trimEnd('.')
+

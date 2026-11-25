@@ -394,52 +394,23 @@ object SettingsPreferences {
     const val INPUT_TEXT_CANDIDATE_BAR = "candidate_bar"
     const val DEFAULT_PAGE_SIZE = 20 // 手机候选栏每页候选词数；schema 里的 page_size 来自 PC 版（5），太短，默认用 20
 
-    fun showCorrectionMarks(context: Context): Boolean = getPrefs(context).getBoolean(KEY_SHOW_CORRECTION_MARKS, true)
+    fun showCorrectionMarks(context: Context): Boolean = true
 
     fun setShowCorrectionMarks(context: Context, show: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_SHOW_CORRECTION_MARKS, show).apply()
+        // Fixed default; legacy preference writes are intentionally ignored.
     }
 
-    fun candidateCommentMode(context: Context): CandidateCommentMode {
-        val prefs = getPrefs(context)
-        val stored = prefs.getString(KEY_CANDIDATE_COMMENT_MODE, null)
-        CandidateCommentMode.entries.firstOrNull { it.name == stored }?.let { return it }
-        // Existing explicit ON means ON, never silently reinterpret it as AUTO.
-        return if (prefs.contains(KEY_SHOW_CANDIDATE_COMMENTS)) {
-            if (prefs.getBoolean(KEY_SHOW_CANDIDATE_COMMENTS, true)) CandidateCommentMode.SHOW else CandidateCommentMode.HIDE
-        } else CandidateCommentMode.AUTO
-    }
+    /** Candidate presentation is fixed in Cayboard; settings remain only for source compatibility. */
+    fun candidateCommentMode(context: Context): CandidateCommentMode = CandidateCommentMode.AUTO
+    fun setCandidateCommentMode(context: Context, mode: CandidateCommentMode) { }
+    fun candidateCommentContent(context: Context): CandidateCommentContent = CandidateCommentContent.PINYIN
+    fun setCandidateCommentContent(context: Context, content: CandidateCommentContent) { }
+    fun showCandidateComments(context: Context): Boolean = true
+    fun setShowCandidateComments(context: Context, show: Boolean) { }
 
-    fun setCandidateCommentMode(context: Context, mode: CandidateCommentMode) {
-        getPrefs(context).edit().putString(KEY_CANDIDATE_COMMENT_MODE, mode.name)
-            .putBoolean(KEY_SHOW_CANDIDATE_COMMENTS, mode != CandidateCommentMode.HIDE).apply()
-    }
-
-    fun candidateCommentContent(context: Context): CandidateCommentContent {
-        val stored = getPrefs(context).getString(KEY_CANDIDATE_COMMENT_CONTENT, null)
-        return CandidateCommentContent.entries.firstOrNull { it.name == stored } ?: CandidateCommentContent.PINYIN
-    }
-
-    fun setCandidateCommentContent(context: Context, content: CandidateCommentContent) {
-        getPrefs(context).edit().putString(KEY_CANDIDATE_COMMENT_CONTENT, content.name).apply()
-    }
-
-    fun showCandidateComments(context: Context): Boolean {
-        return candidateCommentMode(context) != CandidateCommentMode.HIDE
-    }
-
-    fun setShowCandidateComments(context: Context, show: Boolean) {
-        setCandidateCommentMode(context, if (show) CandidateCommentMode.SHOW else CandidateCommentMode.HIDE)
-    }
-
-    /** 默认打开（用户 10-31）：打字时候选栏最左边有「<」一键取消编码。手动关过的仍按存下的值。 */
-    fun shouldShowCandidateCancelButton(context: Context): Boolean {
-        return getPrefs(context).getBoolean(KEY_SHOW_CANDIDATE_CANCEL_BUTTON, true)
-    }
-
-    fun setShowCandidateCancelButton(context: Context, show: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_SHOW_CANDIDATE_CANCEL_BUTTON, show).apply()
-    }
+    /** The candidate cancel button is always enabled. */
+    fun shouldShowCandidateCancelButton(context: Context): Boolean = true
+    fun setShowCandidateCancelButton(context: Context, show: Boolean) { }
 
     /**
      * 联想关闭键用叉号（用户 11-03，默认关）：默认上屏后的联想和打字时一样，最左边是「<」；
@@ -457,18 +428,18 @@ object SettingsPreferences {
      * 单字候选不挤在一起。关着时间距不变。
      */
     fun isWideCandidateSpacing(context: Context): Boolean =
-        getPrefs(context).getBoolean(KEY_WIDE_CANDIDATE_SPACING, false)
+        false
 
     fun setWideCandidateSpacing(context: Context, wide: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_WIDE_CANDIDATE_SPACING, wide).apply()
+        // Fixed default; legacy preference writes are intentionally ignored.
     }
 
     fun getInputTextLocation(context: Context): String {
-        return getPrefs(context).getString(KEY_INPUT_TEXT_LOCATION, INPUT_TEXT_CANDIDATE_BAR) ?: INPUT_TEXT_CANDIDATE_BAR
+        return INPUT_TEXT_CANDIDATE_BAR
     }
 
     fun setInputTextLocation(context: Context, location: String) {
-        getPrefs(context).edit().putString(KEY_INPUT_TEXT_LOCATION, location).apply()
+        // Fixed default; legacy preference writes are intentionally ignored.
     }
 
     private fun getPrefs(context: Context): SharedPreferences {
@@ -1194,23 +1165,15 @@ object SettingsPreferences {
         return if (sameScreen) sharedValue else ownValue ?: 0
     }
 
-    fun getPageSize(context: Context): Int {
-        return getPrefs(context).getInt(KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE)
-    }
+    fun getPageSize(context: Context): Int = DEFAULT_PAGE_SIZE
 
-    fun setPageSize(context: Context, pageSize: Int) {
-        getPrefs(context).edit().putInt(KEY_PAGE_SIZE, pageSize).apply()
-    }
+    fun setPageSize(context: Context, pageSize: Int) { }
 
     const val DEFAULT_CANDIDATE_TEXT_SIZE = 19
 
-    fun getCandidateTextSize(context: Context): Int {
-        return getPrefs(context).getInt(KEY_CANDIDATE_TEXT_SIZE, DEFAULT_CANDIDATE_TEXT_SIZE)
-    }
+    fun getCandidateTextSize(context: Context): Int = DEFAULT_CANDIDATE_TEXT_SIZE
 
-    fun setCandidateTextSize(context: Context, size: Int) {
-        getPrefs(context).edit().putInt(KEY_CANDIDATE_TEXT_SIZE, size).apply()
-    }
+    fun setCandidateTextSize(context: Context, size: Int) { }
 
     // ── 方案市场「已安装」的持久记录 ──
     // 记录用户通过市场主动安装过的方案 id；与本地文件存在性解耦（方案可能仅作为依赖落盘，
@@ -1234,3 +1197,7 @@ object SettingsPreferences {
 
 
 }
+
+
+
+

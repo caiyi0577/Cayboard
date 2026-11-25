@@ -22,9 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Refresh
@@ -456,7 +453,7 @@ private fun YamlEditor(file: File, onDeleted: () -> Unit, onBack: () -> Unit) {
                         editor?.editable = isEditing
                     }) {
                         Icon(
-                            if (isEditing) Icons.Default.Visibility else Icons.Default.Edit,
+                            if (isEditing) Icons.Default.Visibility else lucideIcon(LucideSettingIcons.PEN),
                             contentDescription = if (isEditing) "预览" else "编辑",
                             tint = if (isEditing) MaterialTheme.colorScheme.primary
                                    else MaterialTheme.colorScheme.onSurfaceVariant
@@ -540,7 +537,7 @@ private fun FileEntryRow(entry: FileEntry, onView: () -> Unit, onDelete: () -> U
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Description,
+                    imageVector = if (entry.isDirectory) lucideIcon(LucideSettingIcons.CLIPBOARD) else lucideIcon(LucideSettingIcons.TABLE),
                     contentDescription = null,
                     tint = if (entry.isDirectory) MaterialTheme.colorScheme.onPrimaryContainer
                            else MaterialTheme.colorScheme.onSecondaryContainer,
@@ -605,3 +602,5 @@ private fun formatSize(bytes: Long): String {
         else -> "%.1f MB".format(bytes.toDouble() / (1024 * 1024))
     }
 }
+
+

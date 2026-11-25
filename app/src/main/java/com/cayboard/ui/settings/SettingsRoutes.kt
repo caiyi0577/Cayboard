@@ -31,3 +31,4 @@ object SettingsRoutes {
     const val KeyboardResize = "keyboard_resize"
     const val ToolbarArrange = "toolbar_arrange"
 }
+

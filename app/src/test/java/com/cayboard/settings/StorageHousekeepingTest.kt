@@ -21,7 +21,6 @@ class StorageHousekeepingTest {
             File(cache, "model-import-$id").apply { mkdirs() },
             File(cache, "schema-install-$id").apply { mkdirs() },
             File(cache, "-1234567.tar.bz2").apply { writeText("archive") },
-            File(cache, "ocr-frames/$id.png").apply { parentFile!!.mkdirs(); writeText("png") },
             File(models, ".t9-ngram-$id.previous").apply { mkdirs() },
             File(models, ".download-t9-ngram-small-$id").apply { mkdirs(); File(this, "t9_ngram.lm").writeText("partial") },
             File(models, ".import-ochwpro-$id").apply { mkdirs() },

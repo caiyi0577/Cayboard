@@ -8,8 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.twotone.ContentCut
-import androidx.compose.material.icons.twotone.Keyboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,7 +50,7 @@ internal fun DoublePinyinRawPreeditToggle() {
         prefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
-    SettingsToggleItem(Icons.TwoTone.Keyboard, "双拼编码显示全拼",
+    SettingsToggleItem(lucideIcon(LucideSettingIcons.KEY), "双拼编码显示全拼",
         "开启后显示全拼（如 shuang pin），关闭时显示双拼键（如 ul pb）。改完要几秒重新部署",
         checked = enabled, onCheckedChange = { on ->
             SpellingPatches.setDoublePinyinRawPreedit(context, !on)
@@ -118,7 +116,7 @@ fun DoublePinyinSettingsContent(onBack: () -> Unit) {
                 var abbreviation by remember { mutableStateOf(SpellingPatches.doublePinyinAbbreviation(context)) }
                 Column(Modifier.settingsSearchAnchor("双拼简拼")) {
                     SettingsSection(title = "通用") {
-                        SettingsToggleItem(Icons.TwoTone.ContentCut, "双拼简拼",
+                        SettingsToggleItem(lucideIcon(LucideSettingIcons.SLIDERS), "双拼简拼",
                             "26 键只打声母也出词，如 wxzf 出“微信支付”；zh、ch、sh 也可打 z、c、s。改完要几秒重新部署",
                             checked = abbreviation, onCheckedChange = { on ->
                                 SpellingPatches.setDoublePinyinAbbreviation(context, on)
@@ -309,3 +307,6 @@ internal fun DoublePinyinKeyMap(scheme: DoublePinyinScheme, highlight: Char? = n
         }
     }
 }
+
+
+

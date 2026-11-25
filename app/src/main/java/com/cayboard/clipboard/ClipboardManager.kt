@@ -35,6 +35,7 @@ data class ClipboardItem(
     val consumed: Boolean = false,
     /** A password kept by 「记录密码等敏感内容」: shown as dots, pasted privately (#95). */
     val sensitive: Boolean = false,
+    val isPinned: Boolean = false,
 )
 
 class ClipboardManager private constructor(private val context: Context) {
@@ -565,6 +566,7 @@ class ClipboardManager private constructor(private val context: Context) {
 
             consumed = consumed,
             sensitive = sensitive,
+            isPinned = isPinned,
         )
     }
 
@@ -641,6 +643,14 @@ class ClipboardManager private constructor(private val context: Context) {
         if (ids.isEmpty()) return
         scope.launch {
             dao.deleteClipboardByIds(ids)
+        }
+    }
+
+    /** Pinning is explicit and survives history limits and app restarts. */
+    fun setPinned(id: Long, pinned: Boolean) {
+        scope.launch {
+            storageReady.await()
+            dao.setPinned(id, pinned)
         }
     }
 

@@ -35,7 +35,6 @@ enum class PanelType {
 
 sealed interface OverlayRoute {
     data object Menu : OverlayRoute
-    data object Ocr : OverlayRoute
     data object SchemaList : OverlayRoute
     data class Clipboard(val tab: Int = 0) : OverlayRoute
     data object ToolbarCustomize : OverlayRoute

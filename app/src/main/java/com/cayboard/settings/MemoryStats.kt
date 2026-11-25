@@ -39,12 +39,11 @@ object MemoryStats {
         "" -> "键盘与设置"
         VOICE_SUFFIX -> "语音识别"
         ":inference" -> "AI 模型"
-        ":ocr" -> "文字识别"
         else -> processName.substringAfterLast(':')
     }
 
     private fun order(packageName: String, processName: String): Int =
-        when (processName.removePrefix(packageName)) { "" -> 0; VOICE_SUFFIX -> 1; ":inference" -> 2; ":ocr" -> 3; else -> 4 }
+        when (processName.removePrefix(packageName)) { "" -> 0; VOICE_SUFFIX -> 1; ":inference" -> 2; else -> 3 }
 
     /** `/proc/<pid>/smaps_rollup` 里的 `Pss:` 一行（kB）；内核没有这个文件时返回 null。 */
     fun parsePssKb(smapsRollup: String): Long? = field(smapsRollup, "Pss:")

@@ -9,7 +9,6 @@ import com.cayboard.translate.TranslationLanguages
 import com.cayboard.translate.BundledTranslationModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.twotone.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -34,8 +33,8 @@ fun TranslationSettingsContent(onBack: () -> Unit) {
             contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = SETTINGS_BOTTOM_SPACE),verticalArrangement=Arrangement.spacedBy(20.dp)) {
             item { SettingsNote("多语种离线翻译，模型随输入法内置，无需下载。在键盘菜单点「翻译」，输入后停顿即可生成译文。") }
             item { SettingsSection("语言") {
-                SettingsItem(Icons.TwoTone.Translate,"原文语言",source,onClick={choosing="source"},showArrow=true)
-                SettingsItem(Icons.TwoTone.Translate,"翻译成",target,onClick={choosing="target"},showArrow=true)
+                SettingsItem(lucideIcon(LucideSettingIcons.LANGUAGES),"原文语言",source,onClick={choosing="source"},showArrow=true)
+                SettingsItem(lucideIcon(LucideSettingIcons.LANGUAGES),"翻译成",target,onClick={choosing="target"},showArrow=true)
             } }
             item { SettingsSection("离线模型") {
                 SettingsListRow(BundledTranslationModel.NAME,
@@ -63,3 +62,4 @@ fun TranslationSettingsContent(onBack: () -> Unit) {
             } } },confirmButton={TextButton(onClick={choosing=null}) {Text("取消")}})
     }
 }
+

@@ -89,7 +89,6 @@ fun ModelLocalContent(
     ) { padding ->
         val localModels = uiState.models
         val builtinT9Reranker = remember(context) { BundledT9Reranker.isBundled(context) }
-        // 带模型的安装包内置拍照识别模型；轻量版下载后和其他模型一样列在下面。
         val builtinTranslation = remember(context) { BundledTranslationModel.refresh(context) }
         // 三段都用设置页统一的分组样式：标题 + 一个圆角面板，行样式一致，说明文字只放在所属分组里。
         val listState = rememberLazyListState()
@@ -282,5 +281,6 @@ private fun TagText(text: String, color: Color) {
 }
 
 private fun formatSize(bytes: Long): String = if (bytes <= 0) "未知大小" else "%.1f MB".format(bytes / 1024f / 1024f)
+
 
 

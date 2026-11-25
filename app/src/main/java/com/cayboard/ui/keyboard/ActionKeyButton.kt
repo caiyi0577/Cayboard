@@ -2,8 +2,8 @@ package com.cayboard.ui.keyboard
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.NavigateNext
 import androidx.compose.material.icons.filled.Search
@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
+import com.cayboard.R
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -36,7 +38,12 @@ fun ActionKeyButton(
 ) {
     val icon = actionKeyIcon(text)
     val enter = if (text == "删除") LocalFunctionKeyColors.current else LocalEnterKeyColors.current
-    IconKeyButton(icon = rememberVectorPainter(icon), onClick = onClick,
+    val iconPainter = when (text) {
+        "删除" -> painterResource(R.drawable.lucide_delete_backspace)
+        "发送" -> painterResource(R.drawable.lucide_send)
+        else -> rememberVectorPainter(icon)
+    }
+    IconKeyButton(icon = iconPainter, onClick = onClick,
         backgroundColor = enter?.background ?: backgroundColor, iconColor = enter?.foreground ?: textColor, modifier = modifier,
         onPress = onPress, onRelease = onRelease, contentDescription = text,
         shadowEnabled = shadowEnabled, shadowElevation = shadowElevation,
@@ -57,10 +64,11 @@ internal fun heldEnterText(base: String, ctrl: Boolean, shiftHeld: Boolean = fal
 
 /** 回车键（和删除键）按输入框动作名取图标；主键盘、数字、符号和编辑面板共用。 */
 internal fun actionKeyIcon(text: String) = when (text) {
-    "删除" -> Icons.AutoMirrored.Filled.Backspace
+    "删除" -> Icons.AutoMirrored.Filled.KeyboardReturn
     "搜索" -> Icons.Default.Search
     "发送" -> Icons.AutoMirrored.Filled.Send
     "下一步", "下一个" -> Icons.Default.NavigateNext
     "确定", "完成", "前往" -> Icons.Default.Check
     else -> Icons.AutoMirrored.Filled.KeyboardReturn
 }
+

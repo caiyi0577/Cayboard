@@ -138,7 +138,7 @@ object PerformanceCosts {
             Item.OMISSION_CORRECTION -> SpellingPatches.typo(context, SpellingPatches.Typo.OMISSION)
             Item.DOUBLE_PINYIN_ABBREVIATION -> SpellingPatches.doublePinyinAbbreviation(context)
             Item.MIXED_INPUT -> input.mixedInput
-            Item.CHINESE_GLIDE -> input.chineseGlideTyping
+            Item.CHINESE_GLIDE -> false
             Item.TRADITIONAL -> input.traditionalOutput
             Item.RARE_CHARACTERS -> input.rareCharacters
             Item.DATETIME -> input.datetimeCandidates
@@ -148,9 +148,9 @@ object PerformanceCosts {
             Item.PREDICTION -> SettingsPreferences.isSmartPredictionEnabled(context)
             Item.LANGUAGE_KEY_IME_PICKER -> input.languageKeyImePicker
             Item.HIDE_FUNCTION_KEY_HINTS -> input.hideFunctionKeyHints
-            Item.GLIDE_TYPING -> input.glideTyping
-            Item.GLIDE_PREVIEW -> input.glidePreview
-            Item.T9_GLIDE -> input.t9GlideTyping
+            Item.GLIDE_TYPING -> false
+            Item.GLIDE_PREVIEW -> false
+            Item.T9_GLIDE -> false
             Item.DOUBLE_PINYIN_KEY_HINTS -> input.doublePinyinKeyHints
             Item.DELETE_RECOVERY -> SettingsPreferences.isDeleteRecovery(context)
             Item.HANDWRITING_LIVE -> input.handwritingRecognizeWhileWriting
@@ -192,7 +192,7 @@ object PerformanceCosts {
                 SpellingPatches.setTypo(context, typo, on); SpellingPatches.apply(context)
             }
             Item.MIXED_INPUT -> input.copy(mixedInput = on).save(context)
-            Item.CHINESE_GLIDE -> input.copy(chineseGlideTyping = on).save(context)
+            Item.CHINESE_GLIDE -> Unit
             Item.TRADITIONAL -> input.copy(traditionalOutput = on).save(context)
             Item.RARE_CHARACTERS -> input.copy(rareCharacters = on).save(context)
             Item.DATETIME -> input.copy(datetimeCandidates = on).save(context)
@@ -202,9 +202,9 @@ object PerformanceCosts {
             Item.PREDICTION -> SettingsPreferences.setSmartPredictionEnabled(context, on)
             Item.LANGUAGE_KEY_IME_PICKER -> input.copy(languageKeyImePicker = on).save(context)
             Item.HIDE_FUNCTION_KEY_HINTS -> input.copy(hideFunctionKeyHints = on).save(context)
-            Item.GLIDE_TYPING -> input.copy(glideTyping = on).save(context)
-            Item.GLIDE_PREVIEW -> input.copy(glidePreview = on).save(context)
-            Item.T9_GLIDE -> input.copy(t9GlideTyping = on).save(context)
+            Item.GLIDE_TYPING -> Unit
+            Item.GLIDE_PREVIEW -> Unit
+            Item.T9_GLIDE -> Unit
             // 和主题页一样：开液态玻璃时玻璃没开就一起开；关只关液态这一层，玻璃留给 GLASS 那一项管。
             Item.DOUBLE_PINYIN_KEY_HINTS -> input.copy(doublePinyinKeyHints = on).save(context)
             Item.DELETE_RECOVERY -> SettingsPreferences.setDeleteRecovery(context, on)

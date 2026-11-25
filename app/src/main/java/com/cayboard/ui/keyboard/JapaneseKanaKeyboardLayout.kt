@@ -161,7 +161,7 @@ fun JapaneseKanaKeyboardLayout(
                 }
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                SwipeableIconKeyButton(icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                SwipeableIconKeyButton(icon = deleteIconPainter(),
                     onClick = { if (!ctrlTargets.ctrlBackspace()) onKeyPress("delete") },
                     onLongClick = { if (!ctrlTargets.ctrlBackspace()) onKeyPress("delete") }, distanceDelete = true,
                     // 清空、撤回同九键删除键（11-05「部分页面的删除键功能缺失」）。
@@ -293,3 +293,4 @@ internal fun KanaFlickButton(
         KeyFlickLabels(flickFade, foreground, keyWidthDp, keyHeightDp, 10f * contentScale, fontSp)
     }
 }
+

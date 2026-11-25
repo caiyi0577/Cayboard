@@ -94,3 +94,4 @@ internal fun SpeechNumberSettings() {
         Switch(checked = arabic, onCheckedChange = null, colors = settingsSwitchColors())
     }
 }
+

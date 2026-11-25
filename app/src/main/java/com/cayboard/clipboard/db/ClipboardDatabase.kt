@@ -14,7 +14,7 @@ import java.io.File
 
 @Database(
     entities = [ClipboardEntry::class],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class ClipboardDatabase : RoomDatabase() {
@@ -146,6 +146,15 @@ abstract class ClipboardDatabase : RoomDatabase() {
             }
         }
 
+        /** v10 → v11: restore user pinning after the old editor/group cleanup removed the column. */
+        internal val MIGRATION_10_11 = object : Migration(10, 11) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.prepare(
+                    "ALTER TABLE clipboard_entries ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0"
+                ).use { it.step() }
+            }
+        }
+
         @Volatile
         private var instance: ClipboardDatabase? = null
 
@@ -160,7 +169,7 @@ abstract class ClipboardDatabase : RoomDatabase() {
                     .setQueryCoroutineContext(Dispatchers.IO)
                     // 以后再装回这一版时，更新的版本留下的高版本库清空重建，不崩。
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .build()
                     .also { instance = it }
             }

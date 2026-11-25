@@ -1317,6 +1317,8 @@ class RimeEngine {
     private external fun nativeSetPageSize(schemaId: String, pageSize: Int)
     private external fun nativeDestroy()
     private external fun nativeT9SelectCandidate(pinyin: String, text: String?, textLength: Int): Boolean
+    private external fun nativeT9Memorize(input: String, text: String, pinyin: String): Boolean
+    private external fun nativeT9Lookup(input: String): Array<String>?
     private external fun nativeT9SelectPinyinDirect(pinyin: String, digitLength: Int): Boolean
     private external fun nativeT9FixLetter(letter: String): Boolean
     private external fun nativeT9GetLeftPanelState(): String?
@@ -1481,6 +1483,19 @@ class RimeEngine {
             ?.let { dropReadingKeys(it.second, consumed) }.orEmpty()
         nativeT9FlushRimeInput()
         full to withDisplayPreedit(nativeGetProcessResult(true))
+    }
+
+    /** Persist one complete T9 choice in the existing durable digit user dictionary. */
+    internal fun t9Memorize(input: String, text: String, pinyin: String): Boolean = locked {
+        if (!isInitialized || nativeIsMaintaining()) return@locked false
+        nativeT9Memorize(input, text, pinyin)
+    }
+
+    /** Query learned whole words for this T9 code, ordered by durable preference. */
+    internal fun t9Lookup(input: String): List<String> = locked {
+        if (!isInitialized || nativeIsMaintaining() || input.isBlank()) return@locked emptyList()
+        nativeT9Lookup(canonicalT9Input(input))
+            .orEmpty().filter(String::isNotBlank).distinct()
     }
 
     /** Validate identity and consume this selection's commit while holding the same lock. */

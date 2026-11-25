@@ -51,13 +51,13 @@ object DeviceDefaults {
      * The elder package (BuildConfig.ELDER, docs/development/elder-pack-spec.md). Fresh
      * installs only; existing settings are never changed:
      * - 九键拼音 as the keyboard, with 手写 one tap away on the toolbar;
-     * - toolbar 语音、手写、拍照识别、表情、剪贴板、输入方式 (no cursor editing tools);
+     * - toolbar 语音、手写、表情、剪贴板、输入方式 (no cursor editing tools);
      * - larger candidates (24 sp) and a taller keyboard (40 % of the long screen side);
      * - the high-contrast 黑白 theme, which is already the default.
      */
     private fun applyElderDefaults(context: Context) {
         SettingsPreferences.setToolbarButtons(context,
-            listOf(ToolbarButton.VOICE, ToolbarButton.HANDWRITING_LOOKUP, ToolbarButton.OCR,
+            listOf(ToolbarButton.VOICE, ToolbarButton.HANDWRITING_LOOKUP,
                 ToolbarButton.EMOJI, ToolbarButton.CLIPBOARD, ToolbarButton.SCHEMA).map { it.id })
         SettingsPreferences.setCurrentSchema(context, "t9_pinyin")
         SettingsPreferences.setCandidateTextSize(context, ELDER_CANDIDATE_SP)

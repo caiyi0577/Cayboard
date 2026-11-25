@@ -11,7 +11,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -136,7 +135,7 @@ private fun SchemeTextCard(label: String, preview: String, chosen: Boolean, tag:
                 else Modifier.selectable(chosen, role = Role.RadioButton, onClick = onClick))
             .padding(horizontal = 10.dp, vertical = 3.dp), contentAlignment = Alignment.Center) {
             Column(Modifier.padding(horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (isAction) Icon(Icons.Outlined.Settings, null, Modifier.size(16.dp), tint = contentColor.copy(alpha = .75f))
+                if (isAction) Icon(lucideIcon(LucideSettingIcons.SETTINGS), null, Modifier.size(16.dp), tint = contentColor.copy(alpha = .75f))
                 else Text(preview, style = MaterialTheme.typography.labelSmall, color = (if (chosen) selection.quietContent else contentColor).copy(alpha = .75f),
                     textAlign = TextAlign.Center, maxLines = 1)
                 Text(label, style = MaterialTheme.typography.bodyMedium, color = if (chosen) selection.quietContent else contentColor, textAlign = TextAlign.Center, maxLines = 1)
@@ -144,3 +143,4 @@ private fun SchemeTextCard(label: String, preview: String, chosen: Boolean, tag:
         }
     }
 }
+

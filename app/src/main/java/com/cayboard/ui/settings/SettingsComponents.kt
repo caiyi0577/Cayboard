@@ -37,6 +37,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,11 +46,11 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.annotation.DrawableRes
+import com.cayboard.R
+
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import com.cayboard.settings.SchemaInfo
 import com.cayboard.settings.BackgroundConfig
 import com.cayboard.ui.theme.CayboardTheme
@@ -58,6 +59,67 @@ import com.cayboard.settings.KeyboardColorsConfig
 import com.cayboard.ui.theme.KeyboardColorScheme
 import com.cayboard.ui.theme.KeyboardThemes
 import com.cayboard.ui.theme.VisualStyles
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+
+/** 一级设置首页保留图标；进入任意二级设置页后，行组件不再绘制图标或预留图标空间。 */
+internal val LocalSettingsShowIcons = compositionLocalOf { false }
+
+/** Official Lucide SVGs converted to Android vectors; one source stays reusable on iOS/PC. */
+@Composable
+internal fun lucideIcon(@DrawableRes resource: Int): ImageVector = ImageVector.vectorResource(resource)
+
+internal object LucideSettingIcons {
+    const val SMILE = R.drawable.lucide_smile
+    const val SQUARE_PEN = R.drawable.lucide_square_pen
+    const val SWIPE = R.drawable.lucide_swipe
+    const val EXPAND = R.drawable.lucide_expand
+    const val FULL_CIRCLE = R.drawable.lucide_full_circle
+    const val HALF_CIRCLE = R.drawable.lucide_half_circle
+    const val CHECK_CIRCLE = R.drawable.lucide_check_circle
+    const val KEYBOARD_DEVICE = R.drawable.lucide_keyboard_device
+    const val HAND_GESTURE = R.drawable.lucide_hand_gesture
+    const val HAND_METAL = R.drawable.lucide_hand_metal
+    const val LIST = R.drawable.lucide_list
+    const val CPU = R.drawable.lucide_cpu
+    const val SHIELD = R.drawable.lucide_shield
+    const val FILE_CODE = R.drawable.lucide_file_code
+    const val DATABASE = R.drawable.lucide_database
+    const val SCROLL_TEXT = R.drawable.lucide_scroll_text
+    const val CAR = R.drawable.lucide_car
+    const val CLOCK = R.drawable.lucide_clock
+    const val TYPE = R.drawable.lucide_type
+    const val SIGMA = R.drawable.lucide_sigma
+    const val SPELLCHECK = R.drawable.lucide_spellcheck
+    const val AUDIO_LINES = R.drawable.lucide_audio_lines
+    const val CONTACT = R.drawable.lucide_contact
+    const val ALPHABET = R.drawable.lucide_alphabet
+    const val MESSAGE = R.drawable.lucide_message
+    const val KEY = R.drawable.lucide_key
+    const val CLIPBOARD = R.drawable.lucide_clipboard
+    const val KEYBOARD = R.drawable.lucide_keyboard
+    const val LANGUAGES = R.drawable.lucide_languages
+    const val BOOK = R.drawable.lucide_book_open
+    const val GLOBE = R.drawable.lucide_globe
+    const val MOUSE = R.drawable.lucide_mouse
+    const val MIC = R.drawable.lucide_mic
+    const val SETTINGS = R.drawable.lucide_settings
+    const val SLIDERS = R.drawable.lucide_sliders_horizontal
+    const val PEN = R.drawable.lucide_pen_line
+    const val HASH = R.drawable.lucide_hash
+    const val VOLUME = R.drawable.lucide_volume_2
+    const val FLOATING = R.drawable.lucide_picture_in_picture_2
+    const val ARRANGE = R.drawable.lucide_panels_top_left
+    const val GRID = R.drawable.lucide_grid_2x2
+    const val INFO = R.drawable.lucide_info
+    const val CLOUD = R.drawable.lucide_cloud_upload
+    const val SPARKLES = R.drawable.lucide_sparkles
+    const val WAVEFORM = R.drawable.lucide_activity
+    const val TABLE = R.drawable.lucide_table_2
+}
+
 
 @Composable
 fun SettingsSection(
@@ -153,6 +215,7 @@ fun SettingsItem(
     /** 搜索定位和测试标签用的名字，见 [SettingsSection]。 */
     searchKey: String = title,
 ) {
+    val showIcons = LocalSettingsShowIcons.current
     Row(
         modifier = Modifier
             .settingsSearchAnchor(searchKey)
@@ -162,7 +225,7 @@ fun SettingsItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 图标圆角背景
-        Box(
+        if (showIcons) Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(10.dp))
@@ -176,7 +239,7 @@ fun SettingsItem(
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        if (showIcons) Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -237,6 +300,7 @@ fun SettingsToggleItem(
     /** [costItem] 下面再加的代价行（如同一组模糊音在九键上的代价）。 */
     extraCost: (@Composable () -> Unit)? = null,
 ) {
+    val showIcons = LocalSettingsShowIcons.current
     val locked = lockMessage != null
     Row(
         modifier = Modifier
@@ -250,7 +314,7 @@ fun SettingsToggleItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        if (showIcons) Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(10.dp))
@@ -264,7 +328,7 @@ fun SettingsToggleItem(
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        if (showIcons) Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -1096,3 +1160,5 @@ fun CandidateTextSizeCardPreview() {
         )
     }
 }
+
+

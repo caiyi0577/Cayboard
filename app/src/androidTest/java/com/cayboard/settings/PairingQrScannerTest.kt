@@ -6,10 +6,6 @@ import android.os.SystemClock
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -19,7 +15,6 @@ import com.cayboard.clipboard.sync.PairingQrDecoder
 import com.cayboard.clipboard.sync.WindowsPairingProtocol
 import com.cayboard.ui.saveUiEvidence
 import com.cayboard.ui.settings.WindowsPairingScanner
-import com.cayboard.ocr.OcrCameraPanel
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -47,13 +42,9 @@ class PairingQrScannerTest {
 
     @Test fun cameraStreamsInsideScannerAndReleasesForReopening() {
         val visible = mutableStateOf(true)
-        val ocr = mutableStateOf(false)
         var connections = 0
         rule.setContent { MaterialTheme {
             if (visible.value) WindowsPairingScanner(onDismiss = { visible.value = false }) { connections++ }
-            if (ocr.value) Box(Modifier.requiredSize(500.dp, 260.dp)) {
-                OcrCameraPanel(true, Color.Black, Color.White, Color.Cyan, { ocr.value = false }, {})
-            }
         } }
         repeat(2) { round ->
             rule.waitUntil(15000) { rule.onAllNodesWithTag("pairing-camera-ready").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty() }
@@ -66,13 +57,5 @@ class PairingQrScannerTest {
             if (round == 0) rule.runOnIdle { visible.value = true }
         }
         rule.runOnIdle { assertEquals(0, connections) }
-        rule.runOnIdle { ocr.value = true }
-        rule.waitUntil(15000) {
-            rule.onAllNodesWithTag("ocr-capture").fetchSemanticsNodes(atLeastOneRootRequired = false).any {
-                !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled)
-            }
-        }
-        saveUiEvidence("ocr-camera-after-scanner", rule.onNodeWithTag("ocr-camera-panel"))
-        rule.onNodeWithText("取消").performClick()
     }
 }

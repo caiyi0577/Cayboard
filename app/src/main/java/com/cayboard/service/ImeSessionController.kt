@@ -116,6 +116,11 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         } else {
             filteredTexts to filteredComments
         }
+        // The native T9 controller commits the raw candidate text directly, but
+        // the user must see the selected script in the candidate strip as well.
+        // Keep the raw list for engine selection and convert only the rendered list.
+        val t9DisplayTexts = if (isT9Schema && service.traditionalChineseOutput())
+            t9FilteredTexts.map(service.rimeEngine::toTraditional) else t9FilteredTexts
         var displayText: String
         val displayCandidates: List<String>
         val displayComments: List<String>
@@ -140,7 +145,8 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             }
             // preedit 转换由 C++ t9_filter 完成，Kotlin 侧直接使用引擎输出的 preedit
             val display = buildT9DisplayState(
-                service.t9PartialSegments.map { it.text }, rawPreedit, inputText, t9FilteredTexts, t9FilteredComments
+                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.rimeEngine.toTraditional(it.text) else it.text },
+                rawPreedit, inputText, t9DisplayTexts, t9FilteredComments
             )
             displayText = display.displayText
             // T9 插件候选按引擎锚点插入（transformForT9 已把插件输出顺序折叠为
@@ -330,6 +336,8 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         } else {
             filteredTexts to filteredComments
         }
+        val t9DisplayTexts = if (isT9Schema && service.traditionalChineseOutput())
+            t9FilteredTexts.map(service.rimeEngine::toTraditional) else t9FilteredTexts
         var displayText: String
         val displayCandidates: List<String>
         val displayComments: List<String>
@@ -343,7 +351,8 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
                 else -> service.candidateState.value.preeditText
             }
             val display = buildT9DisplayState(
-                service.t9PartialSegments.map { it.text }, rawPreedit, result.inputText, t9FilteredTexts, t9FilteredComments
+                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.rimeEngine.toTraditional(it.text) else it.text },
+                rawPreedit, result.inputText, t9DisplayTexts, t9FilteredComments
             )
             displayText = display.displayText
             displayCandidates = display.displayCandidates

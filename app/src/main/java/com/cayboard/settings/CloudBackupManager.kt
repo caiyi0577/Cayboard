@@ -24,6 +24,17 @@ object CloudBackupManager {
     private const val PART_BYTES = 400L * 1024 * 1024
     private const val KEY_ALIAS = "cayboard-cloud-backup"
 
+    fun verifyCredentials(baseUrl: String, username: String, password: String): Result<Unit> = runCatching {
+        require(baseUrl.startsWith("https://", ignoreCase = true)) { "坚果云地址必须使用 HTTPS" }
+        require(username.isNotBlank() && password.isNotBlank()) { "请输入坚果云注册邮箱和第三方应用密码" }
+        // OPTIONS is a standard WebDAV capability request supported by Android's
+        // HttpURLConnection and avoids unsupported PROPFIND/MKCOL methods.
+        val first = webDavStatus(baseUrl, username, password, "OPTIONS")
+        check(first in 200..399 || first == 405) {
+            if (first == 404) "坚果云目录不存在，请先在坚果云网页端创建英文目录" else "坚果云目录验证失败：HTTP $first"
+        }
+    }
+
     fun backup(context: Context, baseUrl: String, username: String, password: String): Result<Long> = runCatching {
         require(username.isNotBlank() && password.isNotBlank()) { "请输入坚果云账号和应用密码" }
         val temp = File(context.cacheDir, "cayboard-backup-${System.currentTimeMillis()}.zip")
@@ -145,6 +156,7 @@ object CloudBackupManager {
         "Cayboard-full-backup.zip.part-%03d-of-%03d".format(index, count)
 
     private fun webDavPut(base: String, user: String, password: String, name: String, file: File) {
+        ensureDirectory(base, user, password)
         val connection = (URL(base.trimEnd('/') + "/" + name).openConnection() as HttpURLConnection).apply {
             requestMethod = "PUT"; doOutput = true; setFixedLengthStreamingMode(file.length().coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
             setRequestProperty("Authorization", auth(user, password)); setRequestProperty("Content-Type", "application/zip")
@@ -153,6 +165,23 @@ object CloudBackupManager {
         file.inputStream().use { input -> connection.outputStream.use { output -> input.copyTo(output) } }
         check(connection.responseCode in 200..299) { "坚果云上传失败：HTTP ${connection.responseCode} ${serverError(connection)}" }
         connection.disconnect()
+    }
+
+    private fun ensureDirectory(base: String, user: String, password: String) {
+        val code = webDavStatus(base, user, password, "OPTIONS")
+        check(code in 200..399 || code == 405) {
+            if (code == 404) "坚果云目录不存在，请先在坚果云网页端创建英文目录" else "坚果云目录验证失败：HTTP $code"
+        }
+    }
+
+    private fun webDavStatus(base: String, user: String, password: String, method: String): Int {
+        val connection = (URL(base.trimEnd('/') + "/").openConnection() as HttpURLConnection).apply {
+            requestMethod = method; doOutput = method == "MKCOL"; setRequestProperty("Authorization", auth(user, password))
+            connectTimeout = 20_000; readTimeout = 30_000
+        }
+        val code = connection.responseCode
+        connection.disconnect()
+        return code
     }
 
     private fun webDavGet(base: String, user: String, password: String, name: String, target: File) {

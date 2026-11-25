@@ -2,9 +2,7 @@ package com.cayboard.settings
 
 import android.content.Context
 import com.cayboard.clipboard.ClipboardManager
-import com.cayboard.model.ModelManager
 import com.cayboard.clipboard.db.ClipboardDatabase
-import com.cayboard.ocr.OcrModelFiles
 import com.cayboard.util.FileLogger
 import java.io.File
 import java.nio.file.Files
@@ -34,7 +32,6 @@ object StorageStats {
     const val ID_CLIPBOARD = "clipboard"
     const val ID_MODELS = "models"
     const val ID_SCHEMAS = "schemas"
-    const val ID_OCR_MODELS = "ocr_models"
     const val ID_EXTERNAL = "external"
     const val ID_OTHER = "other"
 
@@ -87,7 +84,6 @@ object StorageStats {
         val counter = SizeCounter()
         // 顺序决定硬链接归属：模型在前，rime/ 里指向同一份模型的链接不再计入方案。
         val modelsSize = counter.count(modelsDir(context)) + counter.count(legacyAsrModelsDir(context))
-        val ocrSize = counter.count(OcrModelFiles.extractedStorageDir(context))
         val buildSize = counter.count(rimeBuildDir(context)) + counter.count(rimeLogsDir(context))
         val schemasSize = counter.count(rimeDir(context)) + counter.count(SchemaManager.getMarketDir(context))
         val clipboardSize = ClipboardDatabase.storageFiles(context).sumOf { counter.count(it) }
@@ -102,7 +98,7 @@ object StorageStats {
                 title = "离线模型",
                 description = "保存在数据目录里的模型文件，内置模型可从安装包恢复",
                 sizeBytes = modelsSize,
-                clearable = true,
+                clearable = false,
                 // 点进模型管理逐个删（11-04「更多对内存的控制」）；「清理」仍是一次全删。
                 navigable = true,
             ),
@@ -143,13 +139,6 @@ object StorageStats {
                 clearable = true,
             ),
             Category(
-                id = ID_OCR_MODELS,
-                title = "文字识别模型",
-                description = "从安装包解出的本地文字识别模型文件",
-                sizeBytes = ocrSize,
-                clearable = false,
-            ),
-            Category(
                 id = ID_EXTERNAL,
                 title = "外部目录数据",
                 description = "应用保存在 Android/data 下的文件",
@@ -163,7 +152,7 @@ object StorageStats {
                 sizeBytes = otherSize,
                 clearable = false,
             ),
-        ).filterNot { it.sizeBytes == 0L && it.id in setOf(ID_OCR_MODELS, ID_EXTERNAL) }
+        ).filterNot { it.sizeBytes == 0L && it.id in setOf(ID_EXTERNAL) }
     }
 
     fun totalSize(categories: List<Category>): Long = categories.sumOf { it.sizeBytes }
@@ -176,7 +165,6 @@ object StorageStats {
      */
     suspend fun clearCategory(context: Context, id: String): Boolean {
         return when (id) {
-            ID_MODELS -> clearModels(context)
             ID_SCHEMA_CACHE -> clearSchemaCache(context)
             ID_CLIPBOARD -> {
                 ClipboardManager.getInstance(context).clearClipboard()
@@ -186,19 +174,6 @@ object StorageStats {
             ID_CACHE -> deleteContents(context.cacheDir)
             else -> false
         }
-    }
-
-    private fun clearModels(context: Context): Boolean {
-        var ok = true
-        for (model in ModelManager.getAllModels()) {
-            if (!ModelManager.deleteModel(context, model)) ok = false
-        }
-        // 未知来源的残余模型目录（如旧版本残留）一并移除
-        modelsDir(context).listFiles()?.forEach { dir ->
-            if (!dir.deleteRecursively()) ok = false
-        }
-        if (!legacyAsrModelsDir(context).deleteRecursively()) ok = false
-        return ok
     }
 
     /**

@@ -262,8 +262,7 @@ fun SymbolKeyboardLayout(
             }
 
             SwipeableIconKeyButton(
-                icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(
-                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.Backspace),
+                icon = deleteIconPainter(),
                 onClick = { onSelect("delete") },
                 onLongClick = { onSelect("delete") }, distanceDelete = true,
                 // 清空、撤回同其他键盘的删除键（11-05「部分页面的删除键功能缺失」），方向跟删除键设置走。
@@ -349,3 +348,5 @@ private fun SymbolCategoryTab(
             .height(2.dp).background(selection.quietContent))
     }
 }
+
+

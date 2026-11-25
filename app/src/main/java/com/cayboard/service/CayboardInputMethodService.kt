@@ -161,10 +161,6 @@ import java.io.File
 import java.io.FileInputStream
 import com.cayboard.platform.AndroidPlatform
 
-object OcrDraftEditTextHolder {
-    var editText: android.widget.EditText? = null
-}
-
 /** 快捷发送表单的触发编码输入框 holder（与内容输入框独立）。 */
 
 
@@ -1192,7 +1188,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         toolPanelAdmission?.let { inputReadiness.accepts(it) } == true
 
     internal fun openTranslation(sourceText: String = "") {
-        closeOcrDraft()
         if (uiState.value.toolPanelVisible) closeToolPanel()
         keyRouter.dropCompositionForTargetChange()
         endComposingInputBox()
@@ -1230,7 +1225,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         if (uiState.value.toolPanelVisible) closeToolPanel()
         // One keyboard editor at a time: an open edit form would take the chosen candidates, and
         // closing it later reopened the board under the search (two clipboards, user 10-23).
-        closeOcrDraft()
         keyboardViewModel.closeOverlay()
         // Its own flag: a new input field (restartInput, rotation) rewrites sensitiveEditor, and
         // closing search must preserve the editor’s privacy state.
@@ -1919,9 +1913,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                                     swipeCancelEpoch = state.swipeCancelEpoch,
                                     t9RightCandidateSelectedCount = state.t9RightCandidateSelectedCount,
                                     t9SelectedCandidatePinyin = state.t9SelectedCandidatePinyin,
-                                    showOcrDraft = state.showOcrDraft,
-                                    ocrDraftFocused = state.ocrDraftFocused,
-                                    ocrDraftText = state.ocrDraftText,
                                     toolPanelVisible = state.toolPanelVisible,
                                     toolPanelInputFocused = state.toolPanelInputFocused,
                                     clipboardSearchVisible = state.clipboardSearchVisible,
@@ -2560,14 +2551,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         if (hardwareGamePassthrough) return super.onKeyDown(keyCode, event)
         event?.let { hardwareCapsLockState.value = it.isCapsLockOn }
         if (hasHardwareKeyboard) event?.let { feedbackManager.playHardwareKeySound(it) }
-        if (uiState.value.showOcrDraft && keyCode in listOf(KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)) {
-            keyRouter.handleKeyPress("enter", event?.isShiftPressed == true)
-            return true
-        }
-        if (uiState.value.showOcrDraft && keyCode in listOf(KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE)) {
-            event?.startTracking()
-            return true
-        }
         if (keyCode == KeyEvent.KEYCODE_BACK &&
             (keyboardViewModel.page.value is KeyboardPage.Overlay || keyboardCallbacks?.onDismissPreeditEditor != null ||
                 keyboardViewModel.candidatePageExpanded.value ||
@@ -2726,11 +2709,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         }
         if (hardwareGamePassthrough) return super.onKeyUp(keyCode, event)
         event?.let { hardwareCapsLockState.value = it.isCapsLockOn }
-        if (uiState.value.showOcrDraft && keyCode in listOf(KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)) return true
-        if (uiState.value.showOcrDraft && keyCode in listOf(KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE)) {
-            if (event?.isCanceled != true) keyboardCallbacks?.onCloseOcrDraft?.invoke()
-            return true
-        }
         if (glossShiftKeys.remove(keyCode)) return true
         if (ctrlEnterKeys.remove(keyCode)) return true
         val clipboardConsumed = clipboardNavigationKeys.remove(keyCode)
@@ -2840,7 +2818,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             t9PartialSegments.isNotEmpty()
         val state = uiState.value
         when {
-            composing || state.inputTarget.isInternal || state.toolPanelInputFocused || state.showOcrDraft ->
+            composing || state.inputTarget.isInternal || state.toolPanelInputFocused ->
                 keyRouter.handleKeyPress("enter", false)
             isTerminalEditor() -> currentInputConnection?.let { ic ->
                 com.cayboard.keyboard.CtrlShortcuts.enterKeyEvents(SystemClock.uptimeMillis()).forEach(ic::sendKeyEvent)
@@ -2884,7 +2862,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         val composing = candidateState.value.let { it.isComposing || it.inputText.isNotEmpty() || it.preeditText.isNotEmpty() } ||
             t9PartialSegments.isNotEmpty()
         val state = uiState.value
-        return composing || state.inputTarget.isInternal || state.toolPanelInputFocused || state.showOcrDraft
+        return composing || state.inputTarget.isInternal || state.toolPanelInputFocused
     }
 
     override fun repeatLastInput() {
@@ -3118,7 +3096,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         restoreHandwritingFullscreen()
         applyWindowBackground()
         requestHardwareCursorUpdates()
-        openPendingOcrPanel()
         openPendingKeyboardPanel()
         // 释义词典随设置与下载状态后台加载/释放；选拼音时不占内存。
         com.cayboard.gloss.CandidateGlossary.prepare(this)
@@ -3472,8 +3449,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                 closeClipboardSearch(openBoard = false)
                 if (uiState.value.isVoiceMode) endVoiceSession()
                 closeToolPanel()
-                closeOcrDraft()
-                keyboardViewModel.closeOverlay()
+                        keyboardViewModel.closeOverlay()
                 keyboardViewModel.setCandidatePageExpanded(false)
                 uiState.value = uiState.value.copy(
                     isCompact = true, voiceCollapsed = false, handwritingExpanded = false, clipboardExpanded = false,
@@ -3651,15 +3627,10 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         // 玻璃模糊窗口晚 1 秒再拆：onWindowHidden 时系统的下滑收起动画才开始播，立刻拆掉的话，
         // 下滑那一段键盘后面没有模糊，应用的字清清楚楚透出来，看着就是「闪一下」。模糊窗口是输入法窗口的
         // 子窗口，键盘收完会跟着一起藏，晚拆不会多露一块；1 秒内又弹出来（切聊天框）就直接接着用，不重建。
-        com.cayboard.ocr.DocumentOcrActivity.finishHiddenHost()
         clearHardwareSurfaceBounds()
         cancelKeyboardResize()
         if (!keepVoice) clearInputState()
         recentClipboardItemsState.value = emptyList()
-        // 键盘隐藏时重置快捷发送表单临时态：表单开启状态下直接隐藏键盘（未走 onClose）
-        // 会把 showOcrDraft 残留到下次弹窗，候选栏上方渲染出残留表单背景造成遮挡；
-        // 回车键文案也需一并还原（打开表单时被改为"换行"）。
-        closeOcrDraft()
     }
 
     override fun onWindowShown() {
@@ -3670,7 +3641,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         imeWindowShown = true
         inputStallWatchdog?.start()
         KeyboardPanelLaunch.previewVisible = settingsPreviewEditor
-        openPendingOcrPanel()
         startVoiceAfterPermission()
         requestHardwareCursorUpdates()
         // 键盘弹出时对比系统取色与缓存的动态主题色，壁纸取色变化则重建主题并热更新 UI。
@@ -3689,14 +3659,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         if (!com.cayboard.util.PermissionHelper.takeVoiceAfterGrant(this)) return
         mainHandler.post {
             if (!settingsPreviewEditor && !uiState.value.isVoiceMode) keyboardCallbacks?.onVoiceStickyToggle?.invoke()
-        }
-    }
-
-    private fun openPendingOcrPanel() {
-        if (settingsPreviewEditor) return
-        if (com.cayboard.ocr.DocumentOcrActivity.takePending()) {
-            showScreenKeyboardFromHardware(OverlayRoute.Ocr)
-            keyboardViewModel.showOverlay(OverlayRoute.Ocr)
         }
     }
 
@@ -4400,17 +4362,25 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             val session = uiState.value.inputSessionId
             compositionRefreshJob = launch(keyProcessingDispatcher) {
                 val composition = rimeEngine.readQueuedComposition() ?: return@launch
+                val t9 = isT9Schema(uiState.value.currentSchemaId) && composition.input.isNotEmpty() &&
+                    !com.cayboard.settings.SensitiveInputState.active && !isSecretEditor() && !uiState.value.inputTarget.isInternal
+                val rankedCandidates = if (t9) {
+                    val durable = rimeEngine.t9Lookup(composition.input)
+                    t9UserHabitMemory.rerank(composition.input, composition.candidates, durable)
+                } else composition.candidates
+                val rankedComposition = if (rankedCandidates.contentEquals(composition.candidates)) composition
+                    else composition.copy(candidates = rankedCandidates)
                 val transformed = if (composition.input.isNotEmpty()) candidateTransform.transform(
                     inputText = composition.input, preedit = composition.preedit,
-                    engineCandidates = composition.candidates.toList(), asciiMode = composition.isAsciiMode,
+                    engineCandidates = rankedCandidates.toList(), asciiMode = composition.isAsciiMode,
                     firstPage = !composition.hasPrevPage,
                 ) else null
                 withContext(Dispatchers.Main) {
                     if (!inputReadiness.accepts(admission) || uiState.value.inputSessionId != session ||
                         !rimeEngine.isCandidateRevisionCurrent(composition.engineRevision)) return@withContext
                     if (transformed != null) sessionController.applyComposition(
-                        composition.copy(candidates = transformed.candidates.toTypedArray()), transformed.actions,
-                    ) else sessionController.applyComposition(composition)
+                        rankedComposition.copy(candidates = transformed.candidates.toTypedArray()), transformed.actions,
+                    ) else sessionController.applyComposition(rankedComposition)
                 }
             }
         }
@@ -4619,6 +4589,11 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     /** 候选词变换协调器（插件 candidate_transform 能力，hotPath：key-processing 线程同步调用）。 */
     internal val candidateTransform = CandidateTransformCoordinator(this)
     internal val t9Reranker by lazy { com.cayboard.rime.BundledT9Reranker(this) }
+    /** Offline per-digit candidate habits; kept separate from the bundled neural reranker. */
+    internal val t9UserHabitMemory by lazy { com.cayboard.rime.T9UserHabitMemory(this) }
+    internal val t9LearningCoordinator by lazy {
+        com.cayboard.rime.T9LearningCoordinator(rimeEngine, serviceScope)
+    }
 
     override fun commitText(text: String) {
         commitTextAndPredict(text, isPaste = false)
@@ -4712,26 +4687,6 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             }
         }
         return result
-    }
-
-    /**
-     * 快捷发送表单内退格：按焦点路由到文本框/触发编码框，删除光标前字符或选区。
-     * 与原行为对齐：表单显示即处理（未聚焦时删文本框），焦点在编码框时删编码框。
-     * 需在主线程调用；返回 false 表示表单未显示（调用方继续常规退格流程）。
-     */
-    internal fun deleteInOcrDraft(): Boolean {
-        if (!uiState.value.showOcrDraft) return false
-        val et = OcrDraftEditTextHolder.editText
-        et?.let { box ->
-            val text = box.text ?: return@let
-            // 和应用里一样：开着「输入成对符号」时光标夹在一对空符号中间，两边一起删。
-            if (box.selectionStart == box.selectionEnd && uiState.value.inputTarget.editText() === box &&
-                SettingsPreferences.isPairedSymbolsEnabled(this) && deleteEmptyPairAroundCursor()) return@let
-            val range = internalBackspaceRange(text, box.selectionStart, box.selectionEnd) ?: return@let
-            text.delete(range.first, range.last + 1)
-            try { box.setSelection(range.first) } catch (_: Exception) {}
-        }
-        return true
     }
 
     /**

@@ -6,3 +6,4 @@ app/src/main/assets/rime_japanese/LICENSE -whitespace
 app/src/main/assets/ocr/ppocr-v5/* -text
 app/src/main/assets/rime_chinese/fixed_zhwiki.dict.yaml filter=lfs diff=lfs merge=lfs -text
 app/src/main/assets/rime_chinese/fixed_baidu.dict.yaml filter=lfs diff=lfs merge=lfs -text
+app/src/main/fixed-speech-assets/builtin-speech/xasr/*.onnx filter=lfs diff=lfs merge=lfs -text

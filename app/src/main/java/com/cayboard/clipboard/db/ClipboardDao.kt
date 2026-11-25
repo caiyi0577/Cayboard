@@ -17,11 +17,11 @@ internal const val CLIP_TRIM = "' ' || char(9) || char(10) || char(13) || char(1
 @Dao
 interface ClipboardDao {
 
-    @Query("SELECT * FROM clipboard_entries ORDER BY timestamp DESC")
+    @Query("SELECT * FROM clipboard_entries ORDER BY isPinned DESC, timestamp DESC")
     fun observeAll(): Flow<List<ClipboardEntry>>
 
     
-    @Query("SELECT * FROM clipboard_entries ORDER BY timestamp DESC LIMIT :limit")
+    @Query("SELECT * FROM clipboard_entries ORDER BY isPinned DESC, timestamp DESC LIMIT :limit")
     fun observeWindow(limit: Int): Flow<List<ClipboardEntry>>
 
     
@@ -31,18 +31,18 @@ interface ClipboardDao {
     
     @Query("SELECT * FROM clipboard_entries WHERE sensitive = 0 AND " +
         "(text LIKE :pattern ESCAPE '\\' OR searchKey LIKE :pattern ESCAPE '\\') " +
-        "ORDER BY timestamp DESC LIMIT :limit")
+        "ORDER BY isPinned DESC, timestamp DESC LIMIT :limit")
     suspend fun search(pattern: String, limit: Int): List<ClipboardEntry>
 
     
     @Query("SELECT * FROM clipboard_entries WHERE sensitive = 0 AND searchKey LIKE :pattern " +
-        "ORDER BY timestamp DESC LIMIT :limit")
+        "ORDER BY isPinned DESC, timestamp DESC LIMIT :limit")
     suspend fun searchKey(pattern: String, limit: Int): List<ClipboardEntry>
 
     /** Initials as 9-key digits ([pattern] holds digits): the search key read through the keypad. */
     @Query("SELECT * FROM clipboard_entries WHERE sensitive = 0 AND " +
         com.cayboard.clipboard.ClipboardSearch.T9_KEY_SQL +
-        " LIKE :pattern ORDER BY timestamp DESC LIMIT :limit")
+        " LIKE :pattern ORDER BY isPinned DESC, timestamp DESC LIMIT :limit")
     suspend fun searchKeyDigits(pattern: String, limit: Int): List<ClipboardEntry>
 
     @Query("SELECT id, substr(text, 1, 2000) AS text FROM clipboard_entries WHERE searchKey = '' AND sensitive = 0 LIMIT :limit")
@@ -112,13 +112,13 @@ interface ClipboardDao {
     @Query("SELECT COUNT(*) FROM clipboard_entries ")
     suspend fun countHistory(): Int
 
-    @Query("DELETE FROM clipboard_entries WHERE id IN (SELECT id FROM clipboard_entries  ORDER BY timestamp ASC LIMIT :limit)")
+    @Query("DELETE FROM clipboard_entries WHERE id IN (SELECT id FROM clipboard_entries WHERE isPinned = 0 ORDER BY timestamp ASC LIMIT :limit)")
     suspend fun trimOldest(limit: Int)
 
-    @Query("SELECT COUNT(*) FROM clipboard_entries WHERE timestamp < :cutoff")
+    @Query("SELECT COUNT(*) FROM clipboard_entries WHERE isPinned = 0 AND timestamp < :cutoff")
     suspend fun countHistoryBefore(cutoff: Long): Int
 
-    @Query("DELETE FROM clipboard_entries WHERE timestamp < :cutoff")
+    @Query("DELETE FROM clipboard_entries WHERE isPinned = 0 AND timestamp < :cutoff")
     suspend fun deleteHistoryBefore(cutoff: Long): Int
 
     
@@ -126,7 +126,7 @@ interface ClipboardDao {
     suspend fun trimHistory(maxCount: Int, cutoff: Long): Int {
         var removed = deleteHistoryBefore(cutoff)
         if (maxCount > 0) {
-            val over = countHistory() - maxCount
+            val over = countUnpinned() - maxCount
             if (over > 0) { trimOldest(over); removed += over }
         }
         return removed
@@ -143,7 +143,7 @@ interface ClipboardDao {
     @Transaction
     suspend fun upsertAndTrim(text: String, now: Long, maxItems: Int, searchKey: String = "") {
         if (upsert(text, now, searchKey)) {
-            val unpinned = countHistory()
+            val unpinned = countUnpinned()
             if (unpinned > maxItems) {
                 trimOldest(unpinned - maxItems)
             }
@@ -180,8 +180,14 @@ interface ClipboardDao {
     @Query("UPDATE clipboard_entries SET sensitive = :sensitive WHERE id = :id")
     suspend fun setSensitive(id: Long, sensitive: Boolean)
 
+    @Query("UPDATE clipboard_entries SET isPinned = :pinned WHERE id = :id")
+    suspend fun setPinned(id: Long, pinned: Boolean)
+
+    @Query("SELECT COUNT(*) FROM clipboard_entries WHERE isPinned = 0")
+    suspend fun countUnpinned(): Int
+
     
-    @Query("DELETE FROM clipboard_entries WHERE sensitive = 1 AND timestamp < :cutoff")
+    @Query("DELETE FROM clipboard_entries WHERE sensitive = 1 AND isPinned = 0 AND timestamp < :cutoff")
     suspend fun deleteSensitiveBefore(cutoff: Long): Int
 
     @Query("SELECT COUNT(*) FROM clipboard_entries WHERE fromDevice = 1")
@@ -219,7 +225,7 @@ interface ClipboardDao {
 
     
     @Query("SELECT id, length(CAST(text AS BLOB)) + length(searchKey) AS bytes FROM clipboard_entries " +
-        "WHERE fromDevice = 0 AND id != :keep " +
+        "WHERE fromDevice = 0 AND isPinned = 0 AND id != :keep " +
         "ORDER BY timestamp ASC, id ASC")
     suspend fun ownHistorySizes(keep: Long): List<ClipboardRecordSize>
 

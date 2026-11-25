@@ -97,3 +97,4 @@ private fun CandidatePageOption(title: String, detail: String, key: String, chec
         }
     }
 }
+

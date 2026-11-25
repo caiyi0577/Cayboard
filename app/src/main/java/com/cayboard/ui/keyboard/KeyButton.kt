@@ -350,7 +350,7 @@ fun SwipeableKeyButton(
     val resolvedText = fixedSkinContentColor(text)
     // 九键滑行占了 2～9 键的滑动，上滑出数字、角标都滑不出来：这些键的角标改为长按输入，和 26 键滑行一样
     // （用户 11-11「开着滑行长按失效…只有九键不会跳转」：以前照存的「滑动输入」，长按什么都不出）。
-    val t9GlideOwnsDrag = LocalT9GlideKeys.current != null && badgeText?.singleOrNull()?.let { it in '2'..'9' } == true
+    val t9GlideOwnsDrag = false
     val symbolInputMode = if (t9GlideOwnsDrag) SymbolInputMode.LONG_PRESS else LocalKeyboardInputPreferences.current.symbolInputMode
     val inputPreferences = LocalKeyboardInputPreferences.current
     val letterSwipeLayout = letterSwipeAvailable(LocalFourteenKeyLayout.current,
@@ -383,7 +383,7 @@ fun SwipeableKeyButton(
             letters[if (ctrlTapFraction[0] < 0.5f) 0 else 1].toString() else letters
         if (ctrlTargets?.ctrlTap(pick) != true) onClick()
     }
-    val letterGlideOwnsDrag = LocalLetterGlide.current && letterGroup?.singleOrNull()?.lowercaseChar()?.let { it in 'a'..'z' } == true
+    val letterGlideOwnsDrag = false
     val reserveDragForGlide = letterGlideOwnsDrag || t9GlideOwnsDrag
     // 九键滑行接管拖动的数字键往下滑打不出下角标：左下角不画（用户 11-11）。26 键字母滑行改成长按弹出上下两个角标
     // （[withGlideCornerMenu]），下角标打得到，照旧画（用户 11-11「关闭数字行滑行打不出 !@#」）。
@@ -400,7 +400,7 @@ fun SwipeableKeyButton(
     val downHint = swipeDownText?.takeIf { it.isNotEmpty() } ?: downSymbol?.takeIf { keyOnSwipeDown != null }
     val cornerShown = !(swipeUpKeyLabel ?: swipeText).isNullOrEmpty() || !downCornerLabel.isNullOrEmpty()
     // 滑到哪个键按哪个键（用户 11-14，像三星键盘）：滑行和「上下滑输入符号」都关着、整个键盘滑动移光标也关着时才有。
-    val slideTaps = !cornerSymbols && !reserveDragForGlide && !LocalLetterGlide.current && LocalT9GlideKeys.current == null &&
+    val slideTaps = !cornerSymbols && !reserveDragForGlide &&
         inputPreferences.cursorGesture != CursorGestureMode.KEYBOARD && ctrlTargets != null
     // 这个键在键盘坐标里的左上角（和 Shift 拖动用的 dragBounds 同一坐标），手指在键里的位置加上它就是键盘坐标。
     val slideOrigin = remember { floatArrayOf(0f, 0f) }

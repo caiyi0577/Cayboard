@@ -12,3 +12,4 @@ import androidx.compose.ui.unit.dp
 internal fun DictionaryEmptyLine(text: String) {
     Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
 }
+

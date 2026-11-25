@@ -3009,6 +3009,46 @@ Java_com_cayboard_rime_RimeEngine_nativeT9SelectCandidate(
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
+// Persist one complete T9 choice in the durable digit user dictionary.
+JNIEXPORT jboolean JNICALL
+Java_com_cayboard_rime_RimeEngine_nativeT9Memorize(
+    JNIEnv* env, jobject, jstring input, jstring text, jstring pinyin) {
+    if (!input || !text || !pinyin) return JNI_FALSE;
+    const char* i = env->GetStringUTFChars(input, nullptr);
+    const char* t = env->GetStringUTFChars(text, nullptr);
+    const char* p = env->GetStringUTFChars(pinyin, nullptr);
+    if (!i || !t || !p) {
+        if (i) env->ReleaseStringUTFChars(input, i);
+        if (t) env->ReleaseStringUTFChars(text, t);
+        if (p) env->ReleaseStringUTFChars(pinyin, p);
+        return JNI_FALSE;
+    }
+    rime::T9DigitUserDict::Instance().Memorize(i, t, p);
+    env->ReleaseStringUTFChars(input, i);
+    env->ReleaseStringUTFChars(text, t);
+    env->ReleaseStringUTFChars(pinyin, p);
+    return JNI_TRUE;
+}
+
+// Return learned words for the active physical T9 code, already ordered by learned weight.
+JNIEXPORT jobjectArray JNICALL
+Java_com_cayboard_rime_RimeEngine_nativeT9Lookup(JNIEnv* env, jobject, jstring input) {
+    if (!input) return nullptr;
+    const char* value = env->GetStringUTFChars(input, nullptr);
+    if (!value) return nullptr;
+    const auto entries = rime::T9DigitUserDict::Instance().Lookup(value, 64);
+    env->ReleaseStringUTFChars(input, value);
+    auto strings = env->FindClass("java/lang/String");
+    auto result = env->NewObjectArray(entries.size(), strings, nullptr);
+    for (size_t i = 0; i < entries.size(); ++i) {
+        auto text = CandidateString(env, entries[i].text);
+        env->SetObjectArrayElement(result, i, text);
+        env->DeleteLocalRef(text);
+    }
+    env->DeleteLocalRef(strings);
+    return result;
+}
+
 // T9 用户词典写入/回滚公共实现（memorize=true → commits=+1；false → commits=-1）。
 // 调频文本与拼音由 Kotlin 在 full commit 上屏后传入（Kotlin 上屏路径为唯一真相源）。
 // 拂动固定字母：并入当前数字串并记住该位置的字母；数字串为空返回 false。

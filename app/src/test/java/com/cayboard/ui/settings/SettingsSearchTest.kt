@@ -163,8 +163,6 @@ class SettingsSearchTest {
     /** 11-01 整理：新功能和用户自己的说法都能找到。 */
     @Test fun newFeaturesAndEverydayWordsAreSearchable() {
         assertTrue("中英混输" in titles("中英混打"))
-        assertTrue("拍照识别模型" in titles("OCR"))
-        assertTrue("拍照识别模型" in titles("拍照识字"))
         assertTrue("逗号键分词" in titles("隔音符"))
         assertTrue("中文滑行" in titles("划词"))
         assertTrue("生僻字" in titles("罕用字"))

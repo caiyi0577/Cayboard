@@ -23,5 +23,7 @@ data class ClipboardEntry(
      * dots, pasted privately, never searched or exported, deleted an hour after the copy.
      */
     @ColumnInfo(defaultValue = "0") val sensitive: Boolean = false,
+    /** User-pinned records stay at the top and are excluded from automatic history trimming. */
+    @ColumnInfo(defaultValue = "0") val isPinned: Boolean = false,
 
 )

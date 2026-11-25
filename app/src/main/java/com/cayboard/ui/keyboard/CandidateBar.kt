@@ -1175,7 +1175,7 @@ internal fun candidateSecondaryText(comment: String, correction: String,
     if (correction.isNotEmpty()) correctionAnnotatedString(correction, Color.Unspecified, fullScheme) else AnnotatedString(comment)
 
 /** 候选两侧的默认留白。 */
-internal val CANDIDATE_ITEM_PADDING = 4.dp
+internal val CANDIDATE_ITEM_PADDING = 6.dp
 
 /** 两个候选之间的空白（间隔加两边留白）到这么宽才画分隔竖线：默认约 12dp 不画，「候选词间距加宽」约 23dp 画。 */
 internal val CANDIDATE_DIVIDER_MIN_GAP = 18.dp
@@ -1503,7 +1503,7 @@ internal fun FixedCandidateStrip(
     modifier: Modifier = Modifier,
     highlightIndex: Int = 0,
     showNumberLabels: Boolean = false,
-    itemSpacing: androidx.compose.ui.unit.Dp = 4.dp,
+    itemSpacing: androidx.compose.ui.unit.Dp = 6.dp,
     /** 分体中缝（窗口横坐标）；候选先排左侧，越过中缝接着排右侧。 */
     gapWindowX: Pair<Float, Float>? = null,
     /** 能左右滑动看后面的候选；右边放不下的候选照常显示、被栏边裁掉，滑过去看全。分体中缝时不滑。 */

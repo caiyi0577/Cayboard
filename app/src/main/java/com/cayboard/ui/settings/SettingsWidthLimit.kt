@@ -137,3 +137,4 @@ internal fun Modifier.settingsGutterScroll(state: ScrollableState,
 @Composable
 internal fun Modifier.settingsVerticalScroll(state: ScrollState = rememberScrollState()): Modifier =
     settingsGutterScroll(state).verticalScroll(state).padding(bottom = LocalKeyboardPreviewInset.current + SETTINGS_BOTTOM_SPACE)
+

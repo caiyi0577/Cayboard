@@ -96,3 +96,4 @@ private fun <T> AnimatedContentTransitionScope<T?>.subPageTransform(motion: Bool
     targetState == null -> SettingsPageMotion.pop
     else -> SettingsPageMotion.push
 }
+

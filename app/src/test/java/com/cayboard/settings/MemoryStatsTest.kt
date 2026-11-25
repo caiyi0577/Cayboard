@@ -42,7 +42,6 @@ class MemoryStatsTest {
         assertEquals("键盘与设置", MemoryStats.title(pkg, pkg))
         assertEquals("语音与字幕", MemoryStats.title(pkg, "$pkg:asr"))
         assertEquals("AI 模型", MemoryStats.title(pkg, "$pkg:inference"))
-        assertEquals("文字识别", MemoryStats.title(pkg, "$pkg:ocr"))
         assertEquals("other", MemoryStats.title(pkg, "$pkg:other"))
     }
 }

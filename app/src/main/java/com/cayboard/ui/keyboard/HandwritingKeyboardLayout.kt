@@ -463,7 +463,7 @@ private fun HandwritingFunctionKey(action: String, onClick: () -> Unit, backgrou
     val keyForeground = enter?.foreground ?: foreground
     if (action == "delete") {
         SwipeableIconKeyButton(
-            icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+            icon = deleteIconPainter(),
             onClick = onClick, onLongClick = onClick, onSwipeUp = onClear,
             // 和其他键盘的删除键一样有撤回（11-05 别人的评论「手写时无法撤销」）：有笔迹撤最后一笔，刚清掉的放回。
             onSwipeDown = onUndo,
@@ -510,3 +510,4 @@ private fun HandwritingFunctionKey(action: String, onClick: () -> Unit, backgrou
             fontSize = (if (action == "symbol" || action == "number") 16 else 18).sp)
     }
 }
+

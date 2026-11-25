@@ -13,21 +13,17 @@ import com.cayboard.settings.SettingsPreferences
  * 以前九键菜单里没有滑行开关，开了九键滑行在键盘上关不掉（用户 11-09）。
  */
 internal fun ToolbarButton.appliesTo(kind: LayoutKind): Boolean = when (this) {
-    ToolbarButton.GLIDE -> kind == LayoutKind.ALPHABETIC || kind == LayoutKind.T9
     ToolbarButton.FOURTEEN_SWIPE -> kind == LayoutKind.MERGED
     else -> true
 }
 
 internal fun ToolbarButton.gestureOn(prefs: KeyboardInputPreferences, chinese: Boolean = false, nine: Boolean = false): Boolean = when (this) {
-    ToolbarButton.GLIDE -> if (nine) prefs.t9GlideTyping else if (chinese) prefs.chineseGlideTyping else prefs.glideTyping
     ToolbarButton.FOURTEEN_SWIPE -> prefs.fourteenLetterSwipe
     else -> false
 }
 
 /** 同一含义的全部存储键（旧键随新键一起写，保持读取兼容）。 */
 internal fun ToolbarButton.gestureKeys(chinese: Boolean = false, nine: Boolean = false): List<String> = when (this) {
-    ToolbarButton.GLIDE -> if (nine) listOf("t9_glide_typing")
-        else if (chinese) listOf(KeyboardInputPreferences.CHINESE_GLIDE_KEY) else listOf("glide_typing_v2", "glide_typing")
     ToolbarButton.FOURTEEN_SWIPE -> listOf("fourteen_letter_swipe")
     else -> emptyList()
 }
@@ -37,7 +33,6 @@ internal fun ToolbarButton.flipGesture(context: Context, prefs: KeyboardInputPre
     val next = !gestureOn(prefs, chinese, nine)
     // 和设置页同一套锁：被别的设置锁住时不改，提示是谁锁的。
     val option = when (this) {
-        ToolbarButton.GLIDE -> InputGestureLock.Option.GLIDE_TYPING
         else -> null
     }
     val lock = option?.let { InputGestureLocks.lockFor(prefs, it, next) }

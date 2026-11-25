@@ -1,7 +1,10 @@
 package com.cayboard.ui.settings
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,18 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.twotone.BugReport
-import androidx.compose.material.icons.twotone.Code
-import androidx.compose.material.icons.twotone.Description
-import androidx.compose.material.icons.twotone.PersonOutline
-import androidx.compose.material.icons.twotone.PrivacyTip
-import androidx.compose.material.icons.twotone.Storage
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,8 +51,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cayboard.BuildConfig
@@ -155,6 +154,13 @@ fun AboutContent(
     onNavigateToStorageSpace: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val appIconBitmap = remember(context) {
+        Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888).also { bitmap ->
+            val icon = context.packageManager.getApplicationIcon(context.applicationInfo)
+            icon.setBounds(0, 0, bitmap.width, bitmap.height)
+            icon.draw(Canvas(bitmap))
+        }
+    }
     var verboseLoggingEnabled by remember {
         mutableStateOf(SettingsPreferences.isVerboseLoggingEnabled(context))
     }
@@ -198,18 +204,17 @@ fun AboutContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             
-                            .padding(16.dp),
+                            .padding(horizontal = 24.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                        Image(
+                            painter = BitmapPainter(appIconBitmap.asImageBitmap()),
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier.size(64.dp)
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            text = "Cayboard 是基于 CyIME 和 Rime 开发的开源 Android 输入法，主打中文九键，支持全拼、双拼和英文输入。内置词库、手写、语音转文字、拍照识字和多语种翻译，均在设备上运行。应用代码采用 GNU GPLv3。",
+                            text = "Cayboard 是基于 CyIME 和 Rime 开发的开源 Android 输入法，主打中文九键，支持全拼、双拼和英文输入。内置词库、手写、语音转文字和多语种翻译，均在设备上运行。应用代码采用 GNU GPLv3。",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -226,7 +231,7 @@ fun AboutContent(
             // 链接项
                 SettingsSection(title = "信息与工具") {
                         SettingsItem(
-                            icon = Icons.TwoTone.PrivacyTip,
+                            icon = lucideIcon(LucideSettingIcons.SHIELD),
                             title = "隐私政策",
                             onClick = onNavigateToPrivacy
                         )
@@ -236,7 +241,7 @@ fun AboutContent(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         SettingsItem(
-                            icon = Icons.TwoTone.Description,
+                            icon = lucideIcon(LucideSettingIcons.FILE_CODE),
                             title = "开源许可证",
                             onClick = onNavigateToLicenses
                         )
@@ -246,7 +251,7 @@ fun AboutContent(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         SettingsItem(
-                            icon = Icons.TwoTone.BugReport,
+                            icon = lucideIcon(LucideSettingIcons.SCROLL_TEXT),
                             title = "日志查看器",
                             onClick = onNavigateToLogViewer
                         )
@@ -256,7 +261,7 @@ fun AboutContent(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         SettingsItem(
-                            icon = Icons.TwoTone.Storage,
+                            icon = lucideIcon(LucideSettingIcons.DATABASE),
                             title = "存储空间",
                             onClick = onNavigateToStorageSpace
                         )
@@ -267,7 +272,7 @@ fun AboutContent(
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                             )
                             SettingsItem(
-                                icon = Icons.TwoTone.BugReport,
+                                icon = lucideIcon(LucideSettingIcons.FILE_CODE),
                                 title = "调试日志",
                                 onClick = {},
                                 trailing = {
@@ -318,6 +323,7 @@ private fun SettingsItem(
     onClick: () -> Unit,
     trailing: (@Composable () -> Unit)? = null
 ) {
+    val showIcons = LocalSettingsShowIcons.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -325,7 +331,7 @@ private fun SettingsItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        if (showIcons) Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(10.dp))
@@ -339,7 +345,7 @@ private fun SettingsItem(
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        if (showIcons) Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
@@ -433,8 +439,13 @@ fun PrivacyPolicyContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         PrivacySection(
-                            title = "离线处理",
-                            content = "Cayboard 不具备联网权限，无需账号，不含广告或云同步，也不会上传诊断信息。文字输入、手写、语音识别、拍照识字和翻译均在设备上处理。词库和内置模型随安装包提供。"
+                            title = "默认离线",
+                            content = "Cayboard 默认在本机运行，不要求注册账号，不含广告和统计 SDK。文字输入、候选生成、手写、语音转文字和离线翻译使用本机词库与模型处理，不会把输入内容上传到 Cayboard 服务器。"
+                        )
+
+                        PrivacySection(
+                            title = "联网与云备份",
+                            content = "应用仅在你主动使用“备份与恢复”时，通过 HTTPS WebDAV 连接你填写的坚果云地址，上传或下载你选择的 Cayboard 全量备份包。备份包包含你选择保留的设置、词库、模型、布局、剪贴板历史及应用数据。Cayboard 不运营云端账户，也不会在后台自动同步。坚果云账号和第三方应用密码只用于请求认证，并保存在本机的加密存储中；你可以随时退出或清除保存的凭据。"
                         )
 
                         PrivacySection(
@@ -443,23 +454,33 @@ fun PrivacyPolicyContent(
                         )
 
                         PrivacySection(
-                            title = "麦克风和相机",
-                            content = "使用语音转文字时需要麦克风权限，录音在本机识别。使用拍照识字时需要相机权限，也可选择图片进行本地识别。"
+                            title = "麦克风",
+                            content = "使用语音转文字时需要麦克风权限。录音只用于当前识别任务，由内置 X-ASR 模型在本机处理；停止识别后不会作为音频上传或长期保存。你可以在 Android 系统权限中随时撤销麦克风权限。"
                         )
 
                         PrivacySection(
                             title = "联系人与短信验证码",
-                            content = "开启联系人联想并授权后，Cayboard 在本机查询联系人以生成候选。开启短信验证码功能并授权后，Cayboard 会处理新收到的短信，在本机提取验证码，并把验证码作为敏感内容放入系统剪贴板。"
+                            content = "只有在你开启对应功能并授予权限后，Cayboard 才会在本机读取联系人姓名、号码或新短信内容，用于联系人候选和短信验证码提取。联系人索引只保存在运行内存中，不进入词库、剪贴板历史、备份或同步；验证码按功能设置写入系统剪贴板，并按规则自动清理。"
+                        )
+
+                        PrivacySection(
+                            title = "剪贴板与敏感内容",
+                            content = "开启剪贴板历史后，Cayboard 会读取系统剪贴板中的文本并按你的设置保存在本机。密码框内容、系统标记为敏感的内容和联系人信息默认不进入历史；若你主动开启“记录密码等敏感内容”，敏感记录会以遮罩形式保存并按规则过期删除。剪贴板历史不会自动上传。"
+                        )
+
+                        PrivacySection(
+                            title = "日志、模型和权限",
+                            content = "应用日志保存在本机，用于你主动查看或分享故障信息；日志不应包含完整的键入内容。内置及导入的词库和模型保存在应用目录中，不会自动上传。应用可能请求麦克风、联系人、短信和网络权限，均只在对应功能需要时使用；你可以在系统设置中撤销权限。"
                         )
 
                         PrivacySection(
                             title = "保存、分享和删除",
-                            content = "设置、词库、剪贴板历史、模型文件及诊断日志保存在本机。主动导出备份或分享日志时，系统会把文件交给你选择的位置或应用。可在 Android 的应用权限页撤销授权，在存储空间页清理部分数据，或通过清除应用数据、卸载来删除应用内部数据。已导出的文件需另行删除。"
+                            content = "设置、词库、剪贴板历史、模型文件及诊断日志保存在本机。主动导出或分享时，系统会把文件交给你选择的位置或应用；主动使用坚果云备份时，备份包会按上一节说明传输。你可以在应用内删除剪贴板和日志，在 Android 权限页撤销授权，或通过清除应用数据、卸载来删除应用内部数据。已经导出或上传的文件需要在对应位置另行删除。"
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "更新日期：2026 年 11 月 20 日",
+                            text = "更新日期：2026 年 11 月 24 日",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -560,4 +581,6 @@ fun LicensesContent(
         }
     }
 }
+
+
 

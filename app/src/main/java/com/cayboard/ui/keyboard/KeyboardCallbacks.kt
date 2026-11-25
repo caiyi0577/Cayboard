@@ -8,20 +8,6 @@ import com.cayboard.viewmodel.SchemaSwitchUiState
 data class KeyboardCallbacks(
     val onKeyPress: (String, Boolean) -> Unit,
     val onLetterNeighbors: ((String, String) -> Unit)? = null,
-    /**
-     * 英文滑行：识别出的候选（去撇号的小写写法和轨迹代价）与按 Shift 改大小写的规则；
-     * 输入法按上下文（连着划时连同上一个词）选出上屏的词，其余作为可替换的英文候选。
-     */
-    val onGlideWord: ((List<com.cayboard.glide.GlideCandidate>, (String) -> String) -> Unit)? = null,
-    /** 中文滑行：识别出的一个词的编码（全拼或双拼），按点按同一路径接进当前编码；其后几个编码作候选栏里的备选。 */
-    val onGlideCode: ((String, List<String>, Long?) -> Unit)? = null,
-    /** 英文滑行实时预览：每笔开头取一次，返回按上下文算“现在抬手会上屏什么”的函数（可在后台线程调用）。 */
-    val glidePreviewer: (() -> ((List<com.cayboard.glide.GlideCandidate>, (String) -> String) -> GlideEnglishPreview)?)? = null,
-    val onGlideEnglishPreview: ((GlideEnglishPreview, Long) -> Unit)? = null,
-    val onGlidePreviewCode: ((String, Long, Int) -> Unit)? = null,
-    val onGlidePreviewEnd: (() -> Unit)? = null,
-    val onGlidePreviewHold: (() -> Long?)? = null,
-    val onGlidePreviewFinish: ((Long, Boolean) -> Unit)? = null,
     val inputAdmissionTicket: () -> Long? = { 0L },
     val captureInputContext: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
     /** 九键组句的上文：组合为空时光标前的已上屏文字；null 表示未知或正在组合。 */
@@ -183,9 +169,6 @@ data class KeyboardCallbacks(
     /** T9 候选词变换（hotPath 插件能力）：T9 控制器后台取数后调用，
      *  返回带引擎锚点的插件候选注入列表（text 追加项），null/空 = 不干预。 */
     val onTCandidateTransform: ((RimeProcessResult) -> List<com.cayboard.service.T9CandidateInjection>?)? = null,
-    val onReviewOcrText: ((String) -> Unit)? = null,
-    val onCloseOcrDraft: (() -> Unit)? = null,
-    val onOcrDraftFocusChange: ((Boolean) -> Unit)? = null,
     /** 快捷发送表单"触发编码"输入框焦点变化（决定按键输入路由到编码框）。 */
     /**
      * 切到语音/手写前调用。

@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -227,7 +226,7 @@ private fun CandidateCancelContent(show: Boolean) {
             Spacer(Modifier.width(12.dp))
             Text("你", fontSize = 13.sp, color = onSurface, maxLines = 1)
             Spacer(Modifier.weight(1f))
-            EdgeButton(Icons.Filled.KeyboardArrowUp, highlight = false)
+            EdgeButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, highlight = false)
         }
         Spacer(Modifier.height(4.dp))
         // 开着时「↑」对着左箭头（按钮中心离边 4 + 13 = 17dp）。
@@ -654,3 +653,6 @@ internal fun JapaneseLongVowelIllustration(mode: com.cayboard.ui.keyboard.Japane
         }
     }
 }
+
+
+

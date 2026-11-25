@@ -13,25 +13,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.twotone.Dialpad
-import androidx.compose.material.icons.twotone.Gesture
-import androidx.compose.material.icons.twotone.FormatListNumbered
-import androidx.compose.material.icons.twotone.FormatColorFill
-import androidx.compose.material.icons.twotone.AspectRatio
-import androidx.compose.material.icons.twotone.DataObject
-import androidx.compose.material.icons.twotone.Spellcheck
-import androidx.compose.material.icons.twotone.EmojiSymbols
-import androidx.compose.material.icons.twotone.DashboardCustomize
-import androidx.compose.material.icons.twotone.ScreenRotation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.twotone.Send
-import androidx.compose.material.icons.twotone.Straighten
-import androidx.compose.material.icons.twotone.ViewWeek
-import androidx.compose.material.icons.twotone.Reorder
-import androidx.compose.material.icons.twotone.VerticalAlignBottom
-import androidx.compose.material.icons.twotone.Keyboard
-import androidx.compose.material.icons.twotone.Lightbulb
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,11 +47,11 @@ import androidx.compose.ui.unit.dp
 import com.cayboard.settings.SettingsPreferences
 
 /** 「键盘布局」里各布局一行的图标：26 键用键盘，九键与 14 键用拨号盘，滑行输入用手势。 */
+@get:Composable
 private val LayoutInputCategory.icon: androidx.compose.ui.graphics.vector.ImageVector
     get() = when (this) {
-        LayoutInputCategory.Qwerty -> Icons.TwoTone.Keyboard
-        LayoutInputCategory.Nine -> Icons.TwoTone.Dialpad
-        LayoutInputCategory.Glide -> Icons.TwoTone.Gesture
+        LayoutInputCategory.Qwerty -> lucideIcon(LucideSettingIcons.KEYBOARD)
+        LayoutInputCategory.Nine -> lucideIcon(LucideSettingIcons.HASH)
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -127,20 +111,20 @@ private fun LayoutDisplayPage(
             }
             if (page == null) item {
                 SettingsSection(title = "布局与符号", content = {
-                    SettingsItem(Icons.TwoTone.DashboardCustomize, "布局管理", "显示或排列切换栏里的布局，编辑自定义按键排列",
+                    SettingsItem(lucideIcon(LucideSettingIcons.ARRANGE), "布局管理", "显示或排列切换栏里的布局，编辑自定义按键排列",
                         onClick = { context.startActivity(android.content.Intent(context, com.cayboard.CustomLayoutActivity::class.java)) },
                         showArrow = true)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     var perOrientation by remember {
                         mutableStateOf(com.cayboard.settings.OrientationLayouts.isEnabled(context))
                     }
-                    SettingsToggleItem(Icons.TwoTone.ScreenRotation, "横竖屏分开记布局",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.ARRANGE), "横竖屏分开记布局",
                         "横屏、竖屏各记一个布局 (如横屏 26 键、竖屏九键)，在哪个方向选的就记到哪个方向，转屏后自动换。关闭时横竖屏用同一个布局。",
                         checked = perOrientation, onCheckedChange = {
                             perOrientation = it; com.cayboard.settings.OrientationLayouts.setEnabled(context, it)
                         })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                    SettingsItem(Icons.TwoTone.EmojiSymbols, "按键符号", "每个键滑出的符号，侧栏和数字行放什么",
+                    SettingsItem(lucideIcon(LucideSettingIcons.HASH), "按键符号", "每个键滑出的符号，侧栏和数字行放什么",
                         onClick = { context.startActivity(android.content.Intent(context, com.cayboard.CustomLayoutActivity::class.java)
                             .putExtra("edit_symbols", true)) },
                         showArrow = true)
@@ -148,7 +132,7 @@ private fun LayoutDisplayPage(
                     var punctuationCandidate by remember {
                         mutableStateOf(SettingsPreferences.isPunctuationCommitsCandidateEnabled(context))
                     }
-                    SettingsToggleItem(Icons.TwoTone.Spellcheck, "标点上屏首选",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SPARKLES), "标点上屏首选",
                         "打字中点逗号、句号、问号等断句标点时，先上屏首选候选再接标点，nihao 点逗号得到「你好，」。" +
                             "关闭时先上屏打的字母(nihao，)。实体键盘不变。",
                         checked = punctuationCandidate, onCheckedChange = {
@@ -156,7 +140,7 @@ private fun LayoutDisplayPage(
                         })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     var pairedSymbols by remember { mutableStateOf(SettingsPreferences.isPairedSymbolsEnabled(context)) }
-                    SettingsToggleItem(Icons.TwoTone.DataObject, "输入成对符号",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.TABLE), "输入成对符号",
                         "点 “ ( 《 【 等开头的一半时连结尾一起输入，光标停在中间；接着点结尾会跳过已有的那个，" +
                             "退格删掉空的一对。实体键盘不变。",
                         checked = pairedSymbols, onCheckedChange = {
@@ -164,7 +148,7 @@ private fun LayoutDisplayPage(
                         })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     var enterSends by remember { mutableStateOf(SettingsPreferences.isEnterSendsEnabled(context)) }
-                    SettingsToggleItem(Icons.AutoMirrored.TwoTone.Send, "回车发送",
+                    SettingsToggleItem(Icons.AutoMirrored.Filled.Send, "回车发送",
                         "应用把回车设成发送时(如微信「回车键发送消息」)，回车直接发送；关闭时回车换行，发送用 Ctrl+回车。",
                         checked = enterSends, onCheckedChange = {
                             enterSends = it; SettingsPreferences.setEnterSendsEnabled(context, it)
@@ -179,24 +163,24 @@ private fun LayoutDisplayPage(
                         checked = split, onCheckedChange = { SettingsPreferences.setSplitKeyboardEnabled(context, it) })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     val rightG = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences().splitRightG
-                    SettingsToggleItem(Icons.TwoTone.Keyboard, "右半边也放 G 键",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.KEYBOARD), "右半边也放 G 键",
                         "26 键分体时，右半 h j k l 那排开头再加一个 G，这一排向右对齐到 p 下面，两只手都能按 G。14 键不加。",
                         checked = rightG, onCheckedChange = { SettingsPreferences.setSplitRightGEnabled(context, it) },
                         lockMessage = if (split) null else "打开上面的「分体键盘」后可用")
                     if (split) SplitRightGLegend(rightG)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     val filled = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences().fillBlankAreas
-                    SettingsToggleItem(Icons.TwoTone.FormatColorFill, "填满留空处",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SPARKLES), "填满留空处",
                         "分体中缝和固定键盘两侧的空白用键盘背景铺满，遮住后面的应用；关闭时镂空，透出后面的内容。",
                         checked = filled, onCheckedChange = { SettingsPreferences.setKeyboardBlankFilled(context, it) })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     val wideKeys = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences().wideKeys
-                    SettingsToggleItem(Icons.TwoTone.Straighten, "加宽按键",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SLIDERS), "加宽按键",
                         "键盘两侧留白和按键之间的横向缝变窄，每个键更宽，手机上不容易按到旁边的键；分体键盘不变。",
                         checked = wideKeys, onCheckedChange = { SettingsPreferences.setWideKeysEnabled(context, it) })
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     val evenMerged = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences().evenMergedKeys
-                    SettingsToggleItem(Icons.TwoTone.ViewWeek, "合并键均匀排布",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.ARRANGE), "合并键均匀排布",
                         "14 键和自己排的合并键布局(如 17、18、20 键)里，合并键只比单字母键宽三分之一，单字母键跟着变宽，" +
                             "每排更匀，小屏上好按。关闭时合并键严格占两个 26 键的位置。分体键盘不变。",
                         checked = evenMerged, onCheckedChange = { SettingsPreferences.setEvenMergedKeysEnabled(context, it) },
@@ -207,14 +191,14 @@ private fun LayoutDisplayPage(
             }
             if (page == null) item {
                 SettingsSection(title = "尺寸与位置", content = {
-                    SettingsItem(Icons.TwoTone.AspectRatio, keyboardPanelTitle(com.cayboard.keyboard.KeyboardPanelLaunch.Panel.RESIZE),
+                    SettingsItem(lucideIcon(LucideSettingIcons.FLOATING), keyboardPanelTitle(com.cayboard.keyboard.KeyboardPanelLaunch.Panel.RESIZE),
                         "高度、宽度、悬浮与分体、透明度，打开键盘菜单里同一个调节面板",
                         onClick = { onOpenLayout(SettingsRoutes.KeyboardResize) }, showArrow = true)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                    SettingsItem(Icons.TwoTone.VerticalAlignBottom, "底部留白校准", "查看真实键盘，调低或抬高底排的位置",
+                    SettingsItem(lucideIcon(LucideSettingIcons.ARRANGE), "底部留白校准", "查看真实键盘，调低或抬高底排的位置",
                         onClick = { openPage("bottom_gap") }, showArrow = true)
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                    SettingsItem(Icons.TwoTone.Reorder, keyboardPanelTitle(com.cayboard.keyboard.KeyboardPanelLaunch.Panel.ARRANGE),
+                    SettingsItem(lucideIcon(LucideSettingIcons.ARRANGE), keyboardPanelTitle(com.cayboard.keyboard.KeyboardPanelLaunch.Panel.ARRANGE),
                         "哪些入口放工具栏、哪些放菜单，以及先后顺序",
                         onClick = { onOpenLayout(SettingsRoutes.ToolbarArrange) }, showArrow = true)
                 })
@@ -252,7 +236,7 @@ private fun LayoutDisplayPage(
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     // 数字键盘左栏（用户 11-09）：进「按键符号 → 数字侧栏」改字、加减格子、调顺序。
-                    SettingsItem(Icons.TwoTone.EmojiSymbols, "左栏符号",
+                    SettingsItem(lucideIcon(LucideSettingIcons.HASH), "左栏符号",
                         "数字键盘左侧一列，默认 + - * /。可改字、加减、调顺序，多于 4 个时上下滑。",
                         onClick = { com.cayboard.ui.keyboard.openSideSymbolEditor(context,
                             com.cayboard.ui.keyboard.SideSymbolTarget.NUMBER) },
@@ -260,7 +244,7 @@ private fun LayoutDisplayPage(
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     // 数字行（默认开）：点开关打开，点这一行进「按键符号 → 数字行」改键和顺序。
                     val numberRow = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences().numberRow
-                    SettingsToggleItem(Icons.TwoTone.FormatListNumbered, "数字行",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.HASH), "数字行",
                         "26 键、14 键字母上方加一排数字，键盘总高度不变、字母键变矮。点这一行改每个键和顺序。",
                         checked = numberRow, onCheckedChange = { SettingsPreferences.setNumberRowEnabled(context, it) },
                         onClick = { com.cayboard.ui.keyboard.openSideSymbolEditor(context,
@@ -269,7 +253,7 @@ private fun LayoutDisplayPage(
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     // 打数字出短语（别人请求，默认关）：见 service/DigitPhrases.kt。
                     var digitPhrases by remember { mutableStateOf(com.cayboard.service.DigitPhrases.isEnabled(context)) }
-                    SettingsToggleItem(Icons.TwoTone.Dialpad, "数字出短语",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.HASH), "数字出短语",
                         "打的数字是「我的短语」编码的开头时，候选栏给出这些短语，点一下换掉这串数字。",
                         checked = digitPhrases, onCheckedChange = {
                             digitPhrases = it
@@ -279,7 +263,7 @@ private fun LayoutDisplayPage(
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                     // 英文出短语（别人请求 #269，默认关）：见 service/EnglishPhrases.kt。
                     var englishPhrases by remember { mutableStateOf(com.cayboard.service.EnglishPhrases.isEnabled(context)) }
-                    SettingsToggleItem(Icons.TwoTone.Dialpad, "英文出短语",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.HASH), "英文出短语",
                         "英文状态打的字母正好是「我的短语」的编码时，候选栏给出这条短语，点一下换掉这串字母。",
                         checked = englishPhrases, onCheckedChange = {
                             englishPhrases = it
@@ -480,7 +464,7 @@ private fun LayoutDisplayPage(
                     val pressPrefs = remember(context) { SettingsPreferences.getPrefsPublic(context) }
                     var pressHighlight by remember { mutableStateOf(
                         pressPrefs.getBoolean(SettingsPreferences.KEY_CANDIDATE_PRESS_HIGHLIGHT, false)) }
-                    SettingsToggleItem(Icons.TwoTone.FormatColorFill, "候选栏按钮按压高亮",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SPARKLES), "候选栏按钮按压高亮",
                         "按住取消键或展开箭头时，加深浅色底板或提亮深色底板。", pressHighlight, {
                             pressHighlight = it
                             pressPrefs.edit().putBoolean(SettingsPreferences.KEY_CANDIDATE_PRESS_HIGHLIGHT, it).apply()
@@ -520,7 +504,7 @@ private fun LayoutDisplayPage(
                     if (commentMode != com.cayboard.settings.CandidateCommentMode.HIDE) {
                         val prefs = SettingsPreferences.getPrefsPublic(context)
                         var wubiHints by remember { mutableStateOf(prefs.getBoolean(SettingsPreferences.KEY_HANDWRITING_WUBI_HINTS, false)) }
-                        SettingsToggleItem(Icons.TwoTone.FormatColorFill, "手写候选显示五笔编码",
+                        SettingsToggleItem(lucideIcon(LucideSettingIcons.SPARKLES), "手写候选显示五笔编码",
                             "使用五笔方案时显示该方案的编码，切回拼音时显示读音。", wubiHints, {
                                 wubiHints = it
                                 prefs.edit().putBoolean(SettingsPreferences.KEY_HANDWRITING_WUBI_HINTS, it).apply()
@@ -572,7 +556,7 @@ private fun LayoutDisplayPage(
             if (page == "candidates") item {
                 SettingsSection(title = "拼音显示", content = {
                     var showCorrectionMarks by remember { mutableStateOf(SettingsPreferences.showCorrectionMarks(context)) }
-                    SettingsToggleItem(Icons.TwoTone.Spellcheck, "显示纠错标记",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SPARKLES), "显示纠错标记",
                         "在纠错候选旁显示修正后的编码；关闭后仍可使用纠错候选。",
                         showCorrectionMarks, { showCorrectionMarks = it; SettingsPreferences.setShowCorrectionMarks(context, it) })
                     var inputTextLocation by remember {
@@ -626,11 +610,11 @@ private fun LayoutDisplayPage(
                     DoublePinyinRawPreeditToggle()
                     if (inputTextLocation == SettingsPreferences.INPUT_TEXT_CANDIDATE_BAR) {
                         var showPreview by remember { mutableStateOf(SettingsPreferences.showPreeditPreview(context)) }
-                        SettingsToggleItem(Icons.TwoTone.DataObject, "显示拼音编辑栏", "打字时在候选区显示编码，支持编辑的方案可点按修改。",
+                        SettingsToggleItem(lucideIcon(LucideSettingIcons.TABLE), "显示拼音编辑栏", "打字时在候选区显示编码，支持编辑的方案可点按修改。",
                             showPreview, { showPreview = it; SettingsPreferences.setShowPreeditPreview(context, it) })
                         if (showPreview) {
                             var insideKeyboard by remember { mutableStateOf(SettingsPreferences.inlinePreeditPreview(context)) }
-                            SettingsToggleItem(Icons.TwoTone.DashboardCustomize, "拼音放在键盘内", "在候选栏左侧显示编码，给应用底部留出空间。",
+                            SettingsToggleItem(lucideIcon(LucideSettingIcons.ARRANGE), "拼音放在键盘内", "在候选栏左侧显示编码，给应用底部留出空间。",
                                 insideKeyboard, { insideKeyboard = it; SettingsPreferences.setInlinePreeditPreview(context, it) })
                         }
                     }
@@ -681,7 +665,7 @@ private fun LayoutDisplayPage(
             // 隐藏操作的说明（用户 10-31）：这一页最下面一行，点进去是「按键技巧」；它不是设置，不占上面的位置。
             if (page == "gestures") item {
                 SettingsSection(title = "说明", searchKey = "按键技巧入口", content = {
-                    SettingsItem(Icons.TwoTone.Lightbulb, "按键技巧",
+                    SettingsItem(lucideIcon(LucideSettingIcons.SPARKLES), "按键技巧",
                         "Shift、Ctrl(!@#)、空格、删除键的隐藏操作", showArrow = true,
                         onClick = { onOpenLayout("${SettingsRoutes.LayoutDisplay}?page=key_tips") })
                 })
@@ -764,8 +748,6 @@ private fun FixedBottomCalibrationSettings() {
 /** 「键盘布局」之外直接从首页进入的两页：route, title, one-line description. */
 internal val LayoutDisplayPages = listOf(
     Triple("bottom_gap", "底部留白校准", "查看键盘底部，调低、抬高或恢复系统建议"),
-    Triple("candidates", "候选词", "字号、候选注释(拼音或中英释义)、取消按钮、输入框或候选栏显示"),
-    Triple("gestures", "按键与手势", "角标输入方式、删除键、长按空格、光标、长按语言键"),
     // 不在首页列出，从「按键与手势」最下面进入。
     Triple("key_tips", "按键技巧", "Shift、Ctrl(!@#)、空格、删除键的隐藏操作"),
 )
@@ -908,4 +890,10 @@ internal fun KeyboardAppearanceSettings() {
 internal fun HandwritingSettings() {
     InputExperienceSettings(setOf(InputExperiencePart.HANDWRITING), "手写")
 }
+
+
+
+
+
+
 

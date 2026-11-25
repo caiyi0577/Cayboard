@@ -23,9 +23,7 @@ internal class ImeDistanceBackspace(private val service: CayboardInputMethodServ
 
     private fun current() = ticket != null && service.inputReadiness.accepts(ticket) &&
         service.uiState.value.let { it.inputSessionId == editor && it.currentSchemaId == initial.currentSchemaId &&
-            it.isAsciiMode == initial.isAsciiMode && it.inputTarget == initial.inputTarget &&
-            // 新增固定开着而焦点不在它上面：点按删除删的是它，滑动也不能去删应用的框。
-            (internal || !it.showOcrDraft) } &&
+            it.isAsciiMode == initial.isAsciiMode && it.inputTarget == initial.inputTarget } &&
         !service.keyRouter.hasPendingCandidateCommit
 
     fun move(signed: Int) {

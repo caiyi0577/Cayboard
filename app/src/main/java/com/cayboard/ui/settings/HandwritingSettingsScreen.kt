@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.twotone.Inventory
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,10 +37,9 @@ fun HandwritingSettingsContent(
         Column(Modifier.fillMaxSize().padding(padding).settingsVerticalScroll().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             HandwritingSettings()
-            SettingsSection(title = "手写模型", content = {
-                SettingsItem(Icons.TwoTone.Inventory, "已安装的手写模型",
-                    "内置手写与公式识别模型，查看名称、版本和占用空间。", onClick = onOpenModels, showArrow = true)
-            })
         }
     }
 }
+
+
+

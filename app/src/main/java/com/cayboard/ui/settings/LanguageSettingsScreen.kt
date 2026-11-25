@@ -3,9 +3,6 @@ package com.cayboard.ui.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.twotone.ViewModule
-import androidx.compose.material.icons.twotone.Translate
-import androidx.compose.material.icons.twotone.Abc
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -135,7 +132,7 @@ fun LanguageSettingsContent(onOpenDoublePinyin: () -> Unit = {},
                 SettingsSection(title = "导入方案的语言") {
                     unlabeled.forEachIndexed { index, schema ->
                         if (index > 0) HorizontalDivider()
-                        SettingsItem(Icons.TwoTone.Translate, schema.name, "方案没写语言，点开选一次",
+                        SettingsItem(lucideIcon(LucideSettingIcons.LANGUAGES), schema.name, "方案没写语言，点开选一次",
                             onClick = { picking = schema }, showArrow = true,
                             status = if (schema.languageChosen || schema.language == InputLanguage.UNSPECIFIED) schema.language.displayName
                                 else "${schema.language.displayName}(自动)",
@@ -155,16 +152,16 @@ fun LanguageSettingsContent(onOpenDoublePinyin: () -> Unit = {},
             }
             item(key = "double-pinyin-settings") {
                 SettingsGroupRow(index = 0, count = 1) {
-                    SettingsItem(Icons.TwoTone.ViewModule, "双拼设置",
+                    SettingsItem(lucideIcon(LucideSettingIcons.KEY), "双拼设置",
                         "小鹤、自然码、微软等内置双拼的键位，自定义双拼和输入习惯", onClick = onOpenDoublePinyin, showArrow = true)
                 }
             }
             // 中文输出、拼音纠错、模糊音和英文输入 11-02 各收进一页（原样搬过去，名字和存的值不变），这页只留入口。
             item(key = "input-settings") {
                 SettingsSection(title = "输入设置") {
-                    SettingsItem(Icons.TwoTone.Translate, "中文输入", "繁体、生僻字、拼音纠错、模糊音",
+                    SettingsItem(lucideIcon(LucideSettingIcons.MESSAGE), "中文输入", "繁体、生僻字、拼音纠错、模糊音",
                         onClick = onOpenChineseInput, showArrow = true)
-                    SettingsItem(Icons.TwoTone.Abc, "英文输入", "自动切英文、自动加空格、邮箱后缀",
+                    SettingsItem(lucideIcon(LucideSettingIcons.ALPHABET), "英文输入", "自动切英文、自动加空格、邮箱后缀",
                         onClick = onOpenEnglishInput, showArrow = true)
                 }
             }
@@ -180,3 +177,6 @@ internal fun languageRows(enabledOrder: List<String>, enabled: Set<InputLanguage
     val head = enabledOrder.distinct().filter { id -> id in supported && enabled.any { it.id == id } }
     return head + InputLanguage.supported.map { it.id }.filterNot { it in head }
 }
+
+
+

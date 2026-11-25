@@ -11,7 +11,6 @@ import com.cayboard.keyboard.ToolbarButtonItem
 internal val MenuSettingsTitles: Map<ToolbarButton, String> = mapOf(
     ToolbarButton.SCHEMA to "语言与方案",
     ToolbarButton.CLIPBOARD to "剪贴板",
-    ToolbarButton.OCR to "已安装的模型",
     ToolbarButton.FLOAT to "键盘尺寸与位置",
     ToolbarButton.FLOATING to "键盘尺寸与位置",
     ToolbarButton.ARRANGE to "工具栏与菜单排列",
@@ -19,7 +18,6 @@ internal val MenuSettingsTitles: Map<ToolbarButton, String> = mapOf(
     ToolbarButton.VOICE to "语音转文本",
     ToolbarButton.TRANSLATE to "翻译",
     ToolbarButton.TRADITIONAL to "繁体输出",
-    ToolbarButton.GLIDE to "滑行输入",
     ToolbarButton.FOURTEEN_SWIPE to "左右滑动选字母",
 )
 
@@ -28,3 +26,4 @@ internal fun menuSettingsEntry(item: ToolbarButtonItem): SettingsSearchEntry? = 
     is ToolbarButtonItem.Builtin ->
         MenuSettingsTitles[item.button]?.let { label -> SettingsSearchIndex.firstOrNull { it.title == label } }
 }
+

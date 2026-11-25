@@ -107,9 +107,6 @@ data class KeyboardUiState(
     val swipeCancelEpoch: Long = 0L,
     val t9RightCandidateSelectedCount: Long = 0L,
     val t9SelectedCandidatePinyin: String = "",
-    val showOcrDraft: Boolean = false,
-    val ocrDraftFocused: Boolean = false,
-    val ocrDraftText: String = "",
     val toolPanelVisible: Boolean = false,
     val toolPanelInputFocused: Boolean = false,
     val clipboardSearchVisible: Boolean = false,
@@ -744,7 +741,6 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
         restarting: Boolean, forceNumberPanel: Boolean,
     ) {
         if (restarting && !handwriting) return
-        // The picker or the user may already have opened OCR while the engine was preparing.
         // Snapshot NOW, not when the background work started, so cancel/other tools also win.
         val visiblePage = _page.value
         if (handwriting) switchMain(MainType.HANDWRITING)
@@ -788,6 +784,10 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
 
     fun removeClipboardItems(ids: List<Long>) {
         clipboardManager.removeItems(ids)
+    }
+
+    fun setClipboardPinned(id: Long, pinned: Boolean) {
+        clipboardManager.setPinned(id, pinned)
     }
 
     fun splitClipboardItem(id: Long) {

@@ -255,3 +255,4 @@ internal fun EmailSuffixLegend(on: Boolean) {
         if (!on) LegendCaption("候选栏不给后缀", active = false)
     }
 }
+

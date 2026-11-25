@@ -23,7 +23,6 @@ enum class CornerInputChoice(val label: String) {
         /** 角标“长按”时长按总是出角标，气泡出不来；加锁以前两个都开着的，照实际效果认作「长按输入」。 */
         fun of(settings: KeyboardInputPreferences): CornerInputChoice = when {
             // 开着 26 键滑行时字母键的滑动都给了滑行，角标只能长按出（键盘也按长按处理，见 KeyButton）。
-            InputGestureLocks.glideCornerLock(settings) != null -> LONG_PRESS
             settings.symbolInputMode == SymbolInputMode.LONG_PRESS -> LONG_PRESS
             settings.letterLongPressMenu -> SWIPE_BUBBLE
             else -> SWIPE
@@ -82,7 +81,7 @@ object CursorChoices {
 /** 一个被锁住的选项值：[option] 不能设成 [lockedValue]，原因是 [by] 这个设置。 */
 data class InputGestureLock(val option: Option, val lockedValue: Any, val by: String) {
     enum class Option {
-        SYMBOL_INPUT_MODE, LETTER_LONG_PRESS_MENU, GLIDE_TYPING, CURSOR_GESTURE,
+        SYMBOL_INPUT_MODE, LETTER_LONG_PRESS_MENU, CURSOR_GESTURE,
         /** 双拼键位提示 ↔ 上方/下方角标提示（两个开关都用 [CORNER_HINTS]）。 */
         DOUBLE_PINYIN_KEY_HINTS, CORNER_HINTS,
         /** Shift 键分词 ↔ ing 放在 Shift 键上。 */
@@ -109,23 +108,8 @@ object InputGestureLocks {
     const val T9_GLIDE_LOCK = "九键滑行"
 
     fun of(settings: KeyboardInputPreferences): List<InputGestureLock> = buildList {
-        // 26 键滑行开着时字母键往任何方向滑都是滑行，角标的滑动输入用不了：锁在「长按输入」，写明是哪个滑行锁的（11-08）。
-        // 九键滑行同样占了 2～9 键的滑动（上滑出数字也滑不出来）：一样锁成长按（用户 11-11「只有九键不会跳转」）。
-        when {
-            settings.glideTyping -> add(InputGestureLock(InputGestureLock.Option.SYMBOL_INPUT_MODE, SymbolInputMode.SWIPE_UP, "英文滑行"))
-            settings.chineseGlideTyping -> add(InputGestureLock(InputGestureLock.Option.SYMBOL_INPUT_MODE, SymbolInputMode.SWIPE_UP, "中文滑行"))
-            settings.t9GlideTyping && settings.cursorGesture != CursorGestureMode.KEYBOARD ->
-                add(InputGestureLock(InputGestureLock.Option.SYMBOL_INPUT_MODE, SymbolInputMode.SWIPE_UP, T9_GLIDE_LOCK))
-        }
-        if (settings.glideTyping) {
-            add(InputGestureLock(InputGestureLock.Option.CURSOR_GESTURE, CursorGestureMode.KEYBOARD, "英文滑行"))
-        } else if (settings.chineseGlideTyping) {
-            add(InputGestureLock(InputGestureLock.Option.CURSOR_GESTURE, CursorGestureMode.KEYBOARD, "中文滑行"))
-        } else if (settings.t9GlideTyping) {
-            add(InputGestureLock(InputGestureLock.Option.CURSOR_GESTURE, CursorGestureMode.KEYBOARD, "九键滑行"))
-        }
         if (settings.cursorGesture == CursorGestureMode.KEYBOARD) {
-            add(InputGestureLock(InputGestureLock.Option.GLIDE_TYPING, true, "键盘面板滑动光标"))
+            // 键盘滑动移光标独立保留，不再与已删除的滑行输入互锁。
         }
         if (settings.doublePinyinSemicolonOnShift) {
             add(InputGestureLock(InputGestureLock.Option.SHIFT_SYLLABLE_SPLIT, true, "ing 放在 Shift 键上"))
@@ -136,10 +120,6 @@ object InputGestureLocks {
 
     fun withSymbolInputMode(settings: KeyboardInputPreferences, mode: SymbolInputMode): KeyboardInputPreferences =
         settings.copy(symbolInputMode = mode)
-
-    /** 角标的滑动输入被 26 键滑行锁住时返回那把锁（设置页置灰「滑动输入」两张卡并说明原因）。 */
-    fun glideCornerLock(settings: KeyboardInputPreferences): InputGestureLock? =
-        lockFor(settings, InputGestureLock.Option.SYMBOL_INPUT_MODE, SymbolInputMode.SWIPE_UP)
 
     /** 这个值能不能选；不能选时返回锁的原因，设置页据此置灰并显示 [InputGestureLock.message]。 */
     fun lockFor(settings: KeyboardInputPreferences, option: InputGestureLock.Option, value: Any): InputGestureLock? =

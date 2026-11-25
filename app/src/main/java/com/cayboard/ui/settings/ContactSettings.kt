@@ -4,7 +4,6 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Contacts
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -34,10 +33,13 @@ internal fun ContactSettingsSection() {
         } else save(key, value)
     }
     SettingsSection("通讯录候选") {
-        SettingsToggleItem(Icons.TwoTone.Contacts, "联系人姓名", "输入姓名拼音时显示匹配的联系人，仅在本机内存中查询。",
+        SettingsToggleItem(lucideIcon(LucideSettingIcons.CONTACT), "联系人姓名", "输入姓名拼音时显示匹配的联系人，仅在本机内存中查询。",
             checked = names, onCheckedChange = { change(ContactSuggestions.KEY_NAMES, it) })
         HorizontalDivider()
-        SettingsToggleItem(Icons.TwoTone.Contacts, "联系人号码", "输入姓名拼音时显示匹配的电话号码。",
+        SettingsToggleItem(lucideIcon(LucideSettingIcons.CONTACT), "联系人号码", "输入姓名拼音时显示匹配的电话号码。",
             checked = phones, onCheckedChange = { change(ContactSuggestions.KEY_PHONES, it) })
     }
 }
+
+
+

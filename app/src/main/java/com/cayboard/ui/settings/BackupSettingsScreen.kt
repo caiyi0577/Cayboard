@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.twotone.Cloud
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,10 +50,10 @@ fun BackupSettingsContent(onBack: () -> Unit) {
     var url by remember { mutableStateOf(CloudBackupPreferences.url(context)) }
     var username by remember { mutableStateOf(CloudBackupPreferences.username(context)) }
     var password by remember { mutableStateOf(CloudBackupPreferences.password(context)) }
+    var loggedIn by remember { mutableStateOf(CloudBackupPreferences.isLoggedIn(context)) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     fun run(action: suspend () -> Result<Long>) {
-        CloudBackupPreferences.save(context, url, username, password)
         busy = true; message = null
         scope.launch {
             val result = withContext(Dispatchers.IO) { action() }
@@ -66,7 +69,7 @@ fun BackupSettingsContent(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             SettingsSection(title = "坚果云 WebDAV") {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.TwoTone.Cloud, null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(lucideIcon(LucideSettingIcons.CLOUD), null, tint = MaterialTheme.colorScheme.primary)
                     Text("备份 Cayboard 的全部用户数据：设置、词库、模型、布局、剪贴板和应用文件。备份包直接上传坚果云，不在本机保留本地备份文件。")
                     OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text("坚果云 WebDAV 目录") }, singleLine = true)
                     OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text("坚果云注册邮箱") }, singleLine = true)
@@ -74,14 +77,34 @@ fun BackupSettingsContent(onBack: () -> Unit) {
                         visualTransformation = PasswordVisualTransformation())
                     Text("默认地址：${CloudBackupManager.DEFAULT_URL}。先在坚果云【第三方应用管理】中生成应用密码；备份目录建议使用英文，例如在地址后填写 Cayboard/。不要填写网页登录密码。",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = { run { CloudBackupManager.backup(context, url, username, password) } }, enabled = !busy,
-                        modifier = Modifier.fillMaxWidth()) { if (busy) CircularProgressIndicator(strokeWidth = 2.dp); Text("备份全部数据到坚果云") }
-                    Button(onClick = { run { CloudBackupManager.restore(context, url, username, password) } }, enabled = !busy,
-                        modifier = Modifier.fillMaxWidth()) { Text("从坚果云还原全部数据") }
+                    if (!loggedIn) {
+                        Button(onClick = {
+                            busy = true; message = null
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) { CloudBackupManager.verifyCredentials(url, username, password) }
+                                busy = false
+                                if (result.isSuccess) { CloudBackupPreferences.save(context, url, username, password); loggedIn = true; message = "登录验证成功" }
+                                else message = "登录失败：${result.exceptionOrNull()?.message ?: "账号或第三方应用密码错误"}"
+                            }
+                        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { SmallBusyContent(busy, "登录并验证") }
+                    } else {
+                        Text("已登录：$username", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                        Button(onClick = { run { CloudBackupManager.backup(context, url, username, password) } }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { SmallBusyContent(busy, "备份全部数据到坚果云") }
+                        Button(onClick = { run { CloudBackupManager.restore(context, url, username, password) } }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("从坚果云还原全部数据") }
+                        Button(onClick = { CloudBackupPreferences.clear(context); username = ""; password = ""; loggedIn = false; message = "已退出登录" }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("退出登录") }
+                    }
                     message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SmallBusyContent(busy: Boolean, label: String) {
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        if (busy) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)) }
+        Text(label)
     }
 }
 
@@ -98,4 +121,7 @@ internal object CloudBackupPreferences {
         .putString("webdav_url", url)
         .putString("webdav_user", CloudBackupManager.encryptCredential(context, user))
         .putString("webdav_password", CloudBackupManager.encryptCredential(context, password)).apply()
+    fun isLoggedIn(context: android.content.Context) = username(context).isNotBlank() && password(context).isNotBlank()
+    fun clear(context: android.content.Context) = context.getSharedPreferences(PREFS, 0).edit().remove("webdav_user").remove("webdav_password").apply()
 }
+

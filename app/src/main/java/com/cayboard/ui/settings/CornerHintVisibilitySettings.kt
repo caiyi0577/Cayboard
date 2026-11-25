@@ -39,3 +39,4 @@ internal fun CornerHintVisibilitySettings(modifier: Modifier = Modifier) {
         // 11-11 曾在开着 26 键滑行时不画下角标；现在滑行时长按弹出上下两个角标（withGlideCornerMenu），下角标照这个开关显示。
     }
 }
+

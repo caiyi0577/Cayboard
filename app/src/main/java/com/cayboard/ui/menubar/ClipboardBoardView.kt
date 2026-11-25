@@ -45,6 +45,7 @@ internal fun clipboardClosesAfterPaste(context: Context) = clipboardClosesAfterP
 internal fun ConnectedClipboardBoard(
     textItems: List<ClipboardItem>, onSelectText: (String)->Unit,
     onRemoveText: (List<Long>)->Unit, onSplit: (String,Long)->Unit,
+    onTogglePinned: (Long, Boolean)->Unit = { _, _ -> },
     modifier: Modifier=Modifier, onOpenSearch: (()->Unit)?=null,
     onTranslateText: ((String)->Unit)?=null,
     keepQueryOnDispose: Boolean=false, liveQuery: ClipboardLiveQuery?=null, showControls: Boolean=true,
@@ -67,6 +68,7 @@ internal fun ConnectedClipboardBoard(
     LaunchedEffect(manager) { runCatching { manager.readMissedCopy(boardOpened=true) } }
     DisposableEffect(manager) { onDispose { manager.resetHistoryWindow(); if(!keepQueryOnDispose) manager.boardQuery.value="" } }
     ClipboardBoardView(textItems=results ?: textItems,onSelectText=onSelectText,onSplit=onSplit,
+        onTogglePinned=onTogglePinned,
         onRemove={ onRemoveText(it.map { row -> row.id }) },
         onLoadMore={ if(results==null) manager.loadMoreHistory() }, totalCount=count,
         modifier=modifier, listLayout=listLayout, onListLayoutChange={ listLayout=it; prefs.edit().putBoolean(CLIPBOARD_LIST_LAYOUT_KEY,it).apply() },
@@ -77,11 +79,12 @@ internal fun ConnectedClipboardBoard(
         onClearSearch={ manager.boardQuery.value="" },showControls=showControls,full=room.full)
 }
 
-/** Every action is on the board. A record has no context menu and no permanent pin/edit state. */
+/** Clipboard history board; pinning is available directly on each record. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ClipboardBoardView(
     textItems: List<ClipboardItem>,onSelectText:(String)->Unit,onSplit:(String,Long)->Unit,
+    onTogglePinned:(Long, Boolean)->Unit = { _, _ -> },
     onRemove:(List<ClipboardItem>)->Unit,
     modifier:Modifier=Modifier,onLoadMore:()->Unit={},totalCount:Int=-1,
     listLayout:Boolean=false,onListLayoutChange:((Boolean)->Unit)?=null,
@@ -98,7 +101,8 @@ internal fun ClipboardBoardView(
     var armedId by remember { mutableStateOf<Long?>(null) }
     var bulkArmed by remember { mutableStateOf<String?>(null) }
     var focusedId by remember { mutableStateOf<Long?>(null) }
-    val rows=remember(textItems,removing) { textItems.distinctBy { it.id }.filterNot { it.id in removing }.sortedByDescending { it.timestamp } }
+    val rows=remember(textItems,removing) { textItems.distinctBy { it.id }.filterNot { it.id in removing }
+        .sortedWith(compareByDescending<ClipboardItem> { it.isPinned }.thenByDescending { it.timestamp }) }
     val grid=rememberLazyStaggeredGridState()
     val keyboard=LocalClipboardKeyboardNavigation.current
     fun reset() { openId=null;openSide=0;armedId=null;bulkArmed=null }
@@ -160,7 +164,7 @@ internal fun ClipboardBoardView(
                         focused=keyboard?.active==true && focused?.id==row.id,
                         revealedSide=if(openId==row.id) openSide else 0,armed=armedId==row.id,
                         onReveal={ side -> bulkArmed=null;armedId=null;openId=row.id.takeIf { side!=0 };openSide=side },
-                        onDelete={confirmDelete(row)},onClick={
+                        onDelete={confirmDelete(row)},onTogglePinned={ onTogglePinned(row.id, !row.isPinned) },onClick={
                             focusedId=row.id
                             if(openId==row.id) reset()
                             else { reset(); if(selecting) selected=if(row.id in selected) selected-row.id else selected+row.id else onSelectText(row.text) }
@@ -189,6 +193,7 @@ private fun ClipboardAction(icon:androidx.compose.ui.graphics.vector.ImageVector
 @Composable
 internal fun SwipeClipboardRecord(item:ClipboardItem,selected:Boolean=false,selecting:Boolean=false,focused:Boolean=false,
     revealedSide:Int=0,armed:Boolean=false,onReveal:(Int)->Unit,onDelete:()->Unit,onClick:()->Unit,onLongClick:()->Unit,
+    onTogglePinned: () -> Unit = {},
     modifier:Modifier=Modifier) {
     val colors=MaterialTheme.colorScheme
     val selection=selectionColors()
@@ -205,11 +210,22 @@ internal fun SwipeClipboardRecord(item:ClipboardItem,selected:Boolean=false,sele
         .draggable(rememberDraggableState { dragOffset=(dragOffset+it).coerceIn(-width,width) },Orientation.Horizontal,
             onDragStarted={dragOffset=offset;dragging=true;onReveal(revealedSide)},
             onDragStopped={velocity -> val side=if(abs(dragOffset)>=width*.35f || abs(velocity)>900f && abs(dragOffset)>8f) dragOffset.sign.toInt() else 0;onReveal(side);dragging=false })) {
-        if(abs(offset)>1f || revealedSide!=0) Box(Modifier.matchParentSize().background(Color(0xFFC83C41))) {
-            TextButton(onClick=onDelete,modifier=Modifier.align(if(offset>0) Alignment.CenterStart else Alignment.CenterEnd)
+        if(abs(offset)>1f || revealedSide!=0) Box(Modifier.matchParentSize().background(
+            if (offset < 0f) Color(0xFFC83C41) else colors.primaryContainer)) {
+            val pinAction = offset > 0f
+            TextButton(onClick=if (pinAction) onTogglePinned else onDelete,
+                modifier=Modifier.align(if(offset>0) Alignment.CenterStart else Alignment.CenterEnd)
                 .width(88.dp).fillMaxHeight().testTag("clipboard-delete:${item.id}")
-                .semantics { contentDescription=if(armed) "再次点击确认删除此记录" else "删除此记录" }) {
-                Text(if(armed) "确认删除" else "删除",color=Color.White,fontSize=14.sp,fontWeight=FontWeight.Medium)
+                .semantics { contentDescription=when {
+                    pinAction && item.isPinned -> "取消置顶此记录"
+                    pinAction -> "置顶此记录"
+                    armed -> "再次点击确认删除此记录"
+                    else -> "删除此记录"
+                } }) {
+                Text(if (pinAction) (if (item.isPinned) "取消置顶" else "置顶")
+                    else (if(armed) "确认删除" else "删除"),
+                    color=if (pinAction) colors.onPrimaryContainer else Color.White,
+                    fontSize=14.sp,fontWeight=FontWeight.Medium)
             }
         }
         Box(Modifier.fillMaxWidth().padding(start=with(density) { offset.coerceAtLeast(0f).toDp() },
@@ -220,6 +236,10 @@ internal fun SwipeClipboardRecord(item:ClipboardItem,selected:Boolean=false,sele
             .heightIn(min=64.dp).padding(horizontal=12.dp,vertical=10.dp)) {
             Row(verticalAlignment=Alignment.CenterVertically) {
                 if(selecting) { Icon(if(selected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,null,Modifier.size(18.dp),tint=colors.primary);Spacer(Modifier.width(8.dp)) }
+                if (item.isPinned && !selecting) {
+                    Icon(Icons.Default.PushPin, "已置顶", Modifier.size(18.dp), tint=colors.primary)
+                    Spacer(Modifier.width(7.dp))
+                }
                 Text(if(item.sensitive) ClipboardLinkChoices.SENSITIVE_MASK else remember(item.text) { clipboardRecordPreview(item.text) },
                     color=if(selected || focused) selection.quietContent else colors.onSurface,fontSize=15.sp,lineHeight=21.sp,
                     maxLines=2,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f))

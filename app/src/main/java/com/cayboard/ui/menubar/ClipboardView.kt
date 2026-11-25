@@ -68,6 +68,7 @@ fun ClipboardView(
     ConnectedClipboardBoard(clipboardItems,
         onSelectText = onSelectItem, onRemoveText = viewModel::removeClipboardItems,
         onSplit = onSplitWords,
+        onTogglePinned = viewModel::setClipboardPinned,
         onOpenSearch = onOpenSearch,
         onTranslateText = onTranslateText,
         modifier = modifier.padding(bottom = bottomPaddingDp.dp))

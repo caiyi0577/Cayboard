@@ -338,3 +338,4 @@ private fun TypingTrialOverlay(onReady: () -> Unit, onClose: () -> Unit) {
         )
     }
 }
+

@@ -7,8 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Devices
-import androidx.compose.material.icons.twotone.Sms
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -57,7 +56,7 @@ internal fun VerificationCodeSettingsCard(enabled: Boolean, denied: Boolean,
     onToggle: (Boolean) -> Unit) {
     SettingsSection(title = "验证码", content = {
         Column {
-            SettingsToggleItem(Icons.TwoTone.Sms, "新短信验证码自动复制",
+            SettingsToggleItem(lucideIcon(LucideSettingIcons.MESSAGE), "新短信验证码自动复制",
                 "需授权接收短信。新短信到了只把验证码数字复制到剪贴板，不读取历史短信，不加入历史，10 分钟后自动删除。",
                 enabled, onToggle)
             if (denied) Text("未获得短信权限。请在系统设置 → 应用 → Cayboard → 权限中允许接收短信，然后返回此页。如果没有短信权限选项，可以手动复制验证码数字。",
@@ -66,3 +65,6 @@ internal fun VerificationCodeSettingsCard(enabled: Boolean, denied: Boolean,
         }
     })
 }
+
+
+

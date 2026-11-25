@@ -20,34 +20,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.automirrored.twotone.MenuBook
-import androidx.compose.material.icons.twotone.Draw
-import androidx.compose.material.icons.twotone.Swipe
-import androidx.compose.material.icons.twotone.Language
-import androidx.compose.material.icons.twotone.AppSettingsAlt
-import androidx.compose.material.icons.twotone.Translate
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Speed
-import androidx.compose.material.icons.twotone.AutoAwesome
-import androidx.compose.material.icons.twotone.Backup
-import androidx.compose.material.icons.twotone.Memory
 
-import androidx.compose.material.icons.twotone.Build
-import androidx.compose.material.icons.twotone.Description
-import androidx.compose.material.icons.twotone.Extension
-import androidx.compose.material.icons.twotone.GraphicEq
-import androidx.compose.material.icons.twotone.Info
-import androidx.compose.material.icons.twotone.Keyboard
-import androidx.compose.material.icons.twotone.KeyboardAlt
-import androidx.compose.material.icons.twotone.Palette
-import androidx.compose.material.icons.twotone.QueryStats
-import androidx.compose.material.icons.twotone.Storefront
-import androidx.compose.material.icons.twotone.Straighten
-import androidx.compose.material.icons.twotone.Sync
-import androidx.compose.material.icons.twotone.TableChart
-import androidx.compose.material.icons.twotone.ToggleOn
-import androidx.compose.material.icons.twotone.TypeSpecimen
-import androidx.compose.material.icons.twotone.Vibration
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -150,7 +126,7 @@ fun SettingsMainContent(
             item {
                 SettingsSection(title = "", searchKey = "设置", content = {
                     SettingsItem(
-                        icon = Icons.TwoTone.AppSettingsAlt,
+                        icon = lucideIcon(LucideSettingIcons.SETTINGS),
                         title = stringResource(R.string.item_enable_ime_title), searchKey = "启用输入法",
                         subtitle = stringResource(R.string.item_enable_ime_summary),
                         status = if (entryStatus.imeEnabled) stringResource(R.string.status_set) else stringResource(R.string.status_not_set),
@@ -166,7 +142,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     SettingsItem(
-                        icon = Icons.TwoTone.ToggleOn,
+                        icon = lucideIcon(LucideSettingIcons.CHECK_CIRCLE),
                         title = stringResource(R.string.item_select_ime_title), searchKey = "选择输入法",
                         subtitle = stringResource(R.string.item_select_ime_summary),
                         status = if (entryStatus.imeSelected) stringResource(R.string.status_set) else stringResource(R.string.status_not_set),
@@ -180,7 +156,7 @@ fun SettingsMainContent(
                     HorizontalDivider(Modifier.padding(start = 56.dp), thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                    SettingsItem(icon = Icons.TwoTone.Language, title = stringResource(R.string.item_languages_title), searchKey = "语言与方案",
+                    SettingsItem(icon = lucideIcon(LucideSettingIcons.GLOBE), title = stringResource(R.string.item_languages_title), searchKey = "语言与方案",
                         subtitle = stringResource(R.string.item_languages_summary), onClick = onNavigateToLanguages, showArrow = true)
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 56.dp),
@@ -188,7 +164,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     SettingsItem(
-                        icon = Icons.TwoTone.Keyboard,
+                        icon = lucideIcon(LucideSettingIcons.KEYBOARD),
                         title = stringResource(R.string.item_layouts_title), searchKey = "键盘布局",
                         subtitle = stringResource(R.string.item_layouts_summary),
                         onClick = onNavigateToLayoutDisplay,
@@ -199,19 +175,7 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-                    SettingsItem(
-                        icon = Icons.TwoTone.Swipe,
-                        title = stringResource(R.string.item_gestures_title), searchKey = "按键与手势",
-                        subtitle = stringResource(R.string.item_gestures_summary),
-                        onClick = { onNavigateToRoute("${SettingsRoutes.LayoutDisplay}?page=gestures") },
-                        showArrow = true
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 56.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                    SettingsItem(icon = Icons.TwoTone.KeyboardAlt, title = stringResource(R.string.item_hardware_title), searchKey = "物理键盘",
+                    SettingsItem(icon = lucideIcon(LucideSettingIcons.MOUSE), title = stringResource(R.string.item_hardware_title), searchKey = "物理键盘",
                         subtitle = stringResource(R.string.item_hardware_summary), onClick = onNavigateToHardwareKeyboard,
                         status = if (entryStatus.keyboardConnected) stringResource(R.string.status_connected) else stringResource(R.string.status_not_connected),
                         statusTone = if (entryStatus.keyboardConnected) SettingsStatusTone.OK else SettingsStatusTone.NEUTRAL)
@@ -224,28 +188,14 @@ fun SettingsMainContent(
                         modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     )
-                    SettingsItem(
-                        icon = Icons.TwoTone.TableChart,
-                        title = stringResource(R.string.item_candidates_title), searchKey = "候选词",
-                        subtitle = stringResource(R.string.item_candidates_summary),
-                        onClick = { onNavigateToRoute("${SettingsRoutes.LayoutDisplay}?page=candidates") },
-                        showArrow = true
-                    )
-                    HorizontalDivider(Modifier.padding(start = 56.dp), thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                    SettingsItem(Icons.TwoTone.Translate, "翻译", "内置模型、多语种互译",
-                        onClick = { onNavigateToRoute(SettingsRoutes.Translation) }, showArrow = true)
-                    HorizontalDivider(Modifier.padding(start = 56.dp), thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                    SettingsItem(Icons.TwoTone.Memory, "模型管理", "查看所有离线模型的版本和容量",
+                    SettingsItem(lucideIcon(LucideSettingIcons.CPU), "模型管理", "查看所有离线模型的版本和容量",
                         onClick = onNavigateToModelLocal, showArrow = true)
                     HorizontalDivider(Modifier.padding(start = 56.dp), thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     SettingsItem(
-                        icon = Icons.TwoTone.AutoAwesome,
+                        icon = lucideIcon(LucideSettingIcons.SPARKLES),
                         title = stringResource(R.string.item_prediction_title), searchKey = "智能联想",
                         subtitle = stringResource(R.string.item_prediction_summary),
                         onClick = onNavigateToSmartPrediction,
@@ -256,19 +206,12 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-                    // 首页这一行右边就是语音开关，点开关直接开关语音，点行进语音页（用户 10-20 要求恢复）。
-                    var sttEnabled by remember(entryStatus.sttEnabled) { mutableStateOf(entryStatus.sttEnabled) }
-                    SettingsToggleItem(
-                        icon = Icons.TwoTone.GraphicEq,
+                    SettingsItem(
+                        icon = lucideIcon(LucideSettingIcons.MIC),
                         title = stringResource(R.string.item_speech_title), searchKey = "语音转文本",
                         subtitle = stringResource(R.string.item_speech_summary),
-                        checked = sttEnabled,
                         showArrow = true,
-                        onClick = onNavigateToSpeechToText,
-                        onCheckedChange = { enabled ->
-                            sttEnabled = enabled
-                            SettingsPreferences.setSttEnabled(context, enabled)
-                        }
+                        onClick = onNavigateToSpeechToText
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 56.dp),
@@ -276,7 +219,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     SettingsItem(
-                        icon = Icons.TwoTone.Draw,
+                        icon = lucideIcon(LucideSettingIcons.PEN),
                         title = stringResource(R.string.item_handwriting_title), searchKey = "手写",
                         subtitle = stringResource(R.string.item_handwriting_summary),
                         onClick = { onNavigateToRoute(SettingsRoutes.Handwriting) },
@@ -286,7 +229,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     SettingsItem(
-                        icon = Icons.TwoTone.Sync,
+                        icon = lucideIcon(LucideSettingIcons.CLIPBOARD),
                         title = stringResource(R.string.item_clipboard_title), searchKey = "剪贴板",
                         subtitle = stringResource(R.string.item_clipboard_summary),
                         onClick = onNavigateToClipboard,
@@ -298,7 +241,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     SettingsItem(
-                        icon = Icons.TwoTone.Backup,
+                        icon = lucideIcon(LucideSettingIcons.CLOUD),
                         title = stringResource(R.string.item_backup_title), searchKey = "备份与恢复",
                         subtitle = stringResource(R.string.item_backup_summary),
                         onClick = onNavigateToBackup,
@@ -310,7 +253,7 @@ fun SettingsMainContent(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     SettingsItem(
-                        icon = Icons.TwoTone.Info,
+                        icon = lucideIcon(LucideSettingIcons.INFO),
                         title = stringResource(R.string.item_about_title), searchKey = "关于 Cayboard",
                         subtitle = stringResource(R.string.item_about_summary),
                         onClick = onNavigateToAbout,
@@ -348,5 +291,10 @@ internal fun readMainEntryStatus(context: android.content.Context): MainEntrySta
 
 /** 下载提示里的大小：和模型管理里写的 MB 一样按 1024 × 1024 字节算，取整。 */
 internal fun formatModelMegabytes(bytes: Long): String = "${(bytes + 524_288) / 1_048_576} MB"
+
+
+
+
+
 
 

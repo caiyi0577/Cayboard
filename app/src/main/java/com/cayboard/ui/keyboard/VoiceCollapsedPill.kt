@@ -177,7 +177,8 @@ private fun VoicePillBackspace(color: Color, onDelete: () -> Unit, onPress: () -
     ) {
         Box(Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = if (pressed) .14f else 0f)),
             contentAlignment = Alignment.Center) {
-            Icon(Icons.AutoMirrored.Filled.Backspace, null, tint = color, modifier = Modifier.size(20.dp))
+            Icon(deleteIconPainter(), null, tint = color, modifier = Modifier.size(20.dp))
         }
     }
 }
+

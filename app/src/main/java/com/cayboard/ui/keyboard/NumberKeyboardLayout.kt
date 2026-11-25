@@ -231,7 +231,7 @@ private fun NumberRows(
             }
             Column(Modifier.weight(0.8f).fillMaxHeight().testTag("number-actions")) {
                 SwipeableIconKeyButton(
-                    icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                    icon = deleteIconPainter(),
                     onClick = { onKeyPress("delete") }, backgroundColor = specialKeyBackgroundColor,
                     iconColor = specialKeyTextColor, modifier = Modifier.weight(1f).testTag("number-delete-key"),
                     swipeText = "清空", onSwipe = { onKeyPress("clear_composition") },
@@ -382,3 +382,4 @@ private fun NumberSymbolKey(
         )
     }
 }
+

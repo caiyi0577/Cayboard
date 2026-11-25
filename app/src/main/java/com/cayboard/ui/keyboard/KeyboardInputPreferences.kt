@@ -192,14 +192,9 @@ data class KeyboardInputPreferences(
     val cursorStepSound: Boolean = false,
     val fourteenLetterSwipe: Boolean = true,
     val fourteenLetterSwipeDp: Float = 24f,
-    /** 英文 26 键滑行输入；整键盘滑动移动光标时让位。 */
     val glideTyping: Boolean = false,
-    /** 中文全拼、双拼 26 键滑行输入，与英文分开、默认关（用户 10-31：开着英文滑行的老用户不能被带着开）。 */
     val chineseGlideTyping: Boolean = false,
-    /** Delete the last syllable of an uncommitted Chinese glide as one unit. */
     val deleteChineseGlideCharacter: Boolean = false,
-    /** 滑行时在输入框实时显示识别结果；滑动中反复识别，多占 CPU，默认关。 */
-    val glidePreview: Boolean = false,
     /** 长按弹出字母气泡（26/14 键大小写和带音调字母、九键本键字母）；默认关，免得打断上下拖动输入角标。 */
     val letterLongPressMenu: Boolean = false,
     /**
@@ -251,8 +246,7 @@ data class KeyboardInputPreferences(
      * 滑行在按住多久后不再接管：长按到点就已经输入角标，之后再拖动不能又滑出一个词。
      * 角标为长按输入（自己选的，或开着 26 键滑行被锁成长按）时取 [symbolLongPressMs] 和原来 300 毫秒里短的那个；其余不变。
      */
-    val glideHoldMs: Long get() = if (CornerInputChoice.of(this) == CornerInputChoice.LONG_PRESS)
-        minOf(com.cayboard.glide.GlideTracker.HOLD_MS, symbolLongPressMs) else com.cayboard.glide.GlideTracker.HOLD_MS
+    val glideHoldMs: Long get() = 0L
     companion object {
         /** 中英混输开关；输入法每次按字母键读它（ImeKeyRouter），改了下一键就生效。 */
         const val MIXED_INPUT_KEY = "mixed_input"
@@ -426,7 +420,7 @@ data class KeyboardInputPreferences(
                 reverseSymbolSwipe = prefs.getBoolean("reverse_symbol_swipe", false),
                 clearAllWhileComposing = prefs.getBoolean(CLEAR_ALL_WHILE_COMPOSING_KEY, false),
                 clearBeforeCursorOnly = prefs.getBoolean(CLEAR_BEFORE_CURSOR_ONLY_KEY, false),
-                swipeDistanceDelete = prefs.getBoolean(SWIPE_DISTANCE_DELETE_KEY, true),
+                swipeDistanceDelete = true,
                 deleteRepeatSpeed = com.cayboard.keyboard.DeleteRepeatSpeed.fromName(
                     prefs.getString(com.cayboard.keyboard.DeleteRepeatSpeed.KEY, null)),
                 reverseDeleteSwipe = prefs.getBoolean(REVERSE_DELETE_SWIPE_KEY, false),
@@ -434,13 +428,8 @@ data class KeyboardInputPreferences(
                 // 10.11 的默认关已写进旧键；v2 一次性恢复为开，之后用户手动关闭的保留。
                 // 滑行输入 10-19 起默认关。旧键会被 save() 连同其他设置一起写成旧默认 true，
                 // 分不出是不是用户自己开的，所以只认新键；没有新键就是默认关。
-                glideTyping = prefs.getBoolean("glide_typing_v2", false),
-                chineseGlideTyping = prefs.getBoolean(CHINESE_GLIDE_KEY, false),
-                deleteChineseGlideCharacter = prefs.getBoolean(DELETE_CHINESE_GLIDE_CHARACTER_KEY, false),
-                glidePreview = prefs.getBoolean(GLIDE_PREVIEW_KEY, false),
                 letterLongPressMenu = prefs.getBoolean("letter_long_press_menu", false),
                 cornerSymbolInput = prefs.getBoolean(CORNER_SYMBOL_INPUT_KEY, true),
-                t9GlideTyping = prefs.getBoolean("t9_glide_typing", false),
                 keyTextScale = prefs.getFloat("key_text_scale", DEFAULT_KEY_TEXT_SCALE)
                     .takeIf { it.isFinite() }?.coerceIn(0.8f, 1.6f) ?: DEFAULT_KEY_TEXT_SCALE,
                 cornerHintOpacity = normalizeCornerHintOpacity(prefs.getFloat(CORNER_HINT_OPACITY_KEY, 1f)),
@@ -495,14 +484,8 @@ data class KeyboardInputPreferences(
             .putString(com.cayboard.keyboard.DeleteRepeatSpeed.KEY, deleteRepeatSpeed.name)
             .putBoolean(REVERSE_DELETE_SWIPE_KEY, reverseDeleteSwipe)
             .putFloat(CLEAR_SWIPE_PERCENT_KEY, normalizeClearSwipePercent(clearSwipePercent))
-            .putBoolean("glide_typing_v2", glideTyping)
             .putBoolean("letter_long_press_menu", letterLongPressMenu)
             .putBoolean(CORNER_SYMBOL_INPUT_KEY, cornerSymbolInput)
-            .putBoolean("glide_typing", glideTyping)
-            .putBoolean(CHINESE_GLIDE_KEY, chineseGlideTyping)
-            .putBoolean(DELETE_CHINESE_GLIDE_CHARACTER_KEY, deleteChineseGlideCharacter)
-            .putBoolean(GLIDE_PREVIEW_KEY, glidePreview)
-            .putBoolean("t9_glide_typing", t9GlideTyping)
             .putFloat("cursor_step_dp", cursorStepDp.coerceIn(6f, 24f))
             .putFloat("cursor_swipe_lines", normalizeCursorSwipeLines(cursorSwipeLines))
             .putBoolean("cursor_step_haptic", cursorStepHaptic)

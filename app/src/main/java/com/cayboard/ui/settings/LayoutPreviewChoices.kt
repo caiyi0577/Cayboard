@@ -17,8 +17,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.Keyboard
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -142,7 +140,7 @@ internal fun LayoutPreviewChoices(
                     PreviewChoiceCard(layout.displayName, chosen, width, previewHeight,
                         containerColor, contentColor, accentColor, "$itemTagPrefix${layout.id}", { scroll.picked(); onSelect(layout.id) },
                         unavailable = layout.id in unavailableIds) {
-                                if (rows.isEmpty()) Icon(Icons.Outlined.Keyboard, "${layout.displayName}布局", tint = contentColor)
+                                if (rows.isEmpty()) Icon(lucideIcon(LucideSettingIcons.KEYBOARD), "${layout.displayName}布局", tint = contentColor)
                                 else MiniatureKeyboard(rows, layout.kind in setOf(LayoutKind.ALPHABETIC, LayoutKind.MERGED, LayoutKind.ZHUYIN),
                                     contentColor, Modifier.testTag("layout-preview:${layout.id}"), fillKeys = !containerColor.isNearBlack(),
                                     equalMergedKeys = layout.kind == LayoutKind.MERGED && CustomKeyboardLayouts.find(layout.id) == null,
@@ -155,7 +153,7 @@ internal fun LayoutPreviewChoices(
                     Box(Modifier.choiceRowSlideIn(scroll)) {
                     PreviewChoiceCard("布局管理", false, actionWidth, previewHeight, containerColor, contentColor,
                         accentColor, "profile-layout-management", onManage, isAction = true) {
-                        Icon(Icons.Outlined.Settings, null, Modifier.size(24.dp), tint = contentColor)
+                        Icon(lucideIcon(LucideSettingIcons.SETTINGS), null, Modifier.size(24.dp), tint = contentColor)
                     }
                     }
                 }
@@ -276,3 +274,4 @@ internal fun chosenFill(containerColor: Color, accentColor: Color): Color =
 
 /** 未选中卡片的边：近黑底上加亮到看得出（与键盘的细白边一致）。 */
 internal fun idleBorderAlpha(containerColor: Color): Float = if (containerColor.isNearBlack()) .30f else .12f
+

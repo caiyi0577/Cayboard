@@ -63,14 +63,6 @@ internal fun rememberImeKeyboardCallbacks(
             },
             isDeleteDragging = { service.deleteDragActive.value },
             onLetterNeighbors = { schema, encoded -> service.keyRouter.letterNeighbors = schema to encoded },
-            onGlideWord = service.keyRouter::commitGlideWord,
-            onGlideCode = service.keyRouter::typeGlideCode,
-            glidePreviewer = service.keyRouter::glidePreviewer,
-            onGlideEnglishPreview = service::showGlideEnglishPreview,
-            onGlidePreviewCode = service::showGlidePreviewCode,
-            onGlidePreviewEnd = service::endGlidePreview,
-            onGlidePreviewHold = service::holdGlidePreview,
-            onGlidePreviewFinish = service::finishGlidePreview,
             inputAdmissionTicket = {
                 (if (service.keyRouter.hasPendingCandidateCommit) null else service.inputReadiness.ticket())
                     ?: null.also { service.noteInputDropped("t9_no_ticket") }
@@ -88,11 +80,15 @@ internal fun rememberImeKeyboardCallbacks(
                 ) result
                 else {
                     val context = service.rimeEngine.rerankerContext(result.engineRevision)
-                    if (context == null) result
-                    else {
+                    val scored = if (context == null) result else {
                         service.t9Reranker.warmUp(service.serviceScope)
                         service.t9Reranker.rerank(result, context)
                     }
+                    // Apply the user's explicit choices last so the offline habit always
+                    // wins over the generic language model for an already known digit code.
+                    val durable = service.rimeEngine.t9Lookup(scored.inputText)
+                    scored.copy(candidates = service.t9UserHabitMemory.rerank(
+                        scored.inputText, scored.candidates, durable))
                 }
             },
             onT9UnconsumedDelete = service.keyRouter::processDeleteKey,
@@ -521,16 +517,6 @@ internal fun rememberImeKeyboardCallbacks(
                 service.keyRouter.postRimeJob {
                     service.textCommit.commitCompositionAndLiteral(asTyped = true)
                 }
-            },
-            onReviewOcrText = { text -> service.openOcrDraft(text) },
-            onCloseOcrDraft = {
-                android.util.Log.d("QuickSendForm", "onCloseOcrDraft invoked")
-                service.closeOcrDraft()
-                service.keyboardViewModel.showOverlay(OverlayRoute.Clipboard(0))
-            },
-            // 关闭表单时由 closeOcrDraft 统一还原回车键。
-            onOcrDraftFocusChange = { focused: Boolean ->
-                service.uiState.value = OcrDraftTransitions.textFocus(service.uiState.value, focused)
             },
         )
     }

@@ -16,17 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.twotone.AutoAwesome
-import androidx.compose.material.icons.twotone.KeyboardAlt
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.twotone.Undo
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -139,7 +132,7 @@ fun SmartPredictionSettingsContent(
                     }
                     Column { SettingsSection(title = "联想行为", content = {
                         SettingsToggleItem(
-                            icon = Icons.TwoTone.KeyboardAlt,
+                            icon = lucideIcon(LucideSettingIcons.KEYBOARD),
                             title = "物理键盘关闭联想",
                             subtitle = "连接物理键盘时，文字上屏后不再联想下一个词",
                             checked = hardwareAssociationDisabled,
@@ -150,7 +143,7 @@ fun SmartPredictionSettingsContent(
                         )
                         HorizontalDivider()
                         SettingsToggleItem(
-                            icon = Icons.TwoTone.AutoAwesome,
+                            icon = lucideIcon(LucideSettingIcons.SPARKLES),
                             title = "空格上屏联想候选",
                             subtitle = "有联想词时，按空格上屏第一个",
                             checked = spaceCommitEnabled,
@@ -229,3 +222,4 @@ private fun AssociationModeRow(
         RadioButton(selected = isSelected, onClick = onClick)
     }
 }
+

@@ -1,14 +1,8 @@
 package com.cayboard.ui.settings
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.twotone.SwapHoriz
-import androidx.compose.material.icons.twotone.OpenWith
-import androidx.compose.material.icons.twotone.SpaceBar
-import androidx.compose.material.icons.twotone.ContentCut
-import androidx.compose.material.icons.twotone.Gesture
-import androidx.compose.material.icons.twotone.Abc
-import androidx.compose.material.icons.twotone.Spellcheck
-import androidx.compose.material.icons.twotone.Hearing
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -29,8 +23,6 @@ import com.cayboard.ui.keyboard.rememberKeyboardInputPreferences
 internal enum class LayoutInputCategory(val route: String, val title: String, val description: String) {
     Qwerty("layout_input_qwerty", "26 键", "中英混输、字母错位、空格两侧标点、分词键"),
     Nine("layout_input_nine", "九键与 14 键", "长按选字符、14 键双字母键与触发距离"),
-    /** 英文、中文 26 键和九键滑行原来分在 26 键、九键两页三个开关（用户 11-09「三个入口太乱」），合到这一页；存的值不变。 */
-    Glide("layout_input_glide", "滑行输入", "英文、中文、九键滑行，实时显示词，逐字删除"),
 }
 
 /** 日语 26 键的长音 ー 放在哪：三张带图例的卡片，默认 L 键（见 JapaneseLongVowelKey）。 */
@@ -65,7 +57,6 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
     KeyboardSettingsScaffold(category.title, onBack, preview = true, example = when (category) {
         LayoutInputCategory.Qwerty -> com.cayboard.keyboard.KeyboardPanelLaunch.Example.Letters
         LayoutInputCategory.Nine -> com.cayboard.keyboard.KeyboardPanelLaunch.Example.Keypad
-        LayoutInputCategory.Glide -> com.cayboard.keyboard.KeyboardPanelLaunch.Example.Letters
     }) { modifier ->
         Column(modifier.settingsVerticalScroll().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -73,14 +64,14 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
                 LayoutInputCategory.Qwerty -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // 邻键纠错、模糊音 11-01 搬到「语言与方案」（跟着方案走，九键和 26 键页不再各放一份）。
                 SettingsSection(title = "大小写", content = {
-                    SettingsToggleItem(Icons.TwoTone.Abc, "首字母大写",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.LANGUAGES), "首字母大写",
                         "英文(含英文单词方案)和西、德、法、意、俄语键盘上，新句子和新段落的第一个字母自动大写。",
                         checked = settings.englishSentenceCaps, onCheckedChange = {
                             settings = settings.copy(englishSentenceCaps = it); settings.save(context)
                         })
                 })
                 SettingsSection(title = "混输", content = {
-                    SettingsToggleItem(Icons.TwoTone.Abc, "中英混输",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.LANGUAGES), "中英混输",
                         "仅用于中文全拼 26 键；拼音里夹着英文词(nihaohello)时首选“你好hello”。本身像拼音的英文词(game、nice)认不出。",
                         checked = settings.mixedInput, onCheckedChange = {
                             settings = settings.copy(mixedInput = it); settings.save(context)
@@ -97,23 +88,23 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
                         Spacer(Modifier.height(8.dp))
                         SpacePunctuationIllustration(settings.qwertyCommaKey, settings.qwertyPeriodKey)
                     }
-                    SettingsToggleItem(Icons.TwoTone.SpaceBar, "空格左侧逗号键", "关闭后空格向左加宽。",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.KEYBOARD), "空格左侧逗号键", "关闭后空格向左加宽。",
                         checked = settings.qwertyCommaKey, onCheckedChange = {
                             settings = settings.copy(qwertyCommaKey = it); settings.save(context)
                         })
-                    SettingsToggleItem(Icons.TwoTone.SpaceBar, "空格右侧句号键", "开启后空格让出一个键宽。",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.KEYBOARD), "空格右侧句号键", "开启后空格让出一个键宽。",
                         checked = settings.qwertyPeriodKey, onCheckedChange = {
                             settings = settings.copy(qwertyPeriodKey = it); settings.save(context)
                         })
                     HorizontalDivider()
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "底排标点固定上滑",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.WAVEFORM), "底排标点固定上滑",
                         "空格两侧的逗号、句号键和数字键盘的点键：上滑或长按输入右上角的符号。关闭后跟随全局角标设置。",
                         checked = settings.bottomPunctuationSwipeUp, onCheckedChange = {
                             settings = settings.copy(bottomPunctuationSwipeUp = it); settings.save(context)
                         })
                     HorizontalDivider()
                     // 逗号键分词（默认关）：下角标的方向跟「反转上下滑方向」走，说明照实际方向写。
-                    SettingsToggleItem(Icons.TwoTone.ContentCut, "逗号键分词",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SLIDERS), "逗号键分词",
                         "中文全拼、双拼的 26 键和 14 键：逗号键左下角加 '(只开句号键时在句号键上)，" +
                             "打拼音时${if (settings.bottomPunctuationSwipeUp || settings.reverseSymbolSwipe) "下滑" else "上滑"}插入分词(xi'an)，F 键的 ' 仍跟随字母键手势；" +
                             "没在打拼音时输入 '。九键照旧用 1 键分词。",
@@ -123,7 +114,7 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
                     SyllableSplitKeyLegend(settings.syllableSplitKey, settings.qwertyCommaKey, settings.qwertyPeriodKey,
                         settings.bottomPunctuationSwipeUp || settings.reverseSymbolSwipe)
                     HorizontalDivider()
-                    SettingsToggleItem(Icons.TwoTone.ContentCut, "Shift 键分词",
+                    SettingsToggleItem(lucideIcon(LucideSettingIcons.SLIDERS), "Shift 键分词",
                         "中文全拼、双拼的 26 键和 14 键：打拼音时 Shift 键写「分词」，点一下插入分词(xi'an)；" +
                             "没在打拼音时照旧切换大小写，按住 Shift 打大写也不变。",
                         checked = settings.shiftSyllableSplit, onCheckedChange = {
@@ -151,7 +142,7 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
                         }
                     })
                     SettingsSection(title = "双字母键", content = {
-                        SettingsToggleItem(Icons.TwoTone.SwapHoriz, "左右滑动选字母",
+                        SettingsToggleItem(lucideIcon(LucideSettingIcons.ARRANGE), "左右滑动选字母",
                             "例如 qw：左滑输入 q，右滑输入 w，松手确认；点按仍使用合并键。" +
                                 "适用于拼音和小鹤双拼 14 键，以及自己合并成一格的两个字母(如自建 18 键的 as)。",
                             checked = settings.fourteenLetterSwipe, onCheckedChange = {
@@ -171,59 +162,11 @@ internal fun LayoutInputSettingsContent(category: LayoutInputCategory, onBack: (
                         }
                     })
                 }
-                LayoutInputCategory.Glide -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // 三个布局各一行，存的还是原来三个开关（glide_typing_v2、glide_typing_chinese、t9_glide_typing），默认值不变。
-                // 「键盘面板滑动光标」和滑行冲突：照常显示，被锁时置灰并写明被谁锁（见 InputGestureLocks）。
-                val glideLock = com.cayboard.ui.keyboard.InputGestureLocks.lockFor(settings,
-                    com.cayboard.ui.keyboard.InputGestureLock.Option.GLIDE_TYPING, true)
-                SettingsSection(title = "布局", content = {
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "英文滑行",
-                        "英文 26 键手指划过字母出整词，候选栏可换成其他词；字母键向任何方向滑动都用于滑词，到相邻字母即可松手。",
-                        checked = settings.glideTyping, onCheckedChange = {
-                            settings = settings.copy(glideTyping = it); settings.save(context)
-                        },
-                        lockMessage = glideLock?.takeIf { !settings.glideTyping }?.message,
-                        costItem = com.cayboard.settings.PerformanceCosts.Item.GLIDE_TYPING)
-                    HorizontalDivider()
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "中文滑行",
-                        "中文全拼、双拼 26 键划一个词的拼音，接着划或点按都接在后面，照常选字；字母键向任何方向滑动都用于滑词，到相邻字母即可松手。",
-                        checked = settings.chineseGlideTyping, onCheckedChange = {
-                            settings = settings.copy(chineseGlideTyping = it); settings.save(context)
-                        },
-                        lockMessage = glideLock?.takeIf { !settings.chineseGlideTyping }?.message,
-                        costItem = com.cayboard.settings.PerformanceCosts.Item.CHINESE_GLIDE)
-                    HorizontalDivider()
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "九键滑行",
-                        "一笔划过一个词的几个键，松手后按词库认出这笔划的是哪几个键，再照常选词：划 5→2→4 可以选“来”，从 9 直接划到 4 是 94，路过的键不算。开启后 2～9 键滑动只用于滑词。",
-                        checked = settings.t9GlideTyping, onCheckedChange = {
-                            settings = settings.copy(t9GlideTyping = it); settings.save(context)
-                        },
-                        lockMessage = glideLock?.takeIf { !settings.t9GlideTyping }?.message,
-                        costItem = com.cayboard.settings.PerformanceCosts.Item.T9_GLIDE)
-                })
-                SettingsSection(title = "选项", content = {
-                    // 别的用户 11-02 提的（用惯 Gboard）：默认关；英文、中文滑行都没开时没有作用，关着就置灰。
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "滑行时实时显示词",
-                        "划的过程中按编码显示位置展示识别结果，中文显示拼音；抬手后按最终结果输入。只用于 26 键。",
-                        checked = settings.glidePreview, onCheckedChange = {
-                            settings = settings.copy(glidePreview = it); settings.save(context)
-                        },
-                        lockMessage = "需先打开「英文滑行」或「中文滑行」"
-                            .takeIf { !settings.glidePreview && !settings.glideTyping && !settings.chineseGlideTyping },
-                        costItem = com.cayboard.settings.PerformanceCosts.Item.GLIDE_PREVIEW)
-                    HorizontalDivider()
-                    SettingsToggleItem(Icons.TwoTone.Gesture, "逐字删除中文滑行",
-                        "开启后，删除键一次删除中文滑行输入中最后一个字对应的编码。",
-                        checked = settings.deleteChineseGlideCharacter, onCheckedChange = {
-                            settings = settings.copy(deleteChineseGlideCharacter = it); settings.save(context)
-                        })
-                })
-                }
             }
-            SettingsJumpText((if (category == LayoutInputCategory.Glide) "" else "滑行在「键盘布局 › 滑行输入」；") +
+            SettingsJumpText(
                 "分体键盘、按键符号在上一页「键盘布局」；角标、光标与空格在「按键与手势」；" +
                 "拼音纠错、模糊音在「语言与方案 › 中文输入」。",
-                jumps = listOf("键盘布局 › 滑行输入", "键盘布局", "按键与手势", "语言与方案 › 中文输入"),
+                jumps = listOf("键盘布局", "按键与手势", "语言与方案 › 中文输入"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -250,7 +193,7 @@ internal fun NeighborCorrectionSection() {
     SettingsSection(title = "拼音纠错", content = {
         Text("26 键全拼四种都有，双拼只有邻键纠错，九键、14 键不纠错。", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-        SettingsToggleItem(Icons.TwoTone.Spellcheck, "邻键纠错",
+        SettingsToggleItem(lucideIcon(LucideSettingIcons.SPELLCHECK), "邻键纠错",
             "按偏到旁边的键时，也给出本来想打的词，原来的候选还在",
             checked = settings.neighborCorrection, onCheckedChange = {
                 settings.copy(neighborCorrection = it).save(context)
@@ -258,7 +201,7 @@ internal fun NeighborCorrectionSection() {
             costItem = com.cayboard.settings.PerformanceCosts.Item.NEIGHBOR_CORRECTION)
         if (showDouble) {
             HorizontalDivider()
-            SettingsToggleItem(Icons.TwoTone.Spellcheck, "双拼邻键纠错",
+            SettingsToggleItem(lucideIcon(LucideSettingIcons.SPELLCHECK), "双拼邻键纠错",
                 "双拼 26 键按偏到旁边的键时，也给出本来想打的词(关着时只纠拼不成字的两个键)；改完要几秒重新部署",
                 checked = settings.doublePinyinCorrection, onCheckedChange = {
                     settings.copy(doublePinyinCorrection = it).save(context)
@@ -268,7 +211,7 @@ internal fun NeighborCorrectionSection() {
         }
         SpellingPatches.Typo.entries.forEach { typo ->
             HorizontalDivider()
-            SettingsToggleItem(Icons.TwoTone.Spellcheck, typo.title, typoCaption(typo),
+            SettingsToggleItem(lucideIcon(LucideSettingIcons.SPELLCHECK), typo.title, typoCaption(typo),
                 checked = typos.getValue(typo), onCheckedChange = { on ->
                     SpellingPatches.setTypo(context, typo, on)
                     typos = typos + (typo to on)
@@ -323,7 +266,7 @@ internal fun FuzzyPinyinSection() {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             // 用户 11-02：九键按数字也模糊很耗性能，做成开关、默认关，开关和每组下面写实测代价，卡了自己关。
-            SettingsToggleItem(Icons.TwoTone.Hearing, "九键按数字也模糊",
+            SettingsToggleItem(lucideIcon(LucideSettingIcons.AUDIO_LINES), "九键按数字也模糊",
                 "九键直接按数字也出下面所开各组的相近读音(如 74 也出“是”)，不用再点左侧读音。" +
                     "候选变多、每键变慢，首选也更容易不是想要的字；开的组越多越明显，打字卡了就关掉。改完要几秒重新部署。",
                 checked = t9Digits, onCheckedChange = { on ->
@@ -339,7 +282,7 @@ internal fun FuzzyPinyinSection() {
                 })
             if (showDoublePinyinSwitch) {
                 HorizontalDivider()
-                SettingsToggleItem(Icons.TwoTone.Hearing, "模糊音也用于双拼",
+                SettingsToggleItem(lucideIcon(LucideSettingIcons.AUDIO_LINES), "模糊音也用于双拼",
                     "关着时下面各组只对全拼起作用；打开后双拼也按读音模糊(in 和 ing 互通)",
                     checked = doublePinyin, onCheckedChange = { on ->
                         SpellingPatches.setFuzzyDoublePinyin(context, on)
@@ -352,7 +295,7 @@ internal fun FuzzyPinyinSection() {
             }
             SpellingPatches.Fuzzy.entries.forEach { item ->
                 HorizontalDivider()
-                SettingsToggleItem(Icons.TwoTone.Hearing, item.title, item.example,
+                SettingsToggleItem(lucideIcon(LucideSettingIcons.AUDIO_LINES), item.title, item.example,
                     checked = item in enabled, onCheckedChange = { on ->
                         SpellingPatches.setFuzzy(context, item, on)
                         enabled = SpellingPatches.fuzzy(context)
@@ -405,3 +348,8 @@ private fun QwertyStaggerSettings(
         }
     }
 }
+
+
+
+
+

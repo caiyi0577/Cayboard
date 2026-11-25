@@ -377,3 +377,4 @@ private fun LetterSwipeEditor(key: String, swipes: Map<String, String>, change: 
         onValueChange = { change(slot, "text:$it") }, label = { Text("滑动输入的文字") }, singleLine = true,
         modifier = Modifier.fillMaxWidth())
 }
+

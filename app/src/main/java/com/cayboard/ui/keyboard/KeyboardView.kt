@@ -9,8 +9,6 @@ import com.cayboard.util.InputLatencyTrace
 import androidx.compose.ui.platform.testTag
 
 import android.content.res.Configuration
-import com.cayboard.ocr.OcrDraftSaveResult
-import com.cayboard.service.OcrDraftEditTextHolder
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -567,7 +565,11 @@ fun KeyboardView(
         sidesFilled = inputPreferences.fillBlankAreas && !state.handwritingExpanded,
     ) {
         // 候选栏随键盘半速放大：按卡片实际尺寸算，调节尺寸时跟着预览走；剪贴板上拉和搜索时卡片临时变高，不跟。
-        val barScaleFrozen = LocalClipboardPanelExpansion.current != null || state.clipboardSearchVisible
+        // Tool panels add a 48dp slot above the keyboard. Keep the candidate/toolbar
+        // scale based on the keyboard itself; otherwise opening translation makes the
+        // available height look larger and every toolbar icon grows for one frame.
+        val barScaleFrozen = LocalClipboardPanelExpansion.current != null ||
+            state.clipboardSearchVisible || state.toolPanelVisible
         val candidateBarScaleState = remember {
             mutableFloatStateOf(candidateBarScale(
                 (if (state.isFloatingMode) cardWidthDp else state.keyboardWidthDp.takeIf { it > 0 }
@@ -633,7 +635,7 @@ fun KeyboardView(
         SideEffect {
             callbacks.onPreeditCursorMove = { key ->
                 when {
-                    state.ocrDraftFocused || state.toolPanelInputFocused -> false
+                    state.toolPanelInputFocused -> false
                     preeditEditSession != null -> { editPreedit(key = key); true }
                     !state.isAsciiMode && state.inputProfile.capabilities.editablePinyin &&
                         callbacks.onOpenPreeditEditor != null &&
@@ -681,11 +683,6 @@ fun KeyboardView(
         // 工具栏与菜单共用一组入口：动作、开/关状态和按键反馈相同，放在哪一处都一样。
         val quickContext = LocalContext.current
         val quickToggles = rememberQuickToggleStates()
-        // 中文全拼、双拼 26 键：菜单里的「滑行输入」开关的是「中文滑行输入」（其他中文键盘不滑行，不出现）。
-        val chineseGlideMenu = !state.isAsciiMode &&
-            com.cayboard.glide.chineseGlideSupported(state.inputProfile, state.currentSchemaId)
-        // 九键：菜单里的「滑行输入」开关「九键滑行」（用户 11-09：开了以后键盘上找不到地方关）。
-        val nineGlideMenu = state.inputProfile.layout.kind == com.cayboard.settings.LayoutKind.T9
         val traditionalSwitchApplies = !state.isAsciiMode && !state.isHandwritingMode &&
             state.inputProfile.language == com.cayboard.settings.InputLanguage.CHINESE &&
             state.inputProfile.scheme in setOf(com.cayboard.settings.InputScheme.PINYIN,
@@ -698,10 +695,6 @@ fun KeyboardView(
                 is ToolbarButtonItem.Builtin -> when (item.button) {
                     ToolbarButton.EMOJI -> ({ viewModel.toggleOverlay(OverlayRoute.Emoji) })
                     ToolbarButton.CLIPBOARD -> ({ viewModel.toggleOverlay(OverlayRoute.Clipboard(0)) })
-                    ToolbarButton.OCR -> ({
-                        com.cayboard.ocr.OcrGallerySelection.uri.value = null
-                        viewModel.toggleOverlay(OverlayRoute.Ocr)
-                    })
                     ToolbarButton.SCHEMA -> ({ viewModel.toggleOverlay(OverlayRoute.SchemaList) })
                     ToolbarButton.SYMBOL -> ({ viewModel.toggleOverlay(OverlayRoute.Symbol) })
                     ToolbarButton.FLOAT -> ({ viewModel.closeOverlay(); callbacks.onKeyboardResize?.invoke() })
@@ -715,14 +708,9 @@ fun KeyboardView(
                     ToolbarButton.EDIT -> ({ viewModel.toggleOverlay(OverlayRoute.Edit) })
                     ToolbarButton.SETTINGS -> ({ callbacks.onSettings?.invoke(); viewModel.closeOverlay() })
                     ToolbarButton.ARRANGE -> ({ viewModel.showOverlay(OverlayRoute.ToolbarCustomize) })
-                    // 布局手势开关只在适用的布局出现；排列页用同一规则（[quickAction] 为 null 即不列出）。
-                    ToolbarButton.GLIDE, ToolbarButton.FOURTEEN_SWIPE ->
-                        if (item.button.appliesTo(state.inputProfile.layout.kind) &&
-                            // 滑行开关：英文 26 键开关英文滑行，中文全拼、双拼 26 键开关中文滑行，九键开关九键滑行；
-                            // 被「键盘滑动」占用时不出现。
-                            (item.button != ToolbarButton.GLIDE ||
-                                ((nineGlideMenu || state.isAsciiMode || chineseGlideMenu) && inputPreferences.cursorGesture != CursorGestureMode.KEYBOARD)))
-                            ({ item.button.flipGesture(quickContext, inputPreferences, chineseGlideMenu, nineGlideMenu) }) else return null
+                    ToolbarButton.FOURTEEN_SWIPE ->
+                        if (item.button.appliesTo(state.inputProfile.layout.kind))
+                            ({ item.button.flipGesture(quickContext, inputPreferences) }) else return null
                     ToolbarButton.SOUND -> ({
                         SettingsPreferences.setSoundEnabled(quickContext, !quickToggles.sound)
                     })
@@ -733,7 +721,13 @@ fun KeyboardView(
                         viewModel.closeOverlay()
                         callbacks.onFloatingModeChange?.invoke(!state.isFloatingMode)
                     })
-                    ToolbarButton.TRANSLATE -> ({ callbacks.onOpenTranslation?.invoke() })
+                    ToolbarButton.TRANSLATE -> ({
+                        // The toolbar button is a toggle: tapping it again closes the live
+                        // translation bar instead of forcing the user to reach for X.
+                        if (state.toolPanelVisible && state.toolPanelDisplay == "LIVE")
+                            callbacks.onToolPanelClose?.invoke()
+                        else callbacks.onOpenTranslation?.invoke()
+                    })
                     // 英文状态标点固定半角，入口不出现，避免“点了看不到变化，实际却改了状态”。
                     ToolbarButton.FULL_SHAPE -> widthSwitch?.let { sw -> { callbacks.onToggleSchemaSwitch?.invoke(sw) } } ?: return null
                     // 拼音、双拼、仓颉、注音共用一个简繁开关。
@@ -772,7 +766,6 @@ fun KeyboardView(
                 ToolbarButton.EDIT -> (page as? KeyboardPage.Overlay)?.route == OverlayRoute.Edit
                 ToolbarButton.EMOJI -> (page as? KeyboardPage.Overlay)?.route == OverlayRoute.Emoji
                 ToolbarButton.CLIPBOARD -> (page as? KeyboardPage.Overlay)?.route is OverlayRoute.Clipboard
-                ToolbarButton.OCR -> (page as? KeyboardPage.Overlay)?.route == OverlayRoute.Ocr
                 ToolbarButton.SYMBOL -> (page as? KeyboardPage.Overlay)?.route == OverlayRoute.Symbol
                 ToolbarButton.SCHEMA -> (page as? KeyboardPage.Overlay)?.route == OverlayRoute.SchemaList
                 // 表情、剪贴板等面板盖住手写板时只亮面板那个按钮（#185）
@@ -783,7 +776,7 @@ fun KeyboardView(
                 ToolbarButton.VIBRATION -> quickToggles.vibration
                 ToolbarButton.FLOATING -> state.isFloatingMode
                 ToolbarButton.TRANSLATE -> state.toolPanelVisible
-                in ToolbarButton.LAYOUT_GESTURES -> item.button.gestureOn(inputPreferences, chineseGlideMenu, nineGlideMenu)
+                in ToolbarButton.LAYOUT_GESTURES -> item.button.gestureOn(inputPreferences)
                 ToolbarButton.FULL_SHAPE -> widthSwitch?.let { it.states.getOrNull(it.currentIndex) == "全角" } == true
                 ToolbarButton.TRADITIONAL -> inputPreferences.traditionalOutput
                 else -> false
@@ -872,21 +865,6 @@ fun KeyboardView(
                 }.value
             } else remember(handwritingCandidates, handwritingChinese, hanziPinyinRevision) {
                 if (handwritingChinese) com.cayboard.handwriting.HanziPinyin.comments(handwritingCandidates) else emptyList()
-            }
-
-            if (state.showOcrDraft) {
-                val ocrContext = LocalContext.current
-                com.cayboard.ocr.OcrReviewEditor(
-                    text = state.ocrDraftText, textColor = keyTextColor, background = keyBgColor, accent = accentColor,
-                    onFocus = { callbacks.onOcrDraftFocusChange?.invoke(it) },
-                    onSave = { text ->
-                        val result = com.cayboard.ocr.saveOcrDraft(ocrContext, text)
-                        if (result == OcrDraftSaveResult.ACCEPTED) callbacks.onCloseOcrDraft?.invoke()
-                        else OcrDraftEditTextHolder.editText?.error = result.errorMessage
-                    },
-                    onCancel = { callbacks.onCloseOcrDraft?.invoke(); viewModel.closeOverlay() },
-                    onRetake = { callbacks.onCloseOcrDraft?.invoke(); viewModel.showOverlay(OverlayRoute.Ocr) },
-                )
             }
 
             // ACTIVE 输入面板在候选栏上方（需要 EditText 输入，保留候选栏可见）；
@@ -1979,13 +1957,6 @@ fun KeyboardView(
                         hiddenActions = unusedQuickActions,
                         modifier = panelMaterial.fillMaxWidth().fillMaxHeight(),
                     )
-                    is OverlayRoute.Ocr -> com.cayboard.ocr.OcrCameraPanel(
-                        active = (page as? KeyboardPage.Overlay)?.route == OverlayRoute.Ocr,
-                        background = keyboardBgColor, textColor = keyTextColor, accent = accentColor,
-                        onClose = { viewModel.closeOverlay(); com.cayboard.ocr.DocumentOcrActivity.finishHost() },
-                        onConfirmed = { callbacks.onReviewOcrText?.invoke(it) },
-                        modifier = Modifier.fillMaxSize().padding(bottom = renderedBottomPaddingDp.dp),
-                    )
                     is OverlayRoute.SchemaList -> SchemaListView(
                         availableSchemas = state.schemas,
                         schemas = com.cayboard.settings.InputModes.inCurrentLanguage(state.schemas,
@@ -2127,6 +2098,7 @@ fun KeyboardView(
                         viewModel = viewModel,
                         onBack = { viewModel.popOverlay() },
                         onConfirmText = { text -> callbacks.onCommitText?.invoke(text) },
+                        onTranslateText = callbacks.onClipboardTranslate,
                         bottomPaddingDp = renderedBottomPaddingDp,
                         modifier = panelMaterial.fillMaxWidth().fillMaxHeight()
                     )

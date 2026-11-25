@@ -15,12 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.GraphicEq
-import androidx.compose.material.icons.twotone.DirectionsCar
-import androidx.compose.material.icons.twotone.Computer
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.twotone.VolumeOff
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
@@ -66,7 +63,7 @@ private fun VoiceOtherAudioItem() {
     val context = LocalContext.current
     var current by remember { mutableStateOf(SettingsPreferences.getSttOtherAudio(context)) }
     var picking by remember { mutableStateOf(false) }
-    SettingsItem(icon = Icons.AutoMirrored.TwoTone.VolumeOff, title = "屏蔽外放音",
+    SettingsItem(icon = Icons.AutoMirrored.Filled.VolumeOff, title = "屏蔽外放音",
         subtitle = "说话时压低或暂停正在放的音乐、视频", status = current.label, onClick = { picking = true })
     if (picking) AlertDialog(
         onDismissRequest = { picking = false },
@@ -134,7 +131,7 @@ fun SpeechToTextSettingsContent(
             // 语音总开关放在页内最上面（以前挂在首页那一行上，进来反而找不到）。
             var sttEnabled by remember { mutableStateOf(SettingsPreferences.isSttEnabled(context)) }
             SettingsSection(title = "语音输入") {
-                SettingsToggleItem(icon = Icons.TwoTone.GraphicEq, title = "语音转文本",
+                SettingsToggleItem(icon = lucideIcon(LucideSettingIcons.MIC), title = "语音转文本",
                     subtitle = if (sttEnabled) "点工具栏麦克风说话，转成文字上屏；想按住空格说话，在「按键与手势 › 长按空格」选「语音开关」"
                         else "已关闭：键盘上不显示麦克风，按住空格和 Alt + H 不开麦",
                     subtitleJumps = listOf("按键与手势 › 长按空格"),
@@ -144,7 +141,7 @@ fun SpeechToTextSettingsContent(
                     // 屏蔽外放音：用户 11-04 要的，选项照他的截图，默认不屏蔽（VoiceAudioFocus）。
                     VoiceOtherAudioItem()
                     var pillResume by remember { mutableStateOf(SettingsPreferences.isSttPillResume(context)) }
-                    SettingsToggleItem(icon = Icons.TwoTone.DirectionsCar, title = "开车连续语音",
+                    SettingsToggleItem(icon = lucideIcon(LucideSettingIcons.CAR), title = "开车连续语音",
                         subtitle = "语音收起成悬浮条后，发送完回到输入框自动接着听",
                         checked = pillResume, onCheckedChange = { pillResume = it; SettingsPreferences.setSttPillResume(context, it) })
                 }
@@ -165,3 +162,7 @@ fun SpeechToTextSettingsContent(
         }
     }
 }
+
+
+
+

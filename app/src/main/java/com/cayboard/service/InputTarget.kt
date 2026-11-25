@@ -9,7 +9,6 @@ import android.widget.EditText
  */
 internal sealed interface InputTarget {
     object Host : InputTarget
-    object OcrDraft : InputTarget
     object ToolPanel : InputTarget
     object ClipboardSearch : InputTarget
 
@@ -18,7 +17,6 @@ internal sealed interface InputTarget {
     /** The keyboard's own editor for this target; null for the host or a panel not composed yet. */
     fun editText(): EditText? = when (this) {
         Host -> null
-        OcrDraft -> OcrDraftEditTextHolder.editText
         ToolPanel, ClipboardSearch -> ToolPanelEditTextHolder.editText
     }
 }
@@ -31,7 +29,6 @@ internal sealed interface InputTarget {
 internal fun InputUIState.toolPanelFocusAfter(viewFocused: Boolean): Boolean = viewFocused || clipboardSearchVisible
 
 internal val InputUIState.inputTarget: InputTarget get() = when {
-    ocrDraftFocused -> InputTarget.OcrDraft
     toolPanelInputFocused -> if (clipboardSearchVisible) InputTarget.ClipboardSearch else InputTarget.ToolPanel
     else -> InputTarget.Host
 }

@@ -403,128 +403,8 @@ fun KeyboardLayout(
     val swipeBubble = rememberSwipeBubbleController()
     var keyboardBounds by remember { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
     val liveKeyboardBounds = remember { LiveBounds() }
-    // 滑行：英文 26 键出整词（「滑行输入」）；中文全拼、双拼 26 键（含分体、自定义字母排列）出一个词的编码交给 Rime
-    // （「中文滑行输入」，单独的开关，默认关）。整键盘滑动移动光标与其冲突时让位。
-    // 角标照常按两个角标提示开关显示，滑行不改它（用户 10-31：不能改他的习惯）。
-    val glidePrefs = LocalKeyboardInputPreferences.current
-    val glideProfile = uiState.inputProfile
-    val chineseGlide = !isAsciiMode && glidePrefs.chineseGlideTyping &&
-        com.cayboard.glide.chineseGlideSupported(glideProfile, uiState.currentSchemaId)
-    val glideEnabled = (isAsciiMode && glidePrefs.glideTyping && callbacks.onGlideWord != null || chineseGlide && callbacks.onGlideCode != null) &&
-        glidePrefs.cursorGesture != CursorGestureMode.KEYBOARD && !(isVoiceMode && !isVoiceSticky)
-    val glideTrail = remember { GlideTrail() }
-    val glideScope = rememberCoroutineScope()
-    val glideContext = LocalContext.current.applicationContext
-    // 实时预览（「滑行时实时显示词」，默认关）：手指移动中每隔 [GLIDE_PREVIEW_INTERVAL_MS] 在后台按当前整条轨迹识别一次，
-    // 写出现在抬手会出的词；同一时间只算一个，抬手时作废没算完的，不拖慢抬手后的识别。
-    val glidePreviewOn = glideEnabled && glidePrefs.glidePreview
-    val glidePreview = remember { GlidePreviewJob() }
-    val onGlideProgress: ((() -> Pair<FloatArray, FloatArray>) -> Unit)? = if (!glidePreviewOn) null else progress@{ points ->
-        val gesture = glideTrail.gesture
-        if (glidePreview.gesture != gesture) {
-            glidePreview.start(gesture)
-            glidePreview.english = if (chineseGlide) null else runCatching { callbacks.glidePreviewer?.invoke() }.getOrNull()
-        }
-        glidePreview.points = points
-        if (glidePreview.job?.isActive == true) { glidePreview.moved = true; return@progress }
-        val chinese = chineseGlide
-        val doublePinyin = if (chinese && glideProfile.scheme == com.cayboard.settings.InputScheme.DOUBLE_PINYIN)
-            com.cayboard.settings.DoublePinyinSchemes.find(uiState.currentSchemaId) else null
-        val english = glidePreview.english
-        val shift = viewModel.shiftMode.value
-        val case: (String) -> String = { word -> com.cayboard.glide.glideCased(word, shift.isShifted,
-            shift == com.cayboard.viewmodel.ShiftMode.CAPS) }
-        glidePreview.job = glideScope.launch {
-            do {
-                glidePreview.moved = false
-                val keys = geometry.snapshot()
-                val (xs, ys) = glidePreview.points?.invoke() ?: break
-                if (keys.size < 26) break
-                val preview = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                    runCatching {
-                        val keyboard = com.cayboard.glide.GlideLexicon.keyboard(keys)
-                        if (chinese) {
-                            com.cayboard.glide.GlideLexicon.chineseDecoder(glideContext, keyboard, doublePinyin).decode(xs, ys, limit = 1)
-                                .firstOrNull()?.word?.let { it to null }
-                        } else {
-                            val candidates = com.cayboard.glide.GlideLexicon.decoder(glideContext, keyboard).decode(xs, ys)
-                            if (candidates.isEmpty()) null else {
-                                val shown = english?.invoke(candidates, case) ?: GlideEnglishPreview(case(candidates.first().word),
-                                    candidates.map { case(it.word) })
-                                null to shown
-                            }
-                        }
-                    }.getOrNull()
-                }
-                // 抬手或已经开始下一笔：这次的结果不再显示。
-                if (glideTrail.gesture != gesture || glideTrail.points.isEmpty()) break
-                if (chinese) callbacks.onGlidePreviewCode?.invoke(preview?.first.orEmpty(), uiState.inputSessionId, gesture)
-                else preview?.second?.let { callbacks.onGlideEnglishPreview?.invoke(it, uiState.inputSessionId) }
-                // 歇一会儿再看手指有没有动，限制识别频率（在后台计时，不占主线程）。
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { kotlinx.coroutines.delay(GLIDE_PREVIEW_INTERVAL_MS) }
-            } while (glidePreview.moved)
-        }
-    }
-    val onGlideTrace: (FloatArray, FloatArray) -> Unit = trace@{ xs, ys ->
-        glidePreview.stop()
-        val heldPreview = if (chineseGlide) callbacks.onGlidePreviewHold?.invoke() else null
-        if (heldPreview == null) callbacks.onGlidePreviewEnd?.invoke()
-        val keys = geometry.snapshot()
-        if (keys.size < 26) { heldPreview?.let { callbacks.onGlidePreviewFinish?.invoke(it, false) }; return@trace }
-        // 输入框归属在抬手时确定；识别完成前切换输入框则作废。
-        val inputContext = runCatching { callbacks.captureInputContext() }.getOrNull() ?: run {
-            heldPreview?.let { callbacks.onGlidePreviewFinish?.invoke(it, false) }; return@trace
-        }
-        val shift = viewModel.shiftMode.value
-        // 中文：双拼按当前方案换码，全拼为空。
-        val doublePinyin = if (chineseGlide && glideProfile.scheme == com.cayboard.settings.InputScheme.DOUBLE_PINYIN)
-            com.cayboard.settings.DoublePinyinSchemes.find(uiState.currentSchemaId) else null
-        val chinese = chineseGlide
-        glideScope.launch {
-            var handedOff = false
-            try {
-            val candidates = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                // 词表读不出来时这一笔当没认出，不闪退（用户 11-12）。
-                com.cayboard.glide.GlideLexicon.decodeStroke(glideContext,
-                    com.cayboard.glide.GlideLexicon.keyboard(keys), chinese, doublePinyin, xs, ys)
-            }
-            if (candidates.isEmpty()) {
-                // 很短又认不出词：快打时手指一抖被当成了滑行，按点了起点那个键算，不吞这一下（用户 11-11）。
-                com.cayboard.glide.shortGlideTapKey(keys, xs, ys)?.toString()?.let { key ->
-                    val value = com.cayboard.rime.MergedLetterInput.tapValue(key,
-                        KeysConfigHelper.getKeyCommitValue(key, isAsciiMode), false, shift.isShifted)
-                    kotlinx.coroutines.withContext(inputContext) { onKeyPress(value) }
-                }
-                return@launch
-            }
-            viewModel.onCharacterTyped()
-            if (chinese) {
-                kotlinx.coroutines.withContext(inputContext) { callbacks.onGlideCode?.invoke(candidates.first().word,
-                    candidates.drop(1).map { it.word }, heldPreview) }
-                handedOff = true
-                return@launch
-            }
-            val case: (String) -> String = { word -> com.cayboard.glide.glideCased(word, shift.isShifted,
-                shift == com.cayboard.viewmodel.ShiftMode.CAPS) }
-            kotlinx.coroutines.withContext(inputContext) { callbacks.onGlideWord?.invoke(candidates, case) }
-            } finally {
-                if (!handedOff) heldPreview?.let { callbacks.onGlidePreviewFinish?.invoke(it, false) }
-            }
-        }
-    }
-    // 提前读入词表，第一次滑行不必等待。
-    LaunchedEffect(glideEnabled, chineseGlide) {
-        if (glideEnabled) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching {
-                if (chineseGlide) com.cayboard.glide.GlideLexicon.pinyin(glideContext)
-                else {
-                    com.cayboard.glide.GlideLexicon.words(glideContext)
-                    com.cayboard.glide.GlideLexicon.bigrams(glideContext)
-                }
-            }
-        }
-    }
-
+    // 滑动输入已移除；保留普通按键滑动、符号上滑和 Delete 横滑。
+    val glideEnabled = false
     fun processSwipeState(state: SwipeState, bounds: Rect) {
         // 按键和键盘都按这一刻的位置算，见 [LiveBounds]。
         val origin = liveKeyboardBounds.current(keyboardBounds, "keyboard")
@@ -562,7 +442,7 @@ fun KeyboardLayout(
         LocalHoneycombKeys provides honeycomb,
         LocalCustomAccent provides KeyboardThemes.getPrimaryColor(uiState.themeId, uiState.isDarkTheme),
         LocalShiftSlideTargets provides shiftSlideTargets,
-        LocalLetterGlide provides glideEnabled,
+        LocalLetterGlide provides false,
         LocalKeyCornerRadius provides kbKey.cornerRadius.dp,
         LocalEnterKeyColors provides KeyboardKeyColors(KeyboardThemes.getEnterKeyColor(uiState.themeId, uiState.isDarkTheme), specialKeyTextColor),
         LocalFunctionKeyColors provides KeyboardKeyColors(specialKeyBackgroundColor, specialKeyTextColor),
@@ -579,15 +459,11 @@ fun KeyboardLayout(
                 shiftSlideTargets.keyboardBounds = dragSpace.bounds(coordinates)
             }
             // 轨迹原点与键位同用键盘卡片坐标（未旋转时与 boundsInRoot 相同），旋转的悬浮键盘滑行落在手指下的键。
-            .glideTyping(glideEnabled, geometry, { shiftSlideTargets.keyboardBounds.topLeft }, glideTrail, onGlideTrace, onGlideProgress,
-                onEnd = { glidePreview.stop(); callbacks.onGlidePreviewEnd?.invoke() })
+            
 
     ) {
         // 最先画 = 在所有键帽底下，只从键缝里露出来。
         KeyboardSwipeBubbleOverlay(swipeBubble, bubbleBgColor, keyTextColor, specialKeyTextColor, keyboardBounds.width)
-        if (glideEnabled) GlideTrailOverlay(glideTrail,
-            KeyboardThemes.getAccentColor(uiState.themeId, uiState.isDarkTheme),
-            Modifier.matchParentSize().zIndex(1f))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -602,7 +478,7 @@ fun KeyboardLayout(
                 // 删除键：26 键在第三行末尾，注音在第四行末尾。
                 val deleteKey: @Composable (Modifier) -> Unit = { keyModifier ->
                     SwipeableIconKeyButton(
-                        icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                        icon = deleteIconPainter(),
                         onClick = { if (!shiftSlideTargets.ctrlBackspace()) onKeyPress("delete") },
                         backgroundColor = specialKeyBackgroundColor,
                         iconColor = specialKeyTextColor,
@@ -1052,6 +928,8 @@ fun KeyboardLayout(
                     val bottom = letterKeyboardBottomRow(keyRows, fourteenKey || zhuyin)
                     // 空格左侧逗号、右侧句号；只开逗号时沿用原配置的逗号键。
                     val bottomPrefs = LocalKeyboardInputPreferences.current
+                    val englishKeyboard = isAsciiMode || uiState.inputProfile.language ==
+                        com.cayboard.settings.InputLanguage.ENGLISH
                     val commaOnLeft = bottomPrefs.qwertyCommaKey
                     val periodOnRight = bottomPrefs.qwertyPeriodKey
                     val punctuationFull = LocalKeyboardPunctuation.current?.full ?: !isAsciiMode
@@ -1113,7 +991,21 @@ fun KeyboardLayout(
                             )
                         } else {
                             for (slot in 1..2) {
-                                KeyboardModeKey(
+                                if (englishKeyboard && slot == 2) {
+                                    // 英文键盘把语言切换放在原数字切换键的位置，与下方的 123 互换。
+                                    LanguageKeyButton(
+                                        icon = rememberVectorPainter(Icons.Default.Language),
+                                        onClick = { onKeyPress("ime_switch") },
+                                        backgroundColor = specialKeyBackgroundColor,
+                                        iconColor = specialKeyTextColor,
+                                        modifier = Modifier.weight(bottom.mode).testTag("mode-slot-$slot"),
+                                        onPress = { onKeyPressDown?.invoke("ime_switch") },
+                                        onRelease = { onKeyRelease?.invoke("ime_switch") },
+                                        shadowEnabled = shadowEnabled,
+                                        shadowElevation = shadowElevation,
+                                        shadowShapeRadius = shadowShapeRadius,
+                                    )
+                                } else KeyboardModeKey(
                                     slot = slot, onKeyPress = onKeyPress,
                                     backgroundColor = specialKeyBackgroundColor,
                                     textColor = specialKeyTextColor,
@@ -1360,7 +1252,19 @@ fun KeyboardLayout(
                                     Unit
                                 }
                             }
-                            if ((k4TapAction == GestureAction.TOGGLE_ASCII && k4Icon != null || isEarthDefaultTap) && k4LongPressLabels == null) {
+                            if (englishKeyboard) {
+                                KeyButton(
+                                    text = "123",
+                                    onClick = { onKeyPress("mode_change_number") },
+                                    backgroundColor = specialKeyBackgroundColor,
+                                    textColor = specialKeyTextColor,
+                                    modifier = Modifier.weight(bottom.language).testTag("qwerty-number-key"),
+                                    onPress = { onKeyPressDown?.invoke("mode_change") },
+                                    shadowEnabled = shadowEnabled,
+                                    shadowElevation = shadowElevation,
+                                    shadowShapeRadius = shadowShapeRadius,
+                                )
+                            } else if ((k4TapAction == GestureAction.TOGGLE_ASCII && k4Icon != null || isEarthDefaultTap) && k4LongPressLabels == null) {
                                 LanguageKeyButton(
                                     icon = k4Icon ?: rememberVectorPainter(Icons.Default.Language),
                                     onClick = k4OnClick,
@@ -2179,3 +2083,4 @@ internal fun commitLongPressChoice(label: String, onCommitText: ((String) -> Uni
 internal fun letterLongPressMenuAllowed(key: String, enabled: Boolean): Boolean =
     // 字母键是 1～2 个字母（26 键 q、14 键 qw）；earth 之类的功能键名不算。
     enabled || key.length !in 1..2 || !key.all { it in 'a'..'z' || it in 'A'..'Z' }
+

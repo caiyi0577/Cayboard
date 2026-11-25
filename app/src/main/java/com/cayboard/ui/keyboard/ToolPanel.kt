@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -229,7 +230,10 @@ fun ToolPanelBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(TOOL_PANEL_BAR_HEIGHT.dp)
+            // Keep the live bar on a fixed layout slot.  Without requiredHeight,
+            // language pills or the embedded EditText can make the parent remeasure
+            // and redistribute a few pixels across the keyboard rows.
+            .requiredHeight(TOOL_PANEL_BAR_HEIGHT.dp)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

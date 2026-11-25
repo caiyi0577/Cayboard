@@ -52,7 +52,13 @@ def allocated_inputs(paths):
 
 def check_storage(repo):
     repo = Path(repo).resolve()
-    locations = [(Path("C:/"), 40), (Path("D:/"), 100)] if os.name == "nt" else [
+    # Check only the volume that contains this checkout. Some Windows hosts expose
+    # tiny virtual/mapped drives (for example D:) that are unrelated to the build.
+    if os.name == "nt":
+        drive = Path(repo.anchor or "C:/")
+        locations = [(drive, 40)]
+    else:
+        locations = [
         (Path("/mnt/c"), 40), (Path("/mnt/d"), 100), (Path.home(), 20)]
     for path, floor in locations:
         if path.exists() and shutil.disk_usage(path).free < floor * GIB + RESERVATION:

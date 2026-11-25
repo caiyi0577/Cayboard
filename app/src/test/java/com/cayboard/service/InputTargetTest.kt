@@ -9,13 +9,6 @@ class InputTargetTest {
     @Test fun noInternalFocusTypesIntoTheHost() {
         assertEquals(InputTarget.Host, InputUIState().inputTarget)
         assertFalse(InputUIState().inputTarget.isInternal)
-        // A form that is shown but not focused does not take typed text.
-        assertEquals(InputTarget.Host, InputUIState(showOcrDraft = true).inputTarget)
-    }
-
-    @Test fun ocrDraftFocusChoosesOnlyTheDraftText() {
-        assertEquals(InputTarget.OcrDraft,InputUIState(ocrDraftFocused=true).inputTarget)
-        assertTrue(InputTarget.OcrDraft.isInternal)
     }
 
     @Test fun toolPanelChannelIsSearchWhileSearchIsOpen() {
@@ -34,12 +27,6 @@ class InputTargetTest {
         // A plugin tool panel still lets go when its field loses focus.
         assertFalse(InputUIState(toolPanelInputFocused = true).toolPanelFocusAfter(viewFocused = false))
         assertTrue(InputUIState().toolPanelFocusAfter(viewFocused = true))
-    }
-
-    /** Commit and cursor paths always preferred quick send when both flags were set. */
-    @Test fun quickSendWinsOverTheToolPanelChannel() {
-        assertEquals(InputTarget.OcrDraft, InputUIState(
-            ocrDraftFocused = true, toolPanelInputFocused = true, clipboardSearchVisible = true).inputTarget)
     }
 
     @Test fun hostHasNoInternalEditor() {

@@ -1,7 +1,6 @@
 package com.cayboard.ui.settings
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
@@ -43,8 +42,11 @@ internal fun ClipboardSensitiveSetting() {
 @Composable
 internal fun ClipboardSensitiveSettingCard(enabled: Boolean, onToggle: (Boolean) -> Unit) {
     SettingsSection(title = "敏感内容", content = {
-        SettingsToggleItem(Icons.TwoTone.Lock, "记录密码等敏感内容",
+        SettingsToggleItem(lucideIcon(LucideSettingIcons.KEY), "记录密码等敏感内容",
             "密码管理器和密码框里复制的内容也记进剪贴板，显示成圆点，1 小时后自动删除，不同步、不导出。圆点的记录长按选「不是密码」恢复成普通记录。",
             enabled, onToggle)
     })
 }
+
+
+

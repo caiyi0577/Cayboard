@@ -1,7 +1,6 @@
 package com.cayboard.ui.settings
 import android.content.Context
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.ContentPaste
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.cayboard.ui.menubar.CLIPBOARD_CLOSE_AFTER_PASTE_KEY
@@ -14,7 +13,7 @@ internal fun ClipboardPasteSettings() {
     var closeAfterPaste by remember { mutableStateOf(clipboardClosesAfterPaste(prefs)) }
     SettingsSection(title = "粘贴", content = {
         SettingsToggleItem(
-            icon = Icons.TwoTone.ContentPaste,
+            icon = lucideIcon(LucideSettingIcons.CLIPBOARD),
             title = "上屏后自动关闭剪贴板",
             subtitle = "关掉后留在剪贴板里，可以连续贴多条",
             checked = closeAfterPaste,
@@ -25,3 +24,4 @@ internal fun ClipboardPasteSettings() {
         )
     })
 }
+

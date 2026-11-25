@@ -21,13 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.twotone.Build
-import androidx.compose.material.icons.twotone.DataObject
-import androidx.compose.material.icons.twotone.Description
-import androidx.compose.material.icons.twotone.Folder
-import androidx.compose.material.icons.twotone.Memory
-import androidx.compose.material.icons.twotone.Schedule
-import androidx.compose.material.icons.twotone.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -324,19 +317,18 @@ private fun MemorySection(
     }
 }
 
+@Composable
 private fun categoryIcon(id: String): ImageVector = when (id) {
-    StorageStats.ID_MODELS -> Icons.TwoTone.Memory
-    StorageStats.ID_SCHEMA_CACHE -> Icons.TwoTone.Build
-    StorageStats.ID_SCHEMAS -> Icons.TwoTone.Description
-    StorageStats.ID_CLIPBOARD -> Icons.TwoTone.Widgets
-    StorageStats.ID_LOGS -> Icons.TwoTone.Schedule
-    StorageStats.ID_CACHE -> Icons.TwoTone.Folder
-    else -> Icons.TwoTone.DataObject
+    StorageStats.ID_MODELS -> lucideIcon(LucideSettingIcons.TABLE)
+    StorageStats.ID_SCHEMA_CACHE -> lucideIcon(LucideSettingIcons.SLIDERS)
+    StorageStats.ID_SCHEMAS -> lucideIcon(LucideSettingIcons.TABLE)
+    StorageStats.ID_CLIPBOARD -> lucideIcon(LucideSettingIcons.TABLE)
+    StorageStats.ID_LOGS -> lucideIcon(LucideSettingIcons.WAVEFORM)
+    StorageStats.ID_CACHE -> lucideIcon(LucideSettingIcons.CLIPBOARD)
+    else -> lucideIcon(LucideSettingIcons.TABLE)
 }
 
 private fun clearConfirmText(id: String): String = when (id) {
-    StorageStats.ID_MODELS ->
-        "将清理本机模型文件，内置模型下次使用时会从安装包重新准备。本地导入的模型需重新导入。"
     StorageStats.ID_SCHEMA_CACHE ->
         "将删除输入方案的编译缓存与编译日志，不会影响词库和自定义配置；下次启动输入法时会自动重新编译。确定继续吗？"
     StorageStats.ID_CLIPBOARD ->
@@ -347,4 +339,6 @@ private fun clearConfirmText(id: String): String = when (id) {
         "将删除图片与临时文件缓存，清理后首次加载会稍慢。确定继续吗？"
     else -> "确定清理吗？"
 }
+
+
 

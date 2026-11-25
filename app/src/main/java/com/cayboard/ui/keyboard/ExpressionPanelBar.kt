@@ -46,7 +46,7 @@ internal fun ExpressionPanelBar(
             .combinedClickable(role = Role.Button, onClick = onDelete, onLongClick = onDeleteFace,
                 onLongClickLabel = if (onDeleteFace != null) "删除整个颜文字" else null),
             contentAlignment = Alignment.Center) {
-            Icon(Icons.AutoMirrored.Filled.Backspace, "删除", Modifier.size(20.dp), tint = textColor)
+            Icon(deleteIconPainter(), "删除", Modifier.size(20.dp), tint = textColor)
         }
     }
 }
@@ -71,3 +71,4 @@ internal fun PanelEmptyHint(text: String, textColor: Color, modifier: Modifier =
         Text(text, color = textColor.copy(alpha = .5f), fontSize = 14.sp)
     }
 }
+

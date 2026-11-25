@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -55,6 +57,7 @@ fun SplitWordsView(
     text: String, backgroundColor: Color, viewModel: KeyboardViewModel,
     onBack: () -> Unit,
     onConfirmText: (String) -> Unit, bottomPaddingDp: Int = 0,
+    onTranslateText: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -83,8 +86,26 @@ fun SplitWordsView(
     val listState = rememberLazyListState()
     val chipBounds = remember(parts) { mutableMapOf<Int, Rect>() }
     var origin by remember { mutableStateOf(Offset.Zero) }
+    val hitSlop = with(LocalDensity.current) { 14.dp.toPx() }
     fun togglePart(index: Int) { selected = if (index in selected) selected - index else selected + index }
-    fun findChip(position: Offset) = chipBounds.entries.firstOrNull { it.value.contains(position + origin) }?.key
+    fun findChip(position: Offset): Int? {
+        val p = position + origin
+        chipBounds.entries.firstOrNull { r ->
+            val b = r.value
+            p.x in (b.left - hitSlop)..(b.right + hitSlop) && p.y in (b.top - hitSlop)..(b.bottom + hitSlop)
+        }?.key?.let { return it }
+        return chipBounds.entries.minByOrNull { r ->
+            val b = r.value
+            val dx = when { p.x < b.left -> b.left - p.x; p.x > b.right -> p.x - b.right; else -> 0f }
+            val dy = when { p.y < b.top -> b.top - p.y; p.y > b.bottom -> p.y - b.bottom; else -> 0f }
+            dx * dx + dy * dy
+        }?.takeIf { r ->
+            val b = r.value
+            val dx = when { p.x < b.left -> b.left - p.x; p.x > b.right -> p.x - b.right; else -> 0f }
+            val dy = when { p.y < b.top -> b.top - p.y; p.y > b.bottom -> p.y - b.bottom; else -> 0f }
+            dx <= hitSlop * 1.8f && dy <= hitSlop * 1.8f
+        }?.key
+    }
 
     Column(modifier.fillMaxWidth().keyboardPanelBackground(backgroundColor).padding(bottom = bottomPaddingDp.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 6.dp).clipboardPanelExpandGesture(),
@@ -101,6 +122,13 @@ fun SplitWordsView(
                 (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Cayboard 拆词", selectedText))
                 Toast.makeText(context, "已复制所选文字", Toast.LENGTH_SHORT).show()
             }, modifier = Modifier.testTag("split-copy")) { Icon(Icons.Default.ContentCopy, "复制所选", tint = colors.onSurface.copy(alpha = if (selectedText.isNotEmpty()) 1f else .35f), modifier = Modifier.size(19.dp)) }
+            IconButton(enabled = selectedText.isNotEmpty() && onTranslateText != null,
+                onClick = { onTranslateText?.invoke(selectedText) },
+                modifier = Modifier.testTag("split-translate")) {
+                Icon(Icons.Default.Translate, "翻译所选", tint = colors.onSurface.copy(
+                    alpha = if (selectedText.isNotEmpty() && onTranslateText != null) 1f else .35f),
+                    modifier = Modifier.size(19.dp))
+            }
             FilledTonalButton(enabled = selectedText.isNotEmpty(),
                 colors = ButtonDefaults.filledTonalButtonColors(containerColor = colors.primaryContainer, contentColor = colors.primary), contentPadding = PaddingValues(horizontal = 12.dp),
                 onClick = { onConfirmText(selectedText); onBack() }, modifier = Modifier.height(32.dp).testTag("split-confirm")) {
@@ -141,18 +169,21 @@ fun SplitWordsView(
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         val first = findChip(down.position)
-                        val removing = first != null && first in selected
+                        // Keep the selection as it was when the gesture started. Recomputing
+                        // from this baseline on every move lets a drag reverse direction and
+                        // undo only the range created by the current gesture.
+                        val baseline = selected
+                        val removing = first != null && first in baseline
                         var mode = SplitGesture.PENDING
                         while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
-                                if (mode == SplitGesture.PENDING && first != null && !change.isConsumed)
+                                if (mode == SplitGesture.PENDING && first != null)
                                     selected = if (removing) selected - first else selected + first
                                 break
                             }
                             if (mode == SplitGesture.PENDING) {
-                                if (change.isConsumed) { mode = SplitGesture.SCROLL; continue }
                                 val moved = change.position - down.position
                                 if (moved.getDistance() <= viewConfiguration.touchSlop) continue
                                 mode = splitGestureMode(first != null, moved.x, moved.y, listState.canScrollForward || listState.canScrollBackward)
@@ -161,7 +192,7 @@ fun SplitWordsView(
                             change.consume()
                             val at = findChip(change.position) ?: continue
                             val range = (minOf(first!!,at)..maxOf(first,at)).toSet()
-                            selected = if (removing) selected - range else selected + range
+                            selected = if (removing) baseline - range else baseline + range
                         }
                     }
                 },

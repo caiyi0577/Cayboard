@@ -118,3 +118,4 @@ internal fun IconSettingsContent(onBack: () -> Unit, onChanged: () -> Unit) {
         }
     }
 }
+

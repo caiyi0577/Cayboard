@@ -21,8 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -166,10 +164,12 @@ internal fun SideSymbolEditor(target: SideSymbolTarget, onResetReady: ((() -> Un
 private fun RowScope.MoveButton(enabled: Boolean, vertical: Boolean, earlier: Boolean, onClick: () -> Unit) {
     IconButton(enabled = enabled, onClick = onClick) {
         Icon(when {
-            vertical && earlier -> Icons.Default.KeyboardArrowUp
-            vertical -> Icons.Default.KeyboardArrowDown
+            vertical && earlier -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
+            vertical -> Icons.AutoMirrored.Filled.KeyboardArrowRight
             earlier -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
             else -> Icons.AutoMirrored.Filled.KeyboardArrowRight
         }, if (vertical) (if (earlier) "上移" else "下移") else (if (earlier) "左移" else "右移"))
     }
 }
+
+

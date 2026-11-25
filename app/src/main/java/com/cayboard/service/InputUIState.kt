@@ -72,10 +72,7 @@ data class InputUIState(
     val hardwareOptions: com.cayboard.settings.HardwareKeyboardOptions = com.cayboard.settings.HardwareKeyboardOptions(),
     val editorBounds: HardwareCursorAnchor? = null,
     val cursorAnchor: HardwareCursorAnchor? = null,
-    val showOcrDraft: Boolean = false,
-    val ocrDraftFocused: Boolean = false,
     /** 快捷发送表单内焦点是否在"触发编码"输入框（false=在文本输入框）；决定按键输入路由目标。 */
-    val ocrDraftText: String = "",
     /** 通用工具面板是否显示（候选栏上方，与快捷发送同位置）。 */
     val toolPanelVisible: Boolean = false,
     /** 面板输入框是否聚焦（聚焦时按键路由注入面板 EditText）。 */

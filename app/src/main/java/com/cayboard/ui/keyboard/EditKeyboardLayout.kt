@@ -140,7 +140,7 @@ fun EditKeyboardLayout(
                         "down" -> Icons.Default.KeyboardArrowDown to "向下"
                         "left" -> Icons.Default.KeyboardArrowLeft to "向左"
                         "right" -> Icons.Default.KeyboardArrowRight to "向右"
-                        "delete" -> Icons.AutoMirrored.Filled.Backspace to "删除"
+                        "delete" -> Icons.AutoMirrored.Filled.KeyboardReturn to "删除"
                         "enter" -> actionKeyIcon(enterKeyText) to enterKeyText
                         "select_all" -> Icons.Default.SelectAll to "全选"
                         else -> Icons.Default.TextFields to if (selecting) "取消选择" else "选择"
@@ -391,3 +391,4 @@ internal fun EditorActionKey(
         }
     }
 }
+

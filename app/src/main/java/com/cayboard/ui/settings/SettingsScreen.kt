@@ -3,6 +3,7 @@ package com.cayboard.ui.settings
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -96,6 +97,7 @@ fun SettingsScreen(
     ) {
         composable(SettingsRoutes.Main) {
             androidx.compose.runtime.CompositionLocalProvider(LocalSettingsSearchAnchors provides false) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalSettingsShowIcons provides true) {
                 SettingsMainContent(
                     onNavigateToHardwareKeyboard = { navController.navigate(SettingsRoutes.HardwareKeyboard) },
                     onNavigateToLanguages = { navController.navigate("languages") },
@@ -109,9 +111,10 @@ fun SettingsScreen(
                     onNavigateToBackup = { navController.navigate(SettingsRoutes.Backup) },
                     onNavigateToRoute = { navController.navigate(it) },
                 )
+                }
             }
         }
-        composable(SettingsRoutes.HardwareKeyboard) { HardwareKeyboardSettingsContent { navController.popBackStack() } }
+        composable(SettingsRoutes.HardwareKeyboard) { CompositionLocalProvider(LocalSettingsShowIcons provides false) { HardwareKeyboardSettingsContent { navController.popBackStack() } } }
         composable("languages") {
             LanguageSettingsContent(onBack = { navController.popBackStack() },
                 onOpenDoublePinyin = { navController.navigate(SettingsRoutes.DoublePinyin) },
@@ -234,4 +237,5 @@ fun SettingsScreen(
     }
     }
 }
+
 

@@ -523,7 +523,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
     internal fun japaneseReadingOnScreen(): Boolean {
         val state = service.uiState.value
         if (state.isAsciiMode || !state.inputProfile.capabilities.japaneseConversion || state.inputTarget.isInternal ||
-            state.ocrDraftFocused || state.toolPanelInputFocused) return false
+            state.toolPanelInputFocused) return false
         return service.candidateState.value.let { it.isComposing || it.inputText.isNotEmpty() }
     }
 

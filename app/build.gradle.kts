@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import java.security.MessageDigest
 import java.util.Base64
 import java.util.Properties
 
@@ -58,8 +59,8 @@ android {
         // 按发布批次定号：兼容修复升 PATCH，兼容功能升 MINOR 并归零 PATCH。
         // 不兼容变更升 MAJOR；日常编辑不逐次升号。完整规则见 docs/packaging.md。
         // versionCode 是独立递增的交付序号；同批普通版与内置版共用。
-        versionCode = 20261508
-        versionName = "2.1.8"
+        versionCode = 20261515
+        versionName = "2.1.15"
 
 
         // Isolated Compose rendering on a local x86 emulator; ordinary device tests keep the full app.
@@ -166,7 +167,6 @@ android {
         jniLibs {
             useLegacyPackaging = true
             // tasks-native.gradle.kts extracts this same 1.28.0 runtime for C++ consumers.
-            // The Java OCR binding contributes an identical copy plus onnxruntime4j_jni.
             pickFirsts.add("**/libonnxruntime.so")
             pickFirsts.add("**/libc++_shared.so")
         }
@@ -174,20 +174,10 @@ android {
     // 九键长句重排已停用（t9_pinyin.schema.yaml），两种包都不再带这个模型；源文件只留给电脑回放对照。
     // Keep vocabulary and licenses; both editions offer the large grammar separately.
     androidResources.ignoreAssetsPatterns.add("t9_sentence.onnx")
-    // 拍照识别模型（约 21 MB）：轻量版用到时再下载（模型目录 ocr-ppocr-v5，国内魔搭、海外 GitHub）；
-    // 带模型的完整版、老人包、朋友包照旧内置，不联网也能识别。
-    if (providers.gradleProperty("bundleModels").orNull != "true")
-        androidResources.ignoreAssetsPatterns.add("<dir>ppocr-v5")
-    // 内置的拍照识别模型不压缩存放（只多约 3 MB 下载）：识别时直接映射安装包，手机上不再解出第二份（OcrModelFiles）。
     // 语音（SenseVoice）和九键词组模型不这样做：不压缩会让完整版下载各多约 76 MB（2026-11-02 决定保持压缩、解压一份）。
     // 声纹和手写模型保持解压：模型管理（是否装好、删除、设置向导跳过）和手写模板、训练页都按 models/ 下的文件路径读，
     // 为省 7–27 MB 改这些地方不值得。
     androidResources.noCompress.add("cseg")
-    androidResources.noCompress.addAll(listOf("ch_PP-OCRv5_det_mobile.onnx", "ch_PP-OCRv5_rec_mobile.onnx"))
-    // 拍照识别引擎 OpenCV（arm64 约 9 MB）同理：轻量版用到时和模型一起下载（模型目录 ocr-engine，ocr/OcrEngine.kt），
-    // 带模型的安装包照旧内置。它要的 libc++_shared.so 留在包里。离线包（assembleOffline）也必须带 bundleModels。
-    if (providers.gradleProperty("bundleModels").orNull != "true")
-        packaging.jniLibs.excludes.add("**/libopencv_java4.so")
     // This edition carries Chinese and English scheme resources only, including bundled-model builds.
     listOf("<dir>rime_japanese", "<dir>azookey", "<dir>rime_letters").forEach { androidResources.ignoreAssetsPatterns.add(it) }
     packaging.jniLibs.excludes.add("**/libCyAzooKey.so")
@@ -299,12 +289,7 @@ dependencies {
     implementation(libs.exp4j)
 
     // ZXing for QR code generation
-    // Bundled OCR works without Play Services or a first-use model download.
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.28.0")
-    implementation("org.opencv:opencv:4.12.0")
-    implementation("androidx.camera:camera-camera2:1.6.2")
-    implementation("androidx.camera:camera-lifecycle:1.6.2")
-    implementation("androidx.camera:camera-view:1.6.2")
 
     implementation(libs.kotlinx.serialization.json)
 
@@ -355,7 +340,47 @@ dependencies {
 }
 
 // Fixed offline speech assets supplied by the local packaging entry.
-android.sourceSets.getByName("main").assets.srcDir(providers.gradleProperty("cyime.xasrAssetsDir").orNull ?: "src/main/fixed-speech-assets")
+val fixedSpeechAssetsDir = file(providers.gradleProperty("cyime.xasrAssetsDir").orNull ?: "src/main/fixed-speech-assets")
+android.sourceSets.getByName("main").assets.srcDir(fixedSpeechAssetsDir)
+val verifyFixedSpeechAssets = tasks.register("verifyFixedSpeechAssets") {
+    inputs.dir(fixedSpeechAssetsDir)
+    doLast {
+        val speechRoot = fixedSpeechAssetsDir.resolve("builtin-speech")
+        val requiredFiles = listOf(
+            speechRoot.resolve("manifest.json"),
+            speechRoot.resolve("xasr/encoder-epoch-99-avg-1.int8.onnx"),
+            speechRoot.resolve("xasr/decoder-epoch-99-avg-1.onnx"),
+            speechRoot.resolve("xasr/joiner-epoch-99-avg-1.int8.onnx"),
+            speechRoot.resolve("xasr/tokens.txt"),
+        )
+        check(requiredFiles.all { it.isFile && it.length() > 0L }) {
+            "Fixed offline X-ASR assets are incomplete under ${speechRoot.absolutePath}"
+        }
+        val manifestText = requiredFiles.first().readText()
+        val expectedAssets = mapOf(
+            "encoder-epoch-99-avg-1.int8.onnx" to (161015713L to "7f6aa62056efd8af9da13e0faa81cd3f284d2fb2e3b63de56fd2dfd3450910dc"),
+            "decoder-epoch-99-avg-1.onnx" to (11309084L to "72f47405d3c1033bebccbef82f90071e7b4ba3e71b9c986f2b74244b25723aed"),
+            "joiner-epoch-99-avg-1.int8.onnx" to (2581422L to "aedb7fa697b2ab43f20499826fff7c997eea7d67db77be97769aeeeb726e63b3"),
+            "tokens.txt" to (58806L to "b818a60878b9aae978cbb8ad594acbd403d76d1af2e31ef4197c84e2dbdba27c"),
+        )
+        check(expectedAssets.keys.all { manifestText.contains("\"name\": \"$it\"") }) {
+            "Fixed offline X-ASR manifest must list exactly the bundled model files"
+        }
+        for ((name, expected) in expectedAssets) {
+            check(name.matches(Regex("[A-Za-z0-9_.-]+"))) { "Invalid X-ASR asset name: $name" }
+            val asset = speechRoot.resolve("xasr/$name")
+            check(asset.isFile && asset.length() == expected.first) {
+                "X-ASR asset size mismatch: ${asset.absolutePath}"
+            }
+            val digest = MessageDigest.getInstance("SHA-256").digest(asset.readBytes())
+                .joinToString("") { "%02x".format(it) }
+            check(digest == expected.second && manifestText.contains(expected.second)) {
+                "X-ASR asset checksum mismatch: ${asset.name}"
+            }
+        }
+    }
+}
+tasks.named("preBuild").configure { dependsOn(verifyFixedSpeechAssets) }
 
 
 

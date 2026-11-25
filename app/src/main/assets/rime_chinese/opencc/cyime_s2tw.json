@@ -24,7 +24,7 @@
         },
         {
           "type": "text",
-          "file": "CayboardSurnames.txt"
+          "file": "CyimeSurnames.txt"
         }
       ]
     }
@@ -49,7 +49,7 @@
               },
               {
                 "type": "text",
-                "file": "CayboardSurnames.txt"
+                "file": "CyimeSurnames.txt"
               }
             ]
           },
@@ -79,7 +79,7 @@
     {
       "dict": {
         "type": "ocd2",
-        "file": "CayboardTWPhrases.ocd2"
+        "file": "CyimeTWPhrases.ocd2"
       }
     }
   ]

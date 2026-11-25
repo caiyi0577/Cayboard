@@ -48,20 +48,9 @@ class PanelExclusionTest {
         SensitiveInputState.clipboardSearch = false
     }
 
-    @Test fun openingSearchClosesTheEditForm() {
-        service.openOcrDraft("地址")
+    @Test fun openingSearchKeepsTheHostStateSeparate() {
         service.openClipboardSearch()
-        assertFalse(uiState.value.showOcrDraft)
         assertEquals(InputTarget.ClipboardSearch, uiState.value.inputTarget)
         assertEquals("完成", uiState.value.enterKeyText)
-    }
-
-    @Test fun openingTheEditFormClosesSearch() {
-        service.openClipboardSearch()
-        service.openOcrDraft("识别结果")
-        assertFalse(uiState.value.clipboardSearchVisible)
-        assertFalse(SensitiveInputState.clipboardSearch)
-        assertTrue(uiState.value.showOcrDraft)
-        assertEquals(InputTarget.OcrDraft, uiState.value.inputTarget)
     }
 }
