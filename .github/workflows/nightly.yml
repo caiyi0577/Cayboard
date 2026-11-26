@@ -1,4 +1,4 @@
-﻿name: Cayboard Nightly Build
+name: Cayboard Nightly Build
 
 on:
   schedule:
@@ -75,7 +75,7 @@ jobs:
           lfs: true
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
