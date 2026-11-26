@@ -1,7 +1,7 @@
 """Build the bundled Arknights cell dictionary (Rime dict.yaml, full-pinyin codes).
 
 Inputs are read-only local snapshots; nothing is downloaded here:
-  --rime-ice   a rime_ice user directory containing cn_dicts/ (readings + duplicate check)
+  --rime-ice   a cayboard_pinyin user directory containing cn_dicts/ (readings + duplicate check)
   --operators  ArknightsResearch data/derived/<gamedata>/operators.json
   --community  ArknightsResearch data/community/community.sqlite (PRTS skills/enemies/summons)
   --gamedata   ArknightsGameData zh_CN/gamedata/excel (sub-professions, materials)
@@ -14,7 +14,7 @@ Curated terms come from core_terms.txt, community_terms.txt and slang.txt next t
 
 Weights: curated terms of three or more characters outrank same-code everyday words so they
 appear first; two-character curated terms and generated proper nouns stay at a modest weight
-and never displace an existing everyday word. Words rime_ice already ranks at least that high
+and never displace an existing everyday word. Words cayboard_pinyin already ranks at least that high
 are skipped; lower-ranked duplicates are lifted (the schemas' uniquifier hides the repeat).
 """
 import argparse
@@ -74,7 +74,7 @@ class Readings:
             self.words[text] = (code, self.words.get(text, ("", 0))[1])
 
     def code(self, text):
-        """Fewest-segment reading using rime_ice words, then single-character readings."""
+        """Fewest-segment reading using cayboard_pinyin words, then single-character readings."""
         if text in self.words:
             return self.words[text][0]
         n = len(text)
@@ -174,7 +174,7 @@ def main():
     for key in ("rime-ice", "operators", "community", "gamedata", "arkrec", "garrison", "aliases", "output"):
         parser.add_argument(f"--{key}", required=True)
     args = parser.parse_args()
-    readings = Readings(args.rime_ice)
+    readings = Readings(args.cayboard_pinyin)
     entries, missing = {}, []
 
     def put(text, code, weight):

@@ -3,13 +3,15 @@ from pathlib import Path
 from hashlib import sha256
 from io import BytesIO
 import json
+import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import cyime_packager as cp  # noqa: E402
+import cayboard_packager as cp  # noqa: E402
 
 GRADLE = '''android {
     defaultConfig {
@@ -58,6 +60,38 @@ class VersionTest(unittest.TestCase):
             self.assertTrue(cp.needs_bump(root, "mine"))     # different content: new version
 
 
+class PackagerConfigTest(unittest.TestCase):
+    def test_local_config_overrides_defaults_without_replacing_other_presets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packager = root / "scripts/packager"
+            packager.mkdir(parents=True)
+            (packager / "config.json").write_text(json.dumps({
+                "presets": {"light": {"install": False}, "full": {"offline_models": True}},
+                "resourceTag": "models",
+            }), encoding="utf-8")
+            local = root / "local.json"
+            local.write_text(json.dumps({"presets": {"light": {"install": True}},
+                                         "privateGloss": "C:/private/gloss.tsv"}), encoding="utf-8")
+            with patch.dict(os.environ, {"CAYBOARD_PACKAGER_CONFIG": str(local)}, clear=False):
+                config = cp.load_config(root)
+            self.assertEqual(config["presets"], {
+                "light": {"install": True}, "full": {"offline_models": True}
+            })
+            self.assertEqual(config["privateGloss"], "C:/private/gloss.tsv")
+            self.assertEqual(config["resourceTag"], "models")
+
+    def test_model_directory_defaults_to_user_documents_and_can_be_overridden(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packager = root / "scripts/packager"
+            packager.mkdir(parents=True)
+            (packager / "config.json").write_text("{}", encoding="utf-8")
+            with patch.dict(os.environ, {"CAYBOARD_DATA_DIR": "C:/Users/test/Documents/Cayboard-Data"}, clear=False):
+                config = cp.load_config(root)
+            self.assertEqual(Path(config["modelsDir"]), Path("C:/Users/test/Documents/Cayboard-Data/models"))
+
+
 class PackagedInputDataTest(unittest.TestCase):
     def inspect(self, extra=None):
         base = b"shared association table"
@@ -79,7 +113,7 @@ class PackagedInputDataTest(unittest.TestCase):
         light = self.inspect()
         model, gloss = b"model", b"gloss"
         hashes = (sha256(model).hexdigest(), sha256(gloss).hexdigest())
-        private = self.inspect({"assets/rime_chinese/t9_ngram.lm": model, "assets/gloss/cyime_gloss-private.tsv": gloss})
+        private = self.inspect({"assets/cayboard_chinese/t9_ngram.lm": model, "assets/gloss/cayboard_gloss-private.tsv": gloss})
         cp.check_input_data(light, None, None)
         cp.check_input_data(private, *hashes)
         self.assertEqual(private["associationSources"], ["fixture corpus"])
@@ -95,7 +129,7 @@ class PackagedInputDataTest(unittest.TestCase):
                 cp.check_input_data(self.inspect({entry: b"unexpected"}), None, None)
 
     def test_cylm_is_checked_even_when_private_gloss_is_permitted(self):
-        data = self.inspect({"assets/rime_chinese/cylm_model": b"private"})
+        data = self.inspect({"assets/cayboard_chinese/cylm_model": b"private"})
         cp.check_input_data(data, None, None, {"cylm_model": sha256(b"private").hexdigest()})
         with self.assertRaises(cp.DeliveryError):
             cp.check_input_data(data, None, None)
@@ -105,7 +139,7 @@ class StagingTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
         self.root = Path(self.dir.name)
-        (self.root / "app/src/main/assets/rime_chinese").mkdir(parents=True)
+        (self.root / "app/src/main/assets/cayboard_chinese").mkdir(parents=True)
         self.model = self.root / "model.lm"
         self.model.write_bytes(b"model-a")
         self.target = self.root / cp.T9_TARGET

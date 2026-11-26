@@ -67,7 +67,7 @@ class VerificationCodePermissionTest {
     }
 
     private fun saveImage(state: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(Canvas(image)) }

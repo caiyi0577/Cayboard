@@ -12,7 +12,8 @@ fun hymtDigest(file: File): String {
     }
     return hash.digest().joinToString("") {"%02x".format(it)}
 }
-val hymtModelFile = providers.gradleProperty("cyime.hymtModelFile")
+val hymtModelFile = providers.gradleProperty("cayboard.hymtModelFile")
+    .orElse(providers.gradleProperty("cayboard.hymtModelFile"))
     .map { File(it) }.getOrElse(rootProject.file(".codex-artifacts/hymt/Hy-MT2-1.8B-1.25Bit.gguf"))
 val hymtLibFile = rootProject.file(".codex-artifacts/hymt/libs/arm64-v8a/libcyhymt.so")
 val prepareHymtAssets by tasks.registering {

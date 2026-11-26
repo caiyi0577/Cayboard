@@ -4,9 +4,9 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.SchemaChangeApplier
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.SchemaChangeApplier
 import com.cayboard.settings.ImportManager
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.PersonalDictManager
@@ -59,7 +59,7 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
             // 同一条编译问题这一页只弹一次：以后每次启停都会自动应用，不能每点一下开关就弹一遍。
             var shownProblem = ""
             SchemaChangeApplier.finished.collect { usable ->
-                val problem = withContext(Dispatchers.IO) { RimeConfigHelper.deploymentProblem(context) }
+                val problem = withContext(Dispatchers.IO) { EngineConfig.deploymentProblem(context) }
                 when {
                     problem.isNotEmpty() && problem != shownProblem -> _uiState.update { it.copy(deployReport = problem) }
                     problem.isEmpty() && !usable ->
@@ -120,7 +120,7 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
                 SchemaManager.setEnabledSchemas(context, enabled)
                 if (turnedOn) com.cayboard.settings.LanguagePreferences.enableForSchema(context, schema.schemaId)
                 // 关掉的正是当前方案：马上换到同语言还开着的方案（#340），不然键盘一直用着它、布局栏画不出来。
-                else RimeConfigHelper.moveOffDisabledSchema(context)
+                else EngineConfig.moveOffDisabledSchema(context)
                 SchemaManager.getEnabledSchemas(context) to SettingsPreferences.getCurrentSchema(context)
             }
             _uiState.update { it.copy(enabledSchemas = persisted, currentSchema = current) }
@@ -137,11 +137,11 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
         val previous = _uiState.value.currentSchema
         SettingsPreferences.setCurrentSchema(context, schema.schemaId)
         _uiState.update { it.copy(currentSchema = schema.schemaId) }
-        if (RimeEngine.isInitialized()) {
-            val available = RimeEngine.getInstance().getAvailableSchemas()
+        if (InputEngine.isInitialized()) {
+            val available = InputEngine.getInstance().getAvailableSchemas()
             if (schema.schemaId in available) {
                 // 部署/编译进行中 switchSchema 不阻塞返回 false，避免主线程等待
-                val switched = RimeEngine.getInstance().switchSchema(schema.schemaId)
+                val switched = InputEngine.getInstance().switchSchema(schema.schemaId)
                 if (switched) {
                     com.cayboard.settings.InputModes.selectProfile(context, schema.toSchemaInfo())
                     showToast("已切换到${schema.name}")
@@ -196,18 +196,18 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
                 withContext(Dispatchers.IO) {
                     KeysConfigHelper.loadConfig(context)
                     KeyboardThemes.reload(context)
-                    RimeConfigHelper.redeploy(context)
+                    EngineConfig.redeploy(context)
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 com.cayboard.util.FileLogger.e("SchemaSettings", "Deployment repair failed", error)
-                RimeConfigHelper.recordFailure(context, error)
+                EngineConfig.recordFailure(context, error)
                 false
             } finally {
                 _uiState.update { it.copy(isDeploying = false) }
             }
-            val problem = RimeConfigHelper.deploymentProblem(context)
+            val problem = EngineConfig.deploymentProblem(context)
             when {
                 problem.isNotEmpty() -> _uiState.update { it.copy(deployReport = problem) }
                 success -> { showToast("部署完成"); onDeployed?.invoke() }

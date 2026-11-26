@@ -1,7 +1,7 @@
 // Writers for the T9 word trigram model files (formats in t9_ngram_format.h), shared by
 // ngram_build.cc (corpus -> model) and ngram_pack.cc (version 2 file -> compact version 3).
-#ifndef CYIME_TOOLS_NGRAM_WRITE_H_
-#define CYIME_TOOLS_NGRAM_WRITE_H_
+#ifndef CAYBOARD_TOOLS_NGRAM_WRITE_H_
+#define CAYBOARD_TOOLS_NGRAM_WRITE_H_
 
 #include <cstdint>
 #include <cstdio>
@@ -12,7 +12,7 @@
 
 #include "t9_ngram_format.h"
 
-namespace cyime_t9_ngram {
+namespace cayboard_t9_ngram {
 
 // The model as the version 2 layout holds it, with every id and offset as a plain integer.
 struct ModelTables {
@@ -194,6 +194,6 @@ inline bool WriteModel(const std::string& path, const ModelTables& m, uint32_t v
   return version == kVersion3 ? WriteV3(path, m, stats) : WriteV2(path, m, stats);
 }
 
-}  // namespace cyime_t9_ngram
+}  // namespace cayboard_t9_ngram
 
-#endif  // CYIME_TOOLS_NGRAM_WRITE_H_
+#endif  // CAYBOARD_TOOLS_NGRAM_WRITE_H_

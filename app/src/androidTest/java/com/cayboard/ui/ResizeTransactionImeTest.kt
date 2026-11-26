@@ -21,8 +21,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.InputModes
 import com.cayboard.settings.SettingsPreferences
 import androidx.compose.ui.semantics.SemanticsActions
@@ -38,7 +38,7 @@ class ResizeTransactionImeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
-    private val engine = RimeEngine.getInstance()
+    private val engine = InputEngine.getInstance()
     private lateinit var editor: EditText
     private val swipeDistance get() = 80f * context.resources.displayMetrics.density
     private val imeComponent get() = ComponentName(context, "com.cayboard.service.CayboardInputMethodService")
@@ -76,9 +76,9 @@ class ResizeTransactionImeTest {
         // A service-owned ComposeView outlives a test's ComposeTestRule. Reusing it in the
         // next test would keep the previous rule's disposed recomposer and invisible test root.
         stopKeyboardService()
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
         engine.initialize(user, shared)
-        assertTrue(RimeConfigHelper.ensureDeployment(context))
+        assertTrue(EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession())
         engine.clearQueuedComposition()
         shell("ime enable $imeId")
@@ -163,15 +163,15 @@ class ResizeTransactionImeTest {
     @Suppress("DEPRECATION") // Android still exposes this application's own running services.
     private fun stopKeyboardService() {
         val activityManager = context.getSystemService(ActivityManager::class.java)
-        val waitForEngineDestroy = RimeEngine.isInitialized() &&
+        val waitForEngineDestroy = InputEngine.isInitialized() &&
             activityManager.getRunningServices(Int.MAX_VALUE).any { it.service == imeComponent }
         shell("ime disable $imeId")
         rule.waitUntil(10_000) {
             activityManager.getRunningServices(Int.MAX_VALUE).none { it.service == imeComponent } &&
-                (!waitForEngineDestroy || !RimeEngine.isInitialized())
+                (!waitForEngineDestroy || !InputEngine.isInitialized())
         }
         // Service removal and delivery of onDestroy happen on different threads. Drain Main
-        // before initializing Rime again or allowing this test's recomposer to be disposed.
+        // before initializing the native input engine again or allowing this test's recomposer to be disposed.
         instrumentation.waitForIdleSync()
     }
 

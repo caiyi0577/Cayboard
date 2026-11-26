@@ -1,5 +1,6 @@
 package com.cayboard.settings
 
+import com.cayboard.engine.compat.LegacyNames
 /** Resource boundaries for the Chinese/English edition, including upgrades from multilingual builds. */
 object InputResourcePolicy {
     val retiredSchemas = setOf("japanese", "japanese_kana", "jaroomaji", "spanish", "german", "french", "italian", "russian", "korean")
@@ -10,5 +11,6 @@ object InputResourcePolicy {
 
     internal fun isRetiredAsset(relative: String): Boolean =
         relative.removeSuffix(".schema.yaml").let { relative.endsWith(".schema.yaml") && it in retiredSchemas } ||
-            relative in setOf("lua/cyime_japanese_romaji.lua", "lua/cyime_japanese_completion.lua")
+            relative in setOf("lua/cayboard_japanese_romaji.lua", "lua/cayboard_japanese_completion.lua",
+                LegacyNames.OLD_BUNDLED_CORPUS)
 }

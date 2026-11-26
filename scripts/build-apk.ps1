@@ -54,7 +54,7 @@ try {
     }
     $editionArguments = @("-PbundleModels=$($BundleModels.IsPresent.ToString().ToLowerInvariant())")
     if ($ReleaseAbi -ne 'arm64-v8a') {
-        $editionArguments += @('-I', (Join-Path $PSScriptRoot 'phone-release-abi.gradle'), "-PcyimeReleaseAbi=$ReleaseAbi")
+        $editionArguments += @('-I', (Join-Path $PSScriptRoot 'phone-release-abi.gradle'), "-PcayboardReleaseAbi=$ReleaseAbi")
     }
     $buildTasks = @(':app:assemble' + $BuildType)
     if ($RunLayoutGate) { $buildTasks += @(':app:assembleDebug', ':app:assembleDebugAndroidTest') }

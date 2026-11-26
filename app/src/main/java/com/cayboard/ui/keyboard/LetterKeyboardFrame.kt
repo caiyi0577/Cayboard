@@ -99,7 +99,7 @@ internal fun letterKeyboardBottomRow(rows: List<List<String>>, fourteenKey: Bool
         QwertyBottomRowWeights.Standard else QwertyBottomRowWeights.Legacy
 
 /**
- * 第一行一格的宽度（dp），给 xime.custom.yaml 的 geometry.middle_row_inset 当单位：
+ * 第一行一格的宽度（dp），给 cayboard.custom.yaml 的 geometry.middle_row_inset 当单位：
  * 键不按字母数占格时一格就是第一行一个键宽，按字母数占格（14 键）时是一个字母宽。
  * [cellWidthDp] 是键盘按 [columns] 列分出的格宽。
  */

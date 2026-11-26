@@ -98,7 +98,7 @@ class CandidateGlossEdgeTest {
     }
 
     private fun saveComparison() {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         val bounds = rule.onNodeWithTag("comparison").fetchSemanticsNode().boundsInWindow

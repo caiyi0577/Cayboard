@@ -12,8 +12,8 @@ import java.io.File
 
 /**
  * 合并键布局（14/17/18 键）测试：
- * 1. xime.yaml 嵌套 rows 解析（子数组 → 拼接 ID）
- * 2. 前端键位分组与 Rime 方案 xlit 映射串的一致性
+ * 1. cayboard.yaml 嵌套 rows 解析（子数组 → 拼接 ID）
+ * 2. 前端键位分组与 输入方案 xlit 映射串的一致性
  *
  * 14 键随包提供，17/18 键示例供市场分发；一致性校验守护实际方案与前端分组。
  */
@@ -92,7 +92,7 @@ class KeyboardMergedLayoutTest {
 
     // ── 方案 → section 映射 ──
     // 绑定仅认 schemas 声明，代码不做 id 关键字猜测；单测环境无 Context 未加载
-    // xime.yaml，mergedSectionForSchema 恒为 null（全键盘），
+    // cayboard.yaml，mergedSectionForSchema 恒为 null（全键盘），
     // 声明路径由 resolveMergedSection / parseSchemaBindingsYamlText 用例覆盖。
 
     @Test
@@ -181,8 +181,8 @@ class KeyboardMergedLayoutTest {
     }
 
     @Test
-    fun `内置 xime yaml 三个布局均声明 schemas 绑定`() {
-        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(ximeYamlText())
+    fun `内置 cayboard yaml 三个布局均声明 schemas 绑定`() {
+        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(cayboardYamlText())
         assertEquals("qwerty_14", bindings["pinyin_14jian"])
         assertEquals("qwerty_17", bindings["pinyin_17jian"])
         assertEquals("qwerty_18", bindings["pinyin_18jian"])
@@ -203,8 +203,8 @@ class KeyboardMergedLayoutTest {
     }
 
     @Test
-    fun `内置 xime yaml 声明 t9 stroke handwriting 绑定`() {
-        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(ximeYamlText())
+    fun `内置 cayboard yaml 声明 t9 stroke handwriting 绑定`() {
+        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(cayboardYamlText())
         assertEquals("t9", bindings["t9_pinyin"])
         assertEquals("t9", bindings["t9"])
         assertEquals("t9", bindings["wanxiang_t9"])
@@ -213,7 +213,7 @@ class KeyboardMergedLayoutTest {
         assertEquals("handwriting", bindings["handwriting"])
     }
 
-    // ── 前端分组 ↔ Rime xlit 映射一致性 ──
+    // ── 前端分组 ↔ 方案 xlit 映射一致性 ──
 
     /** 定位仓库内文件（单测 workingDir 可能是模块目录或仓库根目录，逐级向上查找）。 */
     private fun repoFile(rel: String): File {
@@ -226,11 +226,11 @@ class KeyboardMergedLayoutTest {
         error("file not found: $rel")
     }
 
-    private fun ximeYamlText(): String =
-        repoFile("src/main/assets/xime.yaml").readText()
+    private fun cayboardYamlText(): String =
+        repoFile("src/main/assets/cayboard.yaml").readText()
 
     private fun schemaExampleText(schemaId: String): String =
-        repoFile(if (schemaId == "pinyin_14jian") "src/main/assets/rime_chinese/$schemaId.schema.yaml"
+        repoFile(if (schemaId == "pinyin_14jian") "src/main/assets/cayboard_chinese/$schemaId.schema.yaml"
             else "docs/schemas_examples/$schemaId.schema.yaml").readText()
 
     /** 从合并键方案 schema 提取 xlit 映射：字母 → 代表字母。 */
@@ -260,8 +260,8 @@ class KeyboardMergedLayoutTest {
 
     @Test
     fun `14键点击分组与精确滑动使用不同编码`() {
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(ximeYamlText(), "qwerty_14")
-            ?: error("xime.yaml 缺少 qwerty_14 rows")
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(cayboardYamlText(), "qwerty_14")
+            ?: error("cayboard.yaml 缺少 qwerty_14 rows")
         assertEquals(14, rows.flatten().size)
         assertEquals(representativeMap(rows), ambiguousTapMap(schemaExampleText("pinyin_14jian")))
     }
@@ -269,8 +269,8 @@ class KeyboardMergedLayoutTest {
     @Test
     fun `14 key Xiaohe keeps the pinned two stroke algebra before merging and has its own prism`() {
         val id = "double_pinyin_flypy_14jian"
-        val text = repoFile("src/main/assets/rime_chinese/$id.schema.yaml").readText()
-        val original = repoFile("build/generated/chinese-assets/rime_ice/double_pinyin_flypy.schema.yaml").readText()
+        val text = repoFile("src/main/assets/cayboard_chinese/$id.schema.yaml").readText()
+        val original = repoFile("build/generated/chinese-assets/cayboard_pinyin/double_pinyin_flypy.schema.yaml").readText()
         fun algebra(source: String): List<String> = source.substringAfter("\nspeller:")
             .substringAfter("  algebra:").lineSequence()
             .takeWhile { it.isBlank() || it.startsWith(" ") || it.startsWith("#") }
@@ -283,26 +283,26 @@ class KeyboardMergedLayoutTest {
         val pinned = rules.drop(leading.size)
         assertEquals(algebra(original), pinned.take(algebra(original).size))
         assertTrue(pinned.drop(algebra(original).size).all { it.startsWith("- derive/") })
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(ximeYamlText(), "qwerty_14")!!
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(cayboardYamlText(), "qwerty_14")!!
         assertEquals(representativeMap(rows), ambiguousTapMap(text))
         assertTrue(text.contains("schema_id: $id"))
-        assertTrue(text.contains("dictionary: rime_ice"))
+        assertTrue(text.contains("dictionary: cayboard_pinyin"))
         assertTrue(text.contains("prism: $id"))
-        assertEquals("qwerty_14", KeysConfigHelper.parseSchemaBindingsYamlText(ximeYamlText())[id])
+        assertEquals("qwerty_14", KeysConfigHelper.parseSchemaBindingsYamlText(cayboardYamlText())[id])
     }
 
     @Test
-    fun `17键前端分组与 Rime xlit 映射一致`() {
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(ximeYamlText(), "qwerty_17")
-            ?: error("xime.yaml 缺少 qwerty_17 rows")
+    fun `17键前端分组与 方案 xlit 映射一致`() {
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(cayboardYamlText(), "qwerty_17")
+            ?: error("cayboard.yaml 缺少 qwerty_17 rows")
         assertEquals(17, rows.flatten().size)
         assertEquals(representativeMap(rows), xlitMap(schemaExampleText("pinyin_17jian")))
     }
 
     @Test
-    fun `18键前端分组与 Rime xlit 映射一致`() {
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(ximeYamlText(), "qwerty_18")
-            ?: error("xime.yaml 缺少 qwerty_18 rows")
+    fun `18键前端分组与 方案 xlit 映射一致`() {
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(cayboardYamlText(), "qwerty_18")
+            ?: error("cayboard.yaml 缺少 qwerty_18 rows")
         assertEquals(18, rows.flatten().size)
         assertEquals(representativeMap(rows), xlitMap(schemaExampleText("pinyin_18jian")))
     }
@@ -325,11 +325,11 @@ class KeyboardMergedLayoutTest {
     fun `合并键布局不在 yaml 里配角标，统一按 MergedKeySymbols 的读顺序排`() {
         // 角标由 MergedKeySymbols 统一给出（CornerHintConsistencyTest 逐个布局核对），yaml 里写了就会顶替预设。
         for (section in listOf("qwerty_14", "qwerty_17", "qwerty_18")) {
-            val yaml = ximeYamlText()
+            val yaml = cayboardYamlText()
             val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(yaml, section)
-                ?: error("xime.yaml 缺少 $section rows")
+                ?: error("cayboard.yaml 缺少 $section rows")
             val gestures = KeysConfigHelper.parseKeyboardYamlSection(yaml, section)
-                ?: error("xime.yaml 缺少 $section keys")
+                ?: error("cayboard.yaml 缺少 $section keys")
             for (key in rows.flatten()) {
                 assertTrue("$section 的按键 $key 不该在 yaml 里配 swipe_up",
                     gestures[key.lowercase()]?.swipeUp == null && gestures[key.lowercase()]?.swipeDown == null)
@@ -342,3 +342,4 @@ class KeyboardMergedLayoutTest {
         assertEquals(FourteenKeySymbols.down, MergedKeySymbols.down(FourteenKeySymbols.keys))
     }
 }
+

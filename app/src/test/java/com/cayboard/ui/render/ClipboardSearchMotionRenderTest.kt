@@ -55,7 +55,7 @@ import java.io.File
 /**
  * 打开剪贴板搜索的动画逐帧对比（手机 360dp，深色，假数据）。上排“改前”：整个输入法窗口逐帧长高（每帧键盘和
  * 后面的 App 都要重排）；下排“改后”：高度一次到位，结果区只在自己的图层里滑入。键盘为占位。
- * 只在设置了 CYIME_RENDER_OUT 时出图。
+ * 只在设置了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w2000dp-h1400dp-hdpi")
@@ -114,7 +114,7 @@ class ClipboardSearchMotionRenderTest {
     }
 
     @Test fun renderOpeningFrames() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         KeyboardThemes.initFromConfig(ApplicationProvider.getApplicationContext<Context>())
         File(out!!).mkdirs()

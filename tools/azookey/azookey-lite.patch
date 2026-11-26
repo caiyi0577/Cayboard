@@ -102,7 +102,7 @@ diff -ruN '--exclude=.build' '--exclude=.git' '--exclude=azooKey_dictionary_stor
 --- pristine/Sources/FoundationLite/FoundationLite.swift	1970-01-01 00:00:00.000000000 +0000
 +++ akkc-lite/Sources/FoundationLite/FoundationLite.swift	2026-11-02 08:26:00.036910334 +0000
 @@ -0,0 +1,226 @@
-+// CyIME: the few Foundation pieces this converter needs, on top of FoundationEssentials,
++// Cayboard: the few Foundation pieces this converter needs, on top of FoundationEssentials,
 +// so Android builds do not link Foundation's ICU data (about 40 MB).
 +@_exported public import FoundationEssentials
 +#if canImport(Android)
@@ -853,7 +853,7 @@ diff -ruN '--exclude=.build' '--exclude=.git' '--exclude=azooKey_dictionary_stor
 -        formatter.calendar = Calendar(identifier: self.type.identifier)
 -        formatter.dateFormat = format
 -        return formatter.string(from: Date().advanced(by: Double((Int(delta) ?? 0) * deltaUnit)))
-+        // CyIME: no ICU here; Gregorian numeric fields only (yyyy MM M dd d HH H mm ss).
++        // Cayboard: no ICU here; Gregorian numeric fields only (yyyy MM M dd d HH H mm ss).
 +        var t = time_t(Date().advanced(by: Double((Int(delta) ?? 0) * deltaUnit)).timeIntervalSince1970)
 +        var tm = tm()
 +        localtime_r(&t, &tm)
@@ -1029,8 +1029,8 @@ diff -ruN '--exclude=.build' '--exclude=.git' '--exclude=azooKey_dictionary_stor
 --- pristine/Sources/SuppTool/main.swift	1970-01-01 00:00:00.000000000 +0000
 +++ akkc-lite/Sources/SuppTool/main.swift	2026-11-03 03:42:47.655963616 +0000
 @@ -0,0 +1,49 @@
-+// CyIME tool: dump the dictionary's louds/ entries to TSV, and build louds/ files back from TSV
-+// (CyIME adds Mozc words to the azooKey dictionary this way; see tools/azookey/README.md).
++// Cayboard tool: dump the dictionary's louds/ entries to TSV, and build louds/ files back from TSV
++// (Cayboard adds Mozc words to the azooKey dictionary this way; see tools/azookey/README.md).
 +//   SuppTool dump <dictionaryDir> <out.tsv>        lines: ruby \t word \t lcid \t rcid \t mid \t value
 +//   SuppTool build <in.tsv> <outLoudsDir> <charID.chid>
 +// Dumping and building back the unchanged dictionary reproduces its louds/ files byte for byte.

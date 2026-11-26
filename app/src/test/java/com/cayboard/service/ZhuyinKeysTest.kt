@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** 注音（大千）：键盘的注音键帽、ImeKeyRouter 送的大千键码和 cyime_zhuyin 方案三者对得上。 */
+/** 注音（大千）：键盘的注音键帽、ImeKeyRouter 送的大千键码和 cayboard_zhuyin 方案三者对得上。 */
 class ZhuyinKeysTest {
     private fun repoFile(rel: String): File {
         var dir: File? = File(System.getProperty("user.dir")).absoluteFile
@@ -25,7 +25,7 @@ class ZhuyinKeysTest {
         error("file not found: $rel")
     }
 
-    private val schema by lazy { repoFile("src/main/assets/rime_chinese/cyime_zhuyin.schema.yaml").readText() }
+    private val schema by lazy { repoFile("src/main/assets/cayboard_chinese/cayboard_zhuyin.schema.yaml").readText() }
 
     /** 方案 preedit_format 的 xlit：大千键码 → 屏上显示的注音符号。 */
     private fun preeditMap(): Map<Char, Char> {
@@ -35,8 +35,8 @@ class ZhuyinKeysTest {
     }
 
     @Test fun `every key cap types a code of the schema that shows the same symbol`() {
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(repoFile("src/main/assets/xime.yaml").readText(), "zhuyin")
-            ?: error("xime.yaml 缺少 zhuyin rows")
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(repoFile("src/main/assets/cayboard.yaml").readText(), "zhuyin")
+            ?: error("cayboard.yaml 缺少 zhuyin rows")
         assertEquals(listOf(11, 10, 10, 10), rows.map { it.size })
         val alphabet = Regex("""alphabet: "([^"]+)"""").find(schema)!!.groupValues[1]
         val shown = preeditMap()
@@ -63,8 +63,8 @@ class ZhuyinKeysTest {
         assertNull(ZhuyinKeys.code("，"))
     }
 
-    @Test fun `cyime_zhuyin is the Chinese zhuyin scheme on the 大千 layout`() {
-        val profile = InputProfiles.describe("cyime_zhuyin")
+    @Test fun `cayboard_zhuyin is the Chinese zhuyin scheme on the 大千 layout`() {
+        val profile = InputProfiles.describe("cayboard_zhuyin")
         assertEquals(InputLanguage.CHINESE, profile.language)
         assertEquals(InputScheme.ZHUYIN, profile.scheme)
         assertEquals(InputLayout.ZHUYIN, profile.layout)

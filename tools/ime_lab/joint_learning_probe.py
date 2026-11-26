@@ -7,7 +7,7 @@ learned entries read moved-from list elements). Fresh-dictionary regression runs
 2. commits a few words (as a person picking candidates), then types the same short inputs again;
 3. picks 这都可以 for zdky once and 自动化 for zdh twice and checks that each then comes first.
 
-Usage: python joint_learning_probe.py --dll DIR --work DIR --t9-ngram MODEL [--rime-ice-extra YAML]
+Usage: python joint_learning_probe.py --dll DIR --work DIR --t9-ngram MODEL [--pinyin-schema-extra YAML]
 The data directory is a fresh copy (lexicon_regression.prepare_android); exit code 1 on any failure.
 """
 import argparse
@@ -26,11 +26,11 @@ def main():
     parser.add_argument("--dll", required=True, type=Path)
     parser.add_argument("--work", required=True, type=Path)
     parser.add_argument("--t9-ngram", required=True, type=Path)
-    parser.add_argument("--rime-ice-extra", type=Path)
+    parser.add_argument("--pinyin-schema-extra", type=Path)
     args = parser.parse_args()
-    os.environ["CYIME_T9_NGRAM"] = str(args.t9_ngram)
-    if args.rime_ice_extra:
-        os.environ["CYIME_RIME_ICE_EXTRA"] = str(args.rime_ice_extra)
+    os.environ["CAYBOARD_T9_NGRAM"] = str(args.t9_ngram)
+    if args.pinyin_schema_extra:
+        os.environ["CAYBOARD_PINYIN_SCHEMA_EXTRA"] = str(args.pinyin_schema_extra)
     args.work.mkdir(parents=True, exist_ok=True)
     data = lr.prepare_android(args.work)
     os.add_dll_directory(str(args.dll))
@@ -46,19 +46,19 @@ def main():
         rime.RimeJoinMaintenanceThread()
     rime.RimeCreateSession.restype = C.c_size_t
     session = C.c_size_t(rime.RimeCreateSession())
-    assert rime.RimeSelectSchema(session, b"rime_ice")
+    assert rime.RimeSelectSchema(session, b"cayboard_pinyin")
     rime.RimeSetOption(session, b"ascii_mode", False)
-    rime.RimeSetProperty(session, b"cyime_neighbors", lr.qwerty_neighbors().encode())
+    rime.RimeSetProperty(session, b"cayboard_neighbors", lr.qwerty_neighbors().encode())
 
     def top(text, n=5):
         rime.RimeClearComposition(session)
         for ch in text:
             rime.RimeProcessKey(session, ord(ch), 0)
         it, out = lr.Iter(), []
-        if rime.RimeCandidateListBegin(session, C.byref(it)):
-            while len(out) < n and rime.RimeCandidateListNext(C.byref(it)):
+        if rime.EngineCandidateListBegin(session, C.byref(it)):
+            while len(out) < n and rime.EngineCandidateListNext(C.byref(it)):
                 out.append(it.candidate.text.decode())
-            rime.RimeCandidateListEnd(C.byref(it))
+            rime.EngineCandidateListEnd(C.byref(it))
         return out
 
     def pick(text, word):

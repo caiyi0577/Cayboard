@@ -75,7 +75,7 @@ class EvidenceTest(unittest.TestCase):
 
     def test_private_gloss_inside_apk_fails_the_public_check(self):
         with tempfile.TemporaryDirectory() as tmp:
-            f = Fixture(tmp, extra_assets={'assets/gloss/cyime_gloss-private.tsv': b'x'})
+            f = Fixture(tmp, extra_assets={'assets/gloss/cayboard_gloss-private.tsv': b'x'})
             self.assertTrue(m.edition_evidence(f.root, '9.9.9', 'full', packager)['problems'])
 
     def test_merge_keeps_hand_written_sections(self):

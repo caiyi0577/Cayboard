@@ -35,7 +35,7 @@ import java.io.File
 /**
  * 编辑面板（三行，圆盘两侧有空位时加行首/行尾）出图：手机、平板宽 × 最小、默认高度 ×
  * 浅色纯色 / 深色玻璃 / 图片主题，看四角文字是否压到中间的方向圆盘；另出一组从窄到宽、
- * 两种系统字号的对照，看行首/行尾从哪个宽度出现、文字图标放不放得下。只在设了 CYIME_RENDER_OUT 时出图。
+ * 两种系统字号的对照，看行首/行尾从哪个宽度出现、文字图标放不放得下。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w900dp-h500dp-xhdpi")
@@ -44,7 +44,7 @@ class EditPanelRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderEditPanel() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)

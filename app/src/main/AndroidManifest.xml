@@ -29,7 +29,7 @@
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/cayboard_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Xime"
+        android:theme="@style/Theme.Cayboard"
         tools:targetApi="31">
         
         <!-- Developer tool for test scripts (does nothing outside 装到我的设备 builds); only adb (DUMP) may send it. -->
@@ -55,7 +55,7 @@
             android:enableOnBackInvokedCallback="true"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
-            android:theme="@style/Theme.Xime">
+            android:theme="@style/Theme.Cayboard">
 
             <!-- 接收其他应用分享的 .yaml / .zip 文件 -->
             <intent-filter>

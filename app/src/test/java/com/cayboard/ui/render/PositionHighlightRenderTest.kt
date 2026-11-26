@@ -57,7 +57,7 @@ import java.io.File
 /**
  * 位置提示框：切换悬浮/固定、拖完悬浮键盘后沿键盘外沿亮一圈强调色框，停一会儿淡出；
  * 调节界面里固定键盘往上拉（顶上胶囊或键盘内部空白）过阻力后变悬浮。
- * 设了 CYIME_RENDER_OUT 时另外把几种主题 × 玻璃 × 固定/悬浮的提示框拼成一张图。
+ * 设了 CAYBOARD_RENDER_OUT 时另外把几种主题 × 玻璃 × 固定/悬浮的提示框拼成一张图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "w800dp-h1400dp-mdpi")
@@ -229,9 +229,9 @@ class PositionHighlightRenderTest {
     }
 
     @Test fun renderSheet() {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         KeyboardThemes.initFromConfig(ApplicationProvider.getApplicationContext<Context>())
-        val themes = (System.getenv("CYIME_RENDER_THEMES")
+        val themes = (System.getenv("CAYBOARD_RENDER_THEMES")
             ?: "soft_blue/light,soft_blue/dark,pure_black/light,pure_black/dark").split(",")
             .map { it.trim().split("/") }.map { it[0] to (it[1] == "dark") }
         val shots = mutableListOf<Pair<String, Bitmap>>()
@@ -267,7 +267,7 @@ class PositionHighlightRenderTest {
             canvas.drawBitmap(bmp, x, y + 34f, null)
         }
         File(out).mkdirs()
-        File(out, "${System.getenv("CYIME_RENDER_NAME") ?: "position-highlight"}.png").outputStream().use {
+        File(out, "${System.getenv("CAYBOARD_RENDER_NAME") ?: "position-highlight"}.png").outputStream().use {
             sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }

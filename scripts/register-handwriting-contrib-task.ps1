@@ -1,4 +1,4 @@
-﻿# 同步手写、词库和滑行练习。优先设置为登录及每天运行；计划任务不可用时设置当前用户登录启动项。
+# 同步手写、词库和滑行练习。优先设置为登录及每天运行；计划任务不可用时设置当前用户登录启动项。
 # 移除时删除计划任务「Cayboard 手写样本」或当前用户启动文件夹中的「Cayboard 贡献样本同步.lnk」。
 param(
     [string]$Time = "23:30",
@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) { throw "$Python 缺 numpy、onnxruntime 或 modelscope
 # 用 pythonw 运行，不弹控制台窗口；输出由脚本自己写进日志
 $pythonw = Join-Path (Split-Path $Python) "pythonw.exe"
 if (-not (Test-Path $pythonw)) { throw "找不到 $pythonw" }
-$log = "D:\CyIME-Data\handwriting_training\contrib\task.log"
+$log = "D:\Cayboard-Data\handwriting_training\contrib\task.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $log) | Out-Null
 $arguments = "-X utf8 `"$script`" --log `"$log`""
 $shortcutPath = Join-Path ([Environment]::GetFolderPath("Startup")) "Cayboard 贡献样本同步.lnk"

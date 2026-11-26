@@ -16,7 +16,7 @@ word level, unlike the phrase-rich IME dictionaries (雾凇 lists 吃饭了, whi
 
 Usage: python tag_word_completions.py TABLE.bin LEXICON_dict.txt OUT.gz
 Output (gzip, fixed mtime so rebuilding gives the same bytes): header
-"# cyime-base-word-completions-v1 <sha256 of TABLE.bin>", then one line per context with marked
+"# cayboard-base-word-completions-v1 <sha256 of TABLE.bin>", then one line per context with marked
 rows, "context\\tMASK": MASK is hexadecimal, bit i set = the i-th row of that context in the
 table file (file order, before any sorting) is marked. The table has at most 16 rows per context.
 """
@@ -26,7 +26,7 @@ import io
 import sys
 from pathlib import Path
 
-HEADER = "# cyime-base-word-completions-v1"
+HEADER = "# cayboard-base-word-completions-v1"
 
 
 def read_lexicon(path):

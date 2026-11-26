@@ -71,7 +71,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import com.cayboard.service.ExpandedCandidatePager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -373,7 +373,7 @@ private fun CandidatePageContent(
                     }
                     val candidateRows = remember(state.candidates, rowWidthUnits, showComments) {
                         // Only layout measurements omit annotations; selection keeps the original entry.
-                        val all = state.candidates.map { RimeCandidate(it.text, if (showComments) it.comment else "") }
+                        val all = state.candidates.map { EngineCandidate(it.text, if (showComments) it.comment else "") }
                         ExpandedCandidatePager.flowRows(all.indices.toList(), all, rowWidthUnits)
                             .map { row -> row.map { state.candidates[it] } }
                     }

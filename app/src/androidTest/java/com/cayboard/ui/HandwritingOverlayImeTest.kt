@@ -30,8 +30,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cayboard.handwriting.HandwritingEngine
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.InputLanguage
 import com.cayboard.settings.LanguagePreferences
 import com.cayboard.settings.SettingsPreferences
@@ -50,8 +50,8 @@ class HandwritingOverlayImeTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         assertTrue("Install the handwriting model before this real-IME check", HandwritingEngine.hasModel(context))
-        assertTrue("The actual engine must be ready", RimeConfigHelper.prepareEngine(context))
-        val engine = RimeEngine.getInstance()
+        assertTrue("The actual engine must be ready", EngineConfig.prepareEngine(context))
+        val engine = InputEngine.getInstance()
         val previousSchema = engine.getCurrentSchema()
         val previousAscii = engine.isAsciiMode()
         val previousSavedAscii = engine.getUserConfigBool("var/option/ascii_mode")
@@ -89,8 +89,8 @@ class HandwritingOverlayImeTest {
                     putInt(bottomPaddingFixtureKey(suffix.isNotEmpty()), 0)
                 }
             }.commit()
-            SettingsPreferences.setCurrentSchema(context, "rime_ice")
-            assertTrue(engine.switchSchema("rime_ice"))
+            SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
+            assertTrue(engine.switchSchema("cayboard_pinyin"))
             engine.setOption("ascii_mode", false)
             engine.setUserConfigBool("var/option/ascii_mode", false)
             shell("ime enable $ime")

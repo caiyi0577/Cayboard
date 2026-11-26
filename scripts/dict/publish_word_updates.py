@@ -6,8 +6,8 @@
   py -3 -B scripts\\dict\\publish_word_updates.py --local    # 只写文件，打包进安装包测试，不提交、不上传
 
 你平时只改这两张表（每行 词<TAB>拼音<TAB>权重，拼音用空格分音节，和以前一样）：
-  app/data/cyime_domain_terms.tsv   输入法用语、新词
-  app/data/cyime_user_fixes.tsv     必过词（排序要对的词）
+  app/data/cayboard_domain_terms.tsv   输入法用语、新词
+  app/data/cayboard_user_fixes.tsv     必过词（排序要对的词）
 内置分类词库（明日方舟等）出了新词，加到 app/data/cell_updates/builtin_<id>.tsv（每行 词<TAB>拼音，
 例如 builtin_arknights.tsv；id 和 CellDictionaryCatalog.kt 里的 builtin_ 名字一样），文件里有的就是在线下发的全部补词。
 脚本把这些表合成 app/src/main/assets/cell_dictionaries/word_updates.json（main 和 dictionaries 两部分），版本号 revision 加 1；
@@ -21,9 +21,9 @@ App 每天最多查一次这个文件（键盘收起后），版本号更大就�
   py -3 -m pip install -U modelscope
   在 https://modelscope.cn/my/myaccesstoken 新建访问令牌，存成用户环境变量 MODELSCOPE_API_TOKEN
 
-线路和 App 一致（KeysConfigHelper.CYIME_STORE_BASE_URLS 去掉末尾 store/ 再接文件路径）：
-  海外  GitHub main（jsDelivr / raw.githubusercontent.com），脚本推送后清 jsDelivr 缓存
-  国内  魔搭 Cyletix/cyime-model 仓库里同一路径
+线路和 App 一致（KeysConfigHelper.CAYBOARD_STORE_BASE_URLS 去掉末尾 store/ 再接文件路径）：
+  海外  Cayboard GitHub main（jsDelivr / raw.githubusercontent.com），脚本推送后清 jsDelivr 缓存
+  国内  魔搭 Cyletix/cayboard-model 仓库里同一路径
 """
 from __future__ import annotations
 
@@ -42,17 +42,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REL = "app/src/main/assets/cell_dictionaries/word_updates.json"
 TARGET = ROOT / REL
-TABLES = [ROOT / "app/data/cyime_domain_terms.tsv", ROOT / "app/data/cyime_user_fixes.tsv"]
+TABLES = [ROOT / "app/data/cayboard_domain_terms.tsv", ROOT / "app/data/cayboard_user_fixes.tsv"]
 CELL_DIR = ROOT / "app/data/cell_updates"
 CATALOG = ROOT / "app/src/main/java/com/cayboard/settings/CellDictionaryCatalog.kt"
-FORMAT = "cyime.cell-words.v1"
-REPO_ID = "Cyletix/cyime-model"
+FORMAT = "cayboard.cell-words.v1"
+REPO_ID = "Cyletix/cayboard-model"
 CHECK_URLS = [
-    "https://raw.githubusercontent.com/Cyletix/CyIME/main/" + REL,
-    "https://cdn.jsdelivr.net/gh/Cyletix/CyIME@main/" + REL,
+    "https://raw.githubusercontent.com/caiyi0577/Cayboard/main/" + REL,
+    "https://cdn.jsdelivr.net/gh/caiyi0577/Cayboard@main/" + REL,
     f"https://www.modelscope.cn/models/{REPO_ID}/resolve/master/" + REL,
 ]
-PURGE = "https://purge.jsdelivr.net/gh/Cyletix/CyIME@main/" + REL
+PURGE = "https://purge.jsdelivr.net/gh/caiyi0577/Cayboard@main/" + REL
 # 与 App 的检查一致（CellWordUpdates.parse / CellMainWord.validate）。
 WORD = re.compile(r"[㐀-䶿一-鿿]{1,32}")
 CELL_WORD = re.compile(r"[㐀-䶿一-鿿]{2,32}")  # CellPinyinWord.validate
@@ -167,7 +167,7 @@ def push(revision: int) -> None:
     git("commit", "-m", f"词库在线更新：revision {revision}", "--", *paths)
     git("push", "origin", "main")
     try:
-        urllib.request.urlopen(urllib.request.Request(PURGE, headers={"User-Agent": "cyime-word-updates"}), timeout=60).read()
+        urllib.request.urlopen(urllib.request.Request(PURGE, headers={"User-Agent": "cayboard-word-updates"}), timeout=60).read()
     except Exception as e:  # noqa: BLE001
         print("jsDelivr 缓存没清掉（最多 12 小时后自己更新）：", e)
 
@@ -194,7 +194,7 @@ def verify(data: bytes, urls: list[str]) -> bool:
         got = None
         for _ in range(3):
             try:
-                req = urllib.request.Request(url, headers={"User-Agent": "cyime-word-updates", "Cache-Control": "no-cache"})
+                req = urllib.request.Request(url, headers={"User-Agent": "cayboard-word-updates", "Cache-Control": "no-cache"})
                 got = hashlib.sha256(urllib.request.urlopen(req, timeout=60).read()).hexdigest()
                 if got == want:
                     break

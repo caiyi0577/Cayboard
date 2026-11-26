@@ -61,7 +61,7 @@ class TabletKeySizingTest {
         assertEquals(language.width, enter.width, 1f)
         if (tablet) assertTrue("tablet function icon is fixed at 20dp", language.width >= 30f)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = File(context.getExternalFilesDir(null), "cyime").apply { mkdirs() }
+        val directory = File(context.getExternalFilesDir(null), "cayboard").apply { mkdirs() }
         val output = File(directory, "tablet-key-sizing-$width-$height.png")
         output.outputStream().use { rule.onNodeWithTag("sizing-keyboard").captureToImage().asAndroidBitmap()
             .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }

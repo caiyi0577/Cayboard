@@ -16,9 +16,9 @@ import csv
 import json
 from pathlib import Path
 
-RUNS = {"Cayboard": ("cyime_26", "cyime_t9"), "搜狗": ("sogou_26", "sogou_t9"),
+RUNS = {"Cayboard": ("cayboard_26", "cayboard_t9"), "搜狗": ("sogou_26", "sogou_t9"),
         "Gboard": ("gboard_26", "gboard_t9"), "三星": ("samsung_26", "samsung_t9")}
-FILE_NAMES = {"Cayboard": "cyime", "搜狗": "sogou", "Gboard": "gboard", "三星": "samsung"}
+FILE_NAMES = {"Cayboard": "cayboard", "搜狗": "sogou", "Gboard": "gboard", "三星": "samsung"}
 
 
 def is_han(s):

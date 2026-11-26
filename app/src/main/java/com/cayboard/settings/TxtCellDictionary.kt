@@ -9,7 +9,7 @@ import java.text.Normalizer
 
 /**
  * Plain-text word lists as other input methods export them, one word per line:
- * `词 拼音`, `拼音 词` (Sogou/QQ exports, `'ni'hao 你好`), `词<TAB>pin yin<TAB>权重` (Rime). Fields are
+ * `词 拼音`, `拼音 词` (Sogou/QQ exports, `'ni'hao 你好`), `词<TAB>pin yin<TAB>权重` (schema dictionary). Fields are
  * separated by tabs, spaces or commas; pinyin may be written with spaces, apostrophes or run
  * together (nihao). A count column is ignored: every word gets the same weight as SCEL imports.
  * Lines without pinyin are skipped and counted. UTF-8, UTF-16 (with BOM) and GB18030 are read.
@@ -35,12 +35,12 @@ object TxtCellDictionary {
     }
 
     /**
-     * Streams the file twice (encoding and Rime header check, then the words). [sink] gets each word and pinyin
+     * Streams the file twice (encoding and schema-dictionary header check, then the words). [sink] gets each word and pinyin
      * once, in file order. Duplicates are found by a 64-bit key, so 1.5 million words take 16 MB, not a map of all.
      */
     fun read(open: () -> InputStream, sink: (DictEntry) -> Unit): Summary {
         val (charset, bom) = charset(open)
-        // A Rime .dict.yaml: only the entries after its header, the first "..." line after line one.
+        // A .dict.yaml: only the entries after its header, the first "..." line after line one.
         var header = -1
         lines(open, charset, bom) { index, line -> if (header < 0 && index > 0 && line == "...") header = index }
         val seen = LongSet()
@@ -83,7 +83,7 @@ object TxtCellDictionary {
 
     /** Space-separated syllables, one per character, or null when the pinyin does not spell them. */
     internal fun syllables(pinyin: String, count: Int): String? {
-        // Rime spells 略/虐 lve/nve.
+        // The bundled dictionary spells 略/虐 lve/nve.
         val given = pinyin.split(' ', '\'').filter { it.isNotEmpty() }
             .map { if (it == "lue" || it == "nue") it.replace('u', 'v') else it }
         if (given.size == count && given.all { it in SYLLABLES }) return given.joinToString(" ")

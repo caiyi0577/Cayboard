@@ -26,7 +26,7 @@ class HostReplayTest(unittest.TestCase):
         self.output = self.root / "result"
         self.args = SimpleNamespace(fixture=self.fixture, output=self.output, json_jar=self.jar,
                                     key_delay_ms=35, baseline=None, assertions=None,
-                                    host_cache=None, wsl_distro="Ubuntu-test")
+                                    host_cache=None, wsl_distro="Ubuntu-test", backend="wsl")
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.stack.enter_context(redirect_stdout(io.StringIO()))
@@ -35,19 +35,22 @@ class HostReplayTest(unittest.TestCase):
         self.adb = self.stack.enter_context(patch("t9_replay.Commands", side_effect=AssertionError("Device access forbidden")))
 
     def local(self, build_output=None):
-        self.stack.enter_context(patch("t9_host.os", SimpleNamespace(name="posix", pathsep=":")))
+        self.stack.enter_context(patch("t9_host.os", SimpleNamespace(
+            name="posix", pathsep=":", link=__import__("os").link)))
+        self.stack.enter_context(patch("t9_host.NATIVE_GLOB", "*.so"))
+        self.stack.enter_context(patch("t9_host.NATIVE_LIBRARY", "cayboard_jni.so"))
         self.stack.enter_context(patch("t9_host.platform.system", return_value="Linux"))
         self.args.host_cache = str(self.root / "cache")  # never the real home cache
         self.library_dir = self.root / "lib"
         self.library_dir.mkdir()
-        (self.library_dir / "librime_jni.so").write_bytes(b"fake host engine")
+        (self.library_dir / "cayboard_jni.so").write_bytes(b"fake host engine")
         (self.library_dir / "libonnxruntime.so").write_bytes(b"fake inference library")
         self.source_inventory = self.root / "source-files.json"
         self.source_inventory.write_text('{"source":"test"}', encoding="utf-8")
         self.build_manifest = self.root / "engine-build.json"
         self.build_manifest.write_text(json.dumps({"status": "complete",
-            "library": str(self.library_dir / "librime_jni.so"),
-            "library_sha256": host.file_digest(self.library_dir / "librime_jni.so"),
+            "library": str(self.library_dir / "cayboard_jni.so"),
+            "library_sha256": host.file_digest(self.library_dir / "cayboard_jni.so"),
             "source_files_sha256": host.file_digest(self.source_inventory)}), encoding="utf-8")
         description = {"library_dir": str(self.library_dir), "manifest": str(self.build_manifest),
                        "java": "fake-java", "javac": "fake-javac"}
@@ -57,7 +60,7 @@ class HostReplayTest(unittest.TestCase):
         self.command = self.stack.enter_context(patch("t9_host.HostCommands.run", side_effect=self.execute))
         self.metadata_mutation = None
 
-    def resources(self, repo, output):
+    def resources(self, repo, output, t9_ngram=None):
         output.write_bytes(b"resource snapshot")
         return {"sha256": host.file_digest(output)}
 
@@ -139,7 +142,7 @@ class HostReplayTest(unittest.TestCase):
 
     def write_snapshot(self, body="ni hao\t你好\tc=2 d=1.5 t=90\nzai jian\t再见\tc=0 d=0.1 t=80\n"):
         path = self.root / "seed.userdb.txt"
-        path.write_text("# Rime user dictionary\n#@/db_name\trime_ice.userdb\n#@/db_type\tuserdb\n"
+        path.write_text("# Input engine user dictionary\n#@/db_name\tcayboard_pinyin.userdb\n#@/db_type\tuserdb\n"
                         "#@/tick\t100\n" + body, encoding="utf-8")
         return path
 
@@ -150,7 +153,7 @@ class HostReplayTest(unittest.TestCase):
         manifest = json.loads((self.output / "run.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["user_state"], "preset_user_dict")
         snapshot = manifest["user_dict_snapshot"]
-        self.assertEqual((snapshot["db_name"], snapshot["entries"]), ("rime_ice", 2))
+        self.assertEqual((snapshot["db_name"], snapshot["entries"]), ("cayboard_pinyin", 2))
         self.assertEqual(snapshot["sha256"], host.file_digest(self.args.user_dict))
         self.assertEqual((self.output / "user-dict.userdb.txt").read_bytes(), self.args.user_dict.read_bytes())
         self.assertIn("预置个人词库快照", (self.output / "index.html").read_text(encoding="utf-8"))
@@ -253,7 +256,7 @@ class HostReplayTest(unittest.TestCase):
         self.args.engine_from, self.args.output = self.output, self.root / "chained"
         self.output = self.args.output
         self.assertEqual(host.run_host(self.args), 0)
-        (self.library_dir / "librime_jni.so").write_bytes(b"rebuilt engine")
+        (self.library_dir / "cayboard_jni.so").write_bytes(b"rebuilt engine")
         self.args.output = self.root / "stale"
         with self.assertRaisesRegex(ValueError, "no longer matches its recorded libraries"):
             host.run_host(self.args)
@@ -306,7 +309,7 @@ class HostReplayTest(unittest.TestCase):
 
     def test_executed_engine_fingerprint_mismatch_cannot_succeed(self):
         self.local()
-        self.metadata_mutation = lambda metadata: metadata.update(library_sha256={"librime_jni.so": "e" * 64})
+        self.metadata_mutation = lambda metadata: metadata.update(library_sha256={"cayboard_jni.so": "e" * 64})
         with self.assertRaisesRegex(ValueError, "library_sha256 differs"):
             host.run_host(self.args)
         self.assertEqual(json.loads((self.output / "run.json").read_text())["status"], "failed")

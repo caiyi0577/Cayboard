@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,12 +7,12 @@ import java.util.List;
 /**
  * 英文词、中英混合词能不能打出来；打一遍（分段选词）后再打同样的键，这个词排第几。九键、14 键、26 键跑同一批例子。
  * Arguments: library_dir, a disposable user directory (deployed on first use), mode (recall | learn | learn2 |
- * decay | reopen | all), schemas (default t9_pinyin,pinyin_14jian,rime_ice), optional preset *.userdb.txt and,
+ * decay | reopen | all), schemas (default t9_pinyin,pinyin_14jian,cayboard_pinyin), optional preset *.userdb.txt and,
  * for decay, how many other words to commit before checking again. Exit status 1 when any case fails.
  * Nine-key goes through the app's own path: nativeT9SelectCandidate per segment, refresh the remaining digits
  * after a partial choice, nativeT9Memorize(fullText, "") after the accepted full commit, then
  * nativeT9ClearComposition(1); 14/26 keys select by global index and commit.
- * Compile and run together with ../android_replay/RimeEngine.java.
+ * Compile and run together with ../android_replay/InputEngine.java.
  */
 public final class T9MixedLearnProbe {
   static final String SCHEMA = "t9_pinyin";
@@ -20,10 +20,10 @@ public final class T9MixedLearnProbe {
   static int failures = 0;
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File logs = new File(args[1], "logs");
     logs.mkdirs();
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(args[1], args[1]);
     try {
       e.nativeEnsureT9SchemaPatches(SCHEMA);
@@ -34,12 +34,12 @@ public final class T9MixedLearnProbe {
         Thread.sleep(100);
       }
       if (args.length > 4) {
-        long[] restored = e.nativeHostRestoreUserDict(args[4], "rime_ice");
+        long[] restored = e.nativeHostRestoreUserDict(args[4], "cayboard_pinyin");
         System.out.println("seed userdb " + (restored == null ? "FAILED" : restored[0] + " entries, tick " + restored[1]));
       }
       if (!e.nativeCreateSession()) throw new Exception("session unavailable");
       String mode = args.length > 2 ? args[2] : "all";
-      String[] schemas = (args.length > 3 ? args[3] : "t9_pinyin,pinyin_14jian,rime_ice").split(",");
+      String[] schemas = (args.length > 3 ? args[3] : "t9_pinyin,pinyin_14jian,cayboard_pinyin").split(",");
       for (String s : schemas) {
         schema = s;
         if (!e.nativeSwitchSchema(s)) throw new Exception("schema unavailable " + s);
@@ -71,16 +71,16 @@ public final class T9MixedLearnProbe {
     return b.toString();
   }
 
-  static void type(RimeEngine e, String keys) throws Exception {
-    if (t9()) { e.nativeT9ClearComposition(1); e.nativeT9FlushRimeInput(); }
+  static void type(InputEngine e, String keys) throws Exception {
+    if (t9()) { e.nativeT9ClearComposition(1); e.nativeT9FlushInput(); }
     else e.nativeSetInput("");
     for (char c : keys.toCharArray()) {
       if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
-      if (t9()) e.nativeT9FlushRimeInput();
+      if (t9()) e.nativeT9FlushInput();
     }
   }
 
-  static String[][] rows(RimeEngine e) { return e.nativeInspectCandidates(200); }
+  static String[][] rows(InputEngine e) { return e.nativeInspectCandidates(200); }
 
   static int rank(String[][] rows, String text) {
     for (int i = 0; i < rows.length; i++) if (rows[i].length > 0 && rows[i][0].equals(text)) return i + 1;
@@ -99,7 +99,7 @@ public final class T9MixedLearnProbe {
   }
 
   // ── 1. 英文词、中英混合词 ──
-  static void recall(RimeEngine e) throws Exception {
+  static void recall(InputEngine e) throws Exception {
     String[][] cases = {
       {"fuck", digits("fuck")}, {"fucking", digits("fucking")}, {"shit", digits("shit")},
       {"B站", digits("bzhan")}, {"T恤", digits("txu")}, {"A股", digits("agu")},
@@ -116,7 +116,7 @@ public final class T9MixedLearnProbe {
   }
 
   /** Picks the target by segments, as a person does when the whole phrase is not offered. */
-  static boolean pickBySegments(RimeEngine e, String keys, String target) throws Exception {
+  static boolean pickBySegments(InputEngine e, String keys, String target) throws Exception {
     type(e, keys);
     String done = "";
     for (int step = 0; step < 8; step++) {
@@ -133,7 +133,7 @@ public final class T9MixedLearnProbe {
       boolean full;
       if (t9()) {
         full = e.nativeT9SelectCandidate(r[best][1], t, t.codePointCount(0, t.length()));
-        e.nativeT9FlushRimeInput();
+        e.nativeT9FlushInput();
       } else {
         if (!e.nativeSelectCandidateByGlobalIndex(best)) { System.out.println("     select failed"); return false; }
         String committed = e.nativeCommit();
@@ -146,14 +146,14 @@ public final class T9MixedLearnProbe {
       if (!t9()) continue;
       String remaining = e.nativeT9GetRemainingDigits();
       if (!remaining.isEmpty() && !remaining.equals(e.nativeGetInput())) e.nativeSetInput(remaining);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     }
     if (!done.equals(target)) { System.out.println("     composed '" + done + "' instead of '" + target + "'"); return false; }
     boolean learned = true;
     if (t9()) {
       learned = e.nativeT9Memorize(target, "");
       e.nativeT9ClearComposition(1);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     }
     System.out.println("     memorize -> " + learned);
     return learned;
@@ -173,7 +173,7 @@ public final class T9MixedLearnProbe {
     {"T恤", digits("txu")},
   }; }
 
-  static void learn(RimeEngine e) throws Exception {
+  static void learn(InputEngine e) throws Exception {
     for (String[] c : learnCases()) {
       type(e, c[1]);
       String[][] before = rows(e);
@@ -200,7 +200,7 @@ public final class T9MixedLearnProbe {
   }; }
 
   /** Harder: phrases far down the list, then the same word inside a longer input. */
-  static void learn2(RimeEngine e) throws Exception {
+  static void learn2(InputEngine e) throws Exception {
     for (String[] c : hardCases()) {
       String keys = digits(c[1]);
       type(e, keys);
@@ -221,7 +221,7 @@ public final class T9MixedLearnProbe {
   }
 
   /** Ordinary typing afterwards: N other words committed (seed dictionary words, as a person picks them). */
-  static void filler(RimeEngine e, int n) throws Exception {
+  static void filler(InputEngine e, int n) throws Exception {
     List<String[]> words = new ArrayList<>();
     for (String line : java.nio.file.Files.readAllLines(new File("/home/user/Cayboard/tools/ime_lab/fixtures/user_dict_seed_20261009.userdb.txt").toPath())) {
       if (line.startsWith("#")) continue;
@@ -241,16 +241,16 @@ public final class T9MixedLearnProbe {
     System.out.println("filler: committed " + done + " other words");
   }
 
-  static boolean pickQuiet(RimeEngine e, String text) throws Exception {
+  static boolean pickQuiet(InputEngine e, String text) throws Exception {
     String[][] r = rows(e);
     int k = rank(r, text) - 1;
     if (k < 0) return false;
     if (t9()) {
       boolean full = e.nativeT9SelectCandidate(r[k][1], text, text.codePointCount(0, text.length()));
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       if (!full) { e.nativeT9ClearComposition(1); return false; }
       boolean ok = e.nativeT9Memorize(text, "");
-      e.nativeT9ClearComposition(1); e.nativeT9FlushRimeInput();
+      e.nativeT9ClearComposition(1); e.nativeT9FlushInput();
       return ok;
     }
     if (!e.nativeSelectCandidateByGlobalIndex(k)) return false;
@@ -259,7 +259,7 @@ public final class T9MixedLearnProbe {
     return c != null && !c.isEmpty();
   }
 
-  static void recheck(RimeEngine e) throws Exception {
+  static void recheck(InputEngine e) throws Exception {
     for (String[] c : hardCases()) {
       type(e, digits(c[1]));
       String[][] r = rows(e);
@@ -270,7 +270,7 @@ public final class T9MixedLearnProbe {
     }
   }
 
-  static void reopen(RimeEngine e) throws Exception {
+  static void reopen(InputEngine e) throws Exception {
     for (String[] c : learnCases()) {
       type(e, c[1]);
       String[][] r = rows(e);

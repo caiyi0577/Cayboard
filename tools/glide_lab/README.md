@@ -12,7 +12,7 @@
 
 ## 本轮具备什么
 
-- 原创、无 Android 依赖的 Kotlin 轨迹／布局／词表契约，可在以后审查后迁入应用；当前包名 `com.kingzcheung.xime.glidelab` 明确标识实验。
+- 独立于 Android 的 Kotlin 轨迹、布局和词表实验，使用 `com.cayboard.glidelab` 包名。
 - 按真实传入坐标与键距处理轨迹，弧长重采样、模板预计算、DTW 路径比较、端点代价及有界先验；所有候选返回可解释分项分数，**不是置信度**。
 - 拒绝点按、过短轨迹、无效时间／坐标、过量点和明显离开键盘的轨迹；阈值只是未调优的实验参数。
 - 英文整词和中文全拼编码两个独立词表／样例；同码不同文字保留为不同条目。
@@ -45,7 +45,7 @@ python -B tools/glide_lab/run.py --output .codex-artifacts/glide-next --baseline
 
 | 字段 | 含义 |
 |---|---|
-| `schema` / `kind` | `cyime.glide.fixture.v1` / `synthetic`，目前只接收明确标注的合成样例 |
+| `schema` / `kind` | `cayboard.glide.fixture.v1` / `synthetic`，目前只接收明确标注的合成样例 |
 | `id`, `language`, `scheme` | 样例标识及独立语言／编码方案；实验只允许 `en/direct`、`zh/pinyin` |
 | `layout.revision` | 该坐标快照的版本；实际接入还需绑定输入会话与配置版本 |
 | `layout.key_unit`, `keys` | 正数键距尺度、每个小写拉丁字符的中心坐标；同一坐标系且一字符一个中心 |

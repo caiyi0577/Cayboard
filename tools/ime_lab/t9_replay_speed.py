@@ -1,6 +1,6 @@
 """Speed gate for host T9 replays: per-key engine work counters and warm-key latency.
 
-Work counters come from the host engine (CYIME_T9_WORK_COUNTERS, see
+Work counters come from the host engine (CAYBOARD_T9_WORK_COUNTERS, see
 tools/ime_lab/host_replay/host_replay_jni.cc). Each key row carries `work`
 (processKey + flush) and `inspect_work` (candidate inspection); settled rows
 carry the work done while waiting. Counts are deterministic for one engine,
@@ -368,7 +368,7 @@ def speed_report(baselines, candidates, passes, tolerance_percent=0.0, model_swa
     report["timing_session"] = session
     if not all(has_work(run, name) for run in baselines + candidates for name in passes):
         report.update(gate="unavailable", reason="Work counters are missing from at least one run "
-                      "(older evidence or an engine built without CYIME_T9_WORK_COUNTERS).")
+                      "(older evidence or an engine built without CAYBOARD_T9_WORK_COUNTERS).")
         for name in passes:
             report["passes"][name] = {"latency": latency_section(baselines, candidates, name, session)}
         return report

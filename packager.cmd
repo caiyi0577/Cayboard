@@ -6,10 +6,10 @@ set "PYTHONIOENCODING=utf-8"
 if "%~1"=="" goto gui
 where py >nul 2>nul
 if not errorlevel 1 (
-  py -3 -B "%~dp0scripts\packager\cyime_packager.py" %*
+  py -3 -B "%~dp0scripts\packager\cayboard_packager.py" %*
   exit /b %errorlevel%
 )
-python -B "%~dp0scripts\packager\cyime_packager.py" %*
+python -B "%~dp0scripts\packager\cayboard_packager.py" %*
 exit /b %errorlevel%
 :gui
 where pyw >nul 2>nul

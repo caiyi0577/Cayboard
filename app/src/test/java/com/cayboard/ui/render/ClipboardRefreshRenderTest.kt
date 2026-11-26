@@ -118,7 +118,7 @@ class ClipboardRefreshRenderTest {
         rule.runOnIdle { assertEquals(input,confirmed); assertEquals(2,back) }
     }
     private fun save(name:String) {
-        val out=System.getenv("CYIME_RENDER_OUT")?:return
+        val out=System.getenv("CAYBOARD_RENDER_OUT")?:return
         File(out).mkdirs();rule.waitForIdle()
         val bounds=rule.onNodeWithTag("clipboard-review",true).fetchSemanticsNode().boundsInRoot
         val root=rule.activity.window.decorView

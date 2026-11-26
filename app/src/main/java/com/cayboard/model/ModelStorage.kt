@@ -76,7 +76,7 @@ object ModelStorage {
     /**
      * 按已知旧路径迁移模型到统一目录。
      * 调用方需在加载/检测模型前调用，确保已下载的旧版模型可用。
-     * 手写模型旧路径在 filesDir 根目录，仅迁移其专属文件，避免误移 rime 等其他数据。
+     * 手写模型旧路径在 filesDir 根目录，仅迁移其专属文件，避免误移输入数据等其他内容。
      */
     fun migrateLegacyForModel(context: Context, modelId: String): Boolean {
         // 旧版手写模型直接放在 filesDir 根目录，仅迁移其专属文件，避免误移其他数据

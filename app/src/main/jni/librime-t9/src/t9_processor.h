@@ -26,7 +26,7 @@ class UserDictionary;
 // 九键拼音输入处理器（RIME Processor 组件）。
 //
 // 整合 T1-T6 组件，内聚全部状态与算法（设计稿 §13.1 模块分工）。
-// 对应 Kotlin main 分支 T9InputController + T9RimeBridge 的全部逻辑。
+// 对应 Kotlin main 分支 T9InputController + T9EngineBridge 的全部逻辑。
 //
 // 设计决策（规划文档 §3.4 D4）：
 //   - 单一 Processor 持有全部状态，避免跨类传递 Context
@@ -40,7 +40,7 @@ class UserDictionary;
 //   - right_commit_handler_：右侧选词三层消费算法
 //   - left_column_locked_ / separator_consumed_digits_ / last_choice_consumed_digits_：
 //     分词键与左选交互的临时状态
-//   - last_rime_input_：发送去重缓存
+//   - last_engine_input_：发送去重缓存
 class T9Processor : public Processor {
 public:
     T9Processor(const Ticket& ticket);
@@ -73,14 +73,14 @@ public:
     // 字母约束；候选过滤时只保留该位置拼音字母一致的候选。数字串为空时返回 false，
     // 由上层按普通字母输入处理。
     bool FixLetter(char letter);
-    // 整句都用拂动时，字母按普通字母进 RIME input，数字串一直为空（见 FixLetter）。
+    // 整句都用拂动时，字母按普通字母进 引擎输入，数字串一直为空（见 FixLetter）。
     // 右选只占前一段时去掉这一段的字母、留下后面的继续选，返回 false（partial）；
     // 选到末尾返回 true；不是这种纯字母输入时返回 nullopt，按原逻辑处理。
     std::optional<bool> SelectLetterCandidate(const std::string& candidate_pinyin,
                                               const std::string& candidate_text);
     bool HasLetterConstraints() const { return !letter_constraints_.empty(); }
-    // candidate 从 RIME input 的 rime_start 开始、拼音注释为 comment 时，是否满足全部字母约束。
-    bool MatchesLetterConstraints(size_t rime_start, const std::string& comment) const;
+    // candidate 从 引擎输入 的 engine_start 开始、拼音注释为 comment 时，是否满足全部字母约束。
+    bool MatchesLetterConstraints(size_t engine_start, const std::string& comment) const;
 
     // ── Phrase 码缓存（t9_filter 预存，右选调频捕获兜底）──
     // t9_filter 位于 filters 最前，此时候选尚为带调 Phrase；后续 lua filter 链
@@ -121,16 +121,16 @@ public:
     void ReplaceFullPinyin(const std::string& pinyin);
 
     // Edit only the uncommitted T9 suffix. The caller holds the engine lock and
-    // validates its snapshot first, then calls FlushRimeInput on success.
+    // validates its snapshot first, then calls FlushEngineInput on success.
     bool ReplaceEditableSuffix(const std::string& pinyin);
 
     // 两种清理模式：mode=0 (CLEAR_COMPOSITION_ONLY), mode=1 (CLEAR_ALL)
     void ClearComposition(int mode);
 
     // ── 异步 flush（JNI 调用）──
-    // 执行 SendToRime 标记的待发送引擎动作（set_input → compose / clear 等）。
+    // 执行 SendToEngine 标记的待发送引擎动作（set_input → compose / clear 等）。
     // 由应用层在 processKey 之后的后台线程调用，避免引擎 compose 阻塞 UI 线程。
-    void FlushRimeInput();
+    void FlushEngineInput();
 
 private:
     // ── 按键处理子流程 ──
@@ -144,16 +144,16 @@ private:
     void HandleLeftSelectChoice(const SyllableOption& option);
     void HandleSelectionReplacementChoice(const SyllableOption& option);
 
-    // ── RIME 交互 ──
-    // 异步 flush 模型（对标 Kotlin 版异步 sendToRime）：
-    //   SendToRime()    只计算"待发送内容"并标记 pending，不直接调用引擎
-    //                    （埋点范围不含引擎 compose，对标 Kotlin t9_send_to_rime）
-    //   FlushRimeInput() 真正执行引擎调用（set_input → compose），
+    // ── 引擎交互 ──
+    // 异步 flush 模型（对标 Kotlin 版异步 sendToEngine）：
+    //   SendToEngine()    只计算"待发送内容"并标记 pending，不直接调用引擎
+    //                    （埋点范围不含引擎 compose，对标 Kotlin t9_send_to_engine）
+    //   FlushEngineInput() 真正执行引擎调用（set_input → compose），
     //                    由应用层在 processKey 之后的后台线程调用
     //                    （公开声明见上方 JNI 暴露接口区）
-    void SendToRime();
-    void SyncRimeInput(const std::optional<std::string>& input);
-    std::optional<SyllableOption> InferFirstSyllableFromRime(const std::string& digits);
+    void SendToEngine();
+    void SyncEngineInput(const std::optional<std::string>& input);
+    std::optional<SyllableOption> InferFirstSyllableFromCandidates(const std::string& digits);
 
     // ── 状态转换 ──
     void EnterIdle();
@@ -190,14 +190,14 @@ private:
     // 调频写入/回滚公共实现（MemorizeEntry/ForgetEntry 共用）：commits=+1 记忆 / -1 回滚。
     // 使用已解析的 Code 直接写/回滚用户词典（MemorizeEntry 的右选码捕获路径复用）。
 
-    // 方案 A（消费算法优化）：查询 RIME 候选的实际匹配结束位置，
-    // 换算为 T9 应消费的数字位数（RIME input[0:end) 中数字字符数，跳过分隔符）。
+    // 方案 A（消费算法优化）：查询 引擎候选的实际匹配结束位置，
+    // 换算为 T9 应消费的数字位数（引擎输入[0:end) 中数字字符数，跳过分隔符）。
     // 候选按 comment 归一化匹配（容忍带调/无调差异，见 NormalizePinyinComment），
     // candidate_text 非空时再按文本双条件定位（同注释歧义防错码）。
     // 返回 -1 表示无法确定（fallback 到现有消费算法）。
     // capture（可空）：捕获 Phrase 的真实码，并保留中英文词典边界。
     // out_is_t9_user（可空）：命中候选为 T9 用户词时置 true。
-    int QueryRimeConsumedDigits(
+    int QueryEngineConsumedDigits(
         const std::optional<std::string>& candidate_pinyin,
         const std::string& candidate_text,
         T9CommitCapture* capture = nullptr,
@@ -224,7 +224,7 @@ private:
     bool left_column_locked_ = false;                    // 分词键锁定标记
     std::optional<std::string> separator_consumed_digits_;   // 分词键确认的数字段
     std::optional<std::string> last_choice_consumed_digits_; // 上次左选消费的数字段
-    std::string last_rime_input_;                        // 发送去重缓存
+    std::string last_engine_input_;                        // 发送去重缓存
     int undone_right_commit_count_ = 0;                  // RightCommit 撤销计数（供 Kotlin 同步）
     char manual_delimiter_ = '\'';                       // 分隔符字符（从 speller.delimiter 读入）
     // 全拼九键（有 script_translator、不是双拼九键）：i、u、v 不能开头一个音节，拂动出的这三个字母
@@ -251,8 +251,8 @@ private:
 
     // ── 用户词典调频（对齐全键盘 Memorize 机制，2026-08-11）──
     // 通过组件池与主翻译器（script_translator）共享 Table/Prism/db：
-    //   dict_      dictionary: rime_frost + prism: t9
-    //   user_dict_ user_dict:  rime_frost（enable_user_dict 默认 true）
+    //   dict_      dictionary: cayboard_pinyin + prism: t9
+    //   user_dict_ user_dict:  cayboard_pinyin（enable_user_dict 默认 true）
     // 由 Kotlin 在 full commit 时调用 MemorizeEntry/ForgetEntry 写入（UpdateEntry）。
     the<Dictionary> dict_;
     the<UserDictionary> user_dict_;
@@ -271,16 +271,16 @@ private:
     };
     std::vector<PhraseCodeEntry> phrase_code_cache_;
 
-    // ── 异步 flush 状态（SendToRime 标记，FlushRimeInput 消费）──
-    // pending_action_ / pending_input_ 的读写都发生在 RimeEngine.rimeLock
-    // 临界区内（processKey 与 t9FlushRimeInput 均持有该锁），无数据竞争。
-    enum class RimePendingAction {
+    // ── 异步 flush 状态（SendToEngine 标记，FlushEngineInput 消费）──
+    // pending_action_ / pending_input_ 的读写都发生在 InputEngine.engineLock
+    // 临界区内（processKey 与 t9FlushEngineInput 均持有该锁），无数据竞争。
+    enum class EnginePendingAction {
         kNone,             // 无待发送动作
         kSetInput,         // 发送 pending_input_ 到引擎（触发 compose）
         kClear,            // 空 buffer：ctx->Clear()
         kZombieClear,      // 僵尸 RC：清 composition + 置空 input
     };
-    RimePendingAction pending_action_ = RimePendingAction::kNone;
+    EnginePendingAction pending_action_ = EnginePendingAction::kNone;
     std::string pending_input_;                          // kSetInput 时的参数
 };
 

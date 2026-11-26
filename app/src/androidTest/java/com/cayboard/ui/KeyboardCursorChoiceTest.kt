@@ -37,7 +37,7 @@ class KeyboardCursorChoiceTest {
             prefs.edit().putString("cursor_gesture_mode", "SPACE").commit()
             rule.setContent {
                 CompositionLocalProvider(LocalDensity provides Density(1f)) { MaterialTheme {
-                    KeyboardView(vm, KeyboardUiState(currentSchemaId = "rime_ice"),
+                    KeyboardView(vm, KeyboardUiState(currentSchemaId = "cayboard_pinyin"),
                         KeyboardCallbacks(onKeyPress = { key, _ -> letters += key }, onCandidateSelect = {}, onCursorMove = { moves += it }),
                         Modifier.size(360.dp, 300.dp))
                 } }

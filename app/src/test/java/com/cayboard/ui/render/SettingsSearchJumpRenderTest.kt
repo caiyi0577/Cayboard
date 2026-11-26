@@ -32,7 +32,7 @@ import java.io.File
 
 /**
  * 设置搜索点开结果后的定位：手机大小的窗口里，目标项原本在屏幕外，要翻下去、滚到可见处并高亮。
- * [jumpScrollsDeepItemIntoView] 是普通单测；[renderHighlight] 只在设置了 CYIME_RENDER_OUT=<目录> 时出图，
+ * [jumpScrollsDeepItemIntoView] 是普通单测；[renderHighlight] 只在设置了 CAYBOARD_RENDER_OUT=<目录> 时出图，
  * 每页每种玻璃一张，横排浅色、深色、纯白、纯黑四个主题，截在高亮最亮的时候。
  */
 @RunWith(AndroidJUnit4::class)
@@ -73,7 +73,7 @@ class SettingsSearchJumpRenderTest {
     }
 
     @Test fun renderHighlight() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

@@ -37,8 +37,8 @@ namespace rime {
 //   完整修复需要 std::shared_mutex（有死锁风险：T9Processor 方法持读锁时
 //   调用 RIME Engine 可能触发 schema 切换需要写锁）或 std::shared_ptr
 //   （需重构 RIME Component 生命周期管理）。
-//   当前由 Kotlin 层 RimeEngine.rimeLock 隐式保护：所有 RIME 操作
-//   （destroy/switchSchema/processKey/t9*）均通过 rimeLock 串行化，
+//   当前由 Kotlin 层 InputEngine.engineLock 隐式保护：所有 RIME 操作
+//   （destroy/switchSchema/processKey/t9*）均通过 engineLock 串行化，
 //   不会出现 JNI 调用与 T9Processor 析构并发的场景。
 //   未来若引入多线程 RIME 操作（如后台词库更新触发 schema 切换），
 //   需重新评估并引入 shared_mutex 或 shared_ptr 方案。
@@ -90,7 +90,7 @@ T9Processor::T9Processor(const Ticket& ticket) : Processor(ticket) {
 
     // 用户词典调频（对齐全键盘 Memory::Memorize 机制）：
     // 与主翻译器（script_translator）使用同一 name_space "translator"，
-    // 通过组件池共享 Table/Prism/db（dict_name=rime_frost, prism_name=t9）。
+    // 通过组件池共享 Table/Prism/db（dict_name=cayboard_pinyin, prism_name=t9）。
     // 仅在右选候选时写入；创建失败（非拼音方案/未部署）时置空，调频自动跳过。
     if (auto dictionary = Dictionary::Require("dictionary")) {
         dict_.reset(dictionary->Create(Ticket(engine_, "translator")));
@@ -150,11 +150,11 @@ ProcessResult T9Processor::ProcessKeyEvent(const KeyEvent& key_event) {
           cur_input.c_str(), input_buffer_.ToBufferString().c_str());
 
     // 状态同步：composition 被外部清空但本地状态仍存在 → 清空本地
-    // 异步 flush 模型下，ctx->input() 反映上次 FlushRimeInput 后的引擎状态；
+    // 异步 flush 模型下，ctx->input() 反映上次 FlushEngineInput 后的引擎状态；
     // 若本地仍有未 flush 的 pending（待发送内容），说明引擎状态将紧随更新，
     // 不视为"外部清空"。仅当无 pending 且引擎输入为空时，才同步清空本地状态。
     if (cur_input.empty() && !input_buffer_.is_empty() &&
-        pending_action_ == RimePendingAction::kNone &&
+        pending_action_ == EnginePendingAction::kNone &&
         !undo_model_.HasPendingCommit()) {
         T9LOG("State sync: clearing stale local state");
         EnterIdle();
@@ -217,10 +217,10 @@ ProcessResult T9Processor::HandleDigitKey(char ch) {
     original_digit_sequence_ += ch;
     T9LOG(">> HandleDigitKey: original_digit_sequence_='%s' (after += '%c')",
           original_digit_sequence_.c_str(), ch);
-    SendToRime();
+    SendToEngine();
 
     Context* ctx = engine_->context();
-    T9LOG("Digit %c: buf='%s', rimeInput='%s', hasMenu=%d",
+    T9LOG("Digit %c: buf='%s', engineInput='%s', hasMenu=%d",
           ch, input_buffer_.ToBufferString().c_str(),
           ctx->input().c_str(), ctx->HasMenu() ? 1 : 0);
     LogPreeditState();
@@ -241,7 +241,7 @@ ProcessResult T9Processor::HandleSeparatorKey() {
 
     if (input_buffer_.is_empty()) {
         // 无输入序列 → 透传给 speller（'1' 在 alphabet 中，由 speller 处理为数字）
-        // 连续按防抖：检查 RIME input 是否已经是 "1"
+        // 连续按防抖：检查 引擎输入 是否已经是 "1"
         if (engine_->context()->input() == "1") {
             T9LOG(">> HandleSeparatorKey: empty+consecutive, consume");
             return kAccepted;
@@ -259,15 +259,15 @@ ProcessResult T9Processor::HandleSeparatorKey() {
         return kAccepted;
     }
 
-    // 追加分隔符位置；后续数字键通过 separator_positions 在 ToRimeInputString 中插入分隔符
+    // 追加分隔符位置；后续数字键通过 separator_positions 在 ToEngineInputString 中插入分隔符
     input_buffer_.separator_positions.push_back(new_pos);
     undo_model_.SeparatorPressed(new_pos);  // 段模型双写（kSeparator op，回退按位置删除）
     // 锁定左侧面板为第一个分隔符前的数字段，后续按键不刷新左侧候选区
     separator_consumed_digits_ = input_buffer_.digit_sequence.substr(
         0, input_buffer_.separator_position());
     left_column_locked_ = true;
-    // 通过 SendToRime 同步到 RIME 引擎，ToRimeInputString 会在所有 separator_positions 插入分隔符
-    SendToRime();
+    // 通过 SendToEngine 同步到 引擎，ToEngineInputString 会在所有 separator_positions 插入分隔符
+    SendToEngine();
 
     T9LOG(">> HandleSeparatorKey: set separator at pos %d, sepDigits='%s', locked=1, buf='%s'",
           input_buffer_.separator_position(),
@@ -302,7 +302,7 @@ ProcessResult T9Processor::HandleApostropheKey() {
     separator_consumed_digits_ = input_buffer_.digit_sequence.substr(
         0, input_buffer_.separator_position());
     left_column_locked_ = true;
-    SendToRime();
+    SendToEngine();
 
     T9LOG(">> HandleApostropheKey: set separator at pos %d, sepDigits='%s', locked=1",
           input_buffer_.separator_position(),
@@ -339,7 +339,7 @@ ProcessResult T9Processor::HandleBackspace() {
             left_column_locked_ = false;
             separator_consumed_digits_.reset();
         }
-        SendToRime();
+        SendToEngine();
     }
 
     LogPreeditState();
@@ -412,8 +412,8 @@ void T9Processor::HandleLeftSelectChoice(const SyllableOption& option) {
 
     left_column_locked_ = false;
     input_buffer_.separator_positions.clear();  // 左选后清除分隔符
-    last_rime_input_.clear();
-    SendToRime();
+    last_engine_input_.clear();
+    SendToEngine();
     T9LOG("HandleLeftSelectChoice: '%s'(%d), buf='%s'",
           option.pinyin.c_str(), option.digit_length,
           input_buffer_.ToBufferString().c_str());
@@ -458,8 +458,8 @@ void T9Processor::HandleSelectionReplacementChoice(const SyllableOption& option)
         last_choice_consumed_digits_ = new_consumed;
     }
     input_buffer_.separator_positions.clear();  // 替换选择后清除分隔符
-    last_rime_input_.clear();
-    SendToRime();
+    last_engine_input_.clear();
+    SendToEngine();
     T9LOG("HandleSelectionReplacement: '%s'(%d), buf='%s'",
           option.pinyin.c_str(), option.digit_length,
           input_buffer_.ToBufferString().c_str());
@@ -498,7 +498,7 @@ bool T9Processor::SelectCandidate(const std::string& candidate_pinyin,
           last_choice_consumed_digits_.has_value() ? last_choice_consumed_digits_->c_str() : "(null)");
 
     if (input_buffer_.is_empty()) {
-        // 整句拂动：字母直接在 RIME input 里，选第一段不能当整句上屏（用户 11-03）。
+        // 整句拂动：字母直接在 引擎输入 里，选第一段不能当整句上屏（用户 11-03）。
         if (auto letters = SelectLetterCandidate(candidate_pinyin, candidate_text)) return *letters;
         T9LOG(">> SelectCandidate: buffer empty → return true");
         return true;
@@ -518,22 +518,22 @@ bool T9Processor::SelectCandidate(const std::string& candidate_pinyin,
     T9RightCommitHandler::Context ctx;
     BuildHandlerContext(ctx);
 
-    // 方案 A：优先用 RIME 候选 end 换算的消费位数（精确反映 schema 派生编码
+    // 方案 A：优先用 引擎候选 end 换算的消费位数（精确反映 schema 派生编码
     // 的匹配范围），无法确定时用 -1 fallback 到现有 AlignWithBuffer 算法。
     // 顺带捕获候选真实数据（Phrase 文本 + 音节码，含声调真相）供调频使用。
     T9CommitCapture captured;
     // 识别候选是否为 T9 用户词：其 input_digits 与当前 unassigned 完全一致，
     // 右选应全量消费（避免音节对齐不匹配导致 partial commit）。
     bool is_t9_user = false;
-    int rime_consumed =
-        QueryRimeConsumedDigits(candidate_pinyin, candidate_text, &captured,
+    int engine_consumed =
+        QueryEngineConsumedDigits(candidate_pinyin, candidate_text, &captured,
                                 &is_t9_user);
-    // 左选场景时 RIME input 含左选拼音前缀，需加 consumed_count 得到总消费位数。
-    if (rime_consumed >= 0 && !input_buffer_.selections.empty()) {
-        rime_consumed += input_buffer_.consumed_count;
+    // 左选场景时 引擎输入 含左选拼音前缀，需加 consumed_count 得到总消费位数。
+    if (engine_consumed >= 0 && !input_buffer_.selections.empty()) {
+        engine_consumed += input_buffer_.consumed_count;
     }
-    T9LOG(">> SelectCandidate: rimeConsumedDigits=%d (consumed=%d, isT9User=%d, hasSels=%d)",
-          rime_consumed, input_buffer_.consumed_count, is_t9_user ? 1 : 0,
+    T9LOG(">> SelectCandidate: engineConsumedDigits=%d (consumed=%d, isT9User=%d, hasSels=%d)",
+          engine_consumed, input_buffer_.consumed_count, is_t9_user ? 1 : 0,
           !input_buffer_.selections.empty() ? 1 : 0);
     // One capture per selected segment, even when its code is unavailable, so undo
     // always removes the matching selection. Missing codes must not be guessed.
@@ -564,7 +564,7 @@ bool T9Processor::SelectCandidate(const std::string& candidate_pinyin,
           is_first_select ? 1 : 0);
 
     bool full_commit = right_commit_handler_.HandleRightCommit(
-        ctx, candidate_pinyin, candidate_text_length, rime_consumed, is_t9_user);
+        ctx, candidate_pinyin, candidate_text_length, engine_consumed, is_t9_user);
 
     // 必须先把 handler 消费结果回写 input_buffer_（consumed/unassigned 更新）。
     ApplyHandlerContext(ctx);
@@ -684,7 +684,7 @@ static const char* kDigitOfLetter = "22233344455566677778889999";
 
 void T9Processor::AdoptLetterInput() {
     Context* ctx = engine_->context();
-    if (!ctx || pending_action_ != RimePendingAction::kNone) return;
+    if (!ctx || pending_action_ != EnginePendingAction::kNone) return;
     const std::string input = ctx->input();
     if (input.empty()) return;
     const auto is_delimiter = [this](char c) { return c == manual_delimiter_ || c == '\'' || c == ' '; };
@@ -750,7 +750,7 @@ std::optional<bool> T9Processor::SelectLetterCandidate(const std::string& candid
     }
     T9CommitCapture captured;
     size_t end = 0;
-    if (QueryRimeConsumedDigits(candidate_pinyin, candidate_text, &captured, nullptr, &end) < 0)
+    if (QueryEngineConsumedDigits(candidate_pinyin, candidate_text, &captured, nullptr, &end) < 0)
         return std::nullopt;
     size_t rest = std::min(end, input.size());
     size_t code_end = rest;
@@ -769,9 +769,9 @@ std::optional<bool> T9Processor::SelectLetterCandidate(const std::string& candid
         return true;
     }
     letter_commits_.push_back(input.substr(0, code_end));
-    last_rime_input_.clear();
+    last_engine_input_.clear();
     pending_input_ = input.substr(rest);
-    pending_action_ = RimePendingAction::kSetInput;
+    pending_action_ = EnginePendingAction::kSetInput;
     T9LOG(">> SelectLetterCandidate: '%s' takes '%s', remaining '%s'",
           candidate_text.c_str(), letter_commits_.back().c_str(), pending_input_.c_str());
     return false;
@@ -780,31 +780,31 @@ std::optional<bool> T9Processor::SelectLetterCandidate(const std::string& candid
 bool T9Processor::UndoLetterCommit() {
     if (letter_commits_.empty() || !input_buffer_.is_empty()) return false;
     Context* ctx = engine_->context();
-    if (!ctx || !ctx->input().empty() || pending_action_ != RimePendingAction::kNone) return false;
+    if (!ctx || !ctx->input().empty() || pending_action_ != EnginePendingAction::kNone) return false;
     pending_input_ = std::move(letter_commits_.back());
     letter_commits_.pop_back();
     undo_model_.PopLastCommitCapture();
     pending_fullcommit_capture_.reset();
     ++undone_right_commit_count_;
-    last_rime_input_.clear();
-    pending_action_ = RimePendingAction::kSetInput;
+    last_engine_input_.clear();
+    pending_action_ = EnginePendingAction::kSetInput;
     T9LOG(">> UndoLetterCommit: restore '%s'", pending_input_.c_str());
     return true;
 }
 
-bool T9Processor::MatchesLetterConstraints(size_t rime_start, const std::string& comment) const {
+bool T9Processor::MatchesLetterConstraints(size_t engine_start, const std::string& comment) const {
     if (letter_constraints_.empty() || comment.empty()) return true;
-    // 候选覆盖的是 RIME input 里的未分配数字段；其前面的字符（已选拼音字母、分隔符）不算。
-    const std::string rime_input = engine_->context()->input();
+    // 候选覆盖的是 引擎输入 里的未分配数字段；其前面的字符（已选拼音字母、分隔符）不算。
+    const std::string engine_input = engine_->context()->input();
     const std::string unassigned = input_buffer_.unassigned();
     const int unassigned_offset = static_cast<int>(input_buffer_.digit_sequence.size() - unassigned.size());
     int digits_before = 0;
     bool in_unassigned = false;
-    for (size_t i = 0; i < rime_start && i < rime_input.size(); ++i) {
-        if (rime_input[i] >= '0' && rime_input[i] <= '9') { ++digits_before; in_unassigned = true; }
-        else if (rime_input[i] != '\'' && rime_input[i] != ' ' && in_unassigned) return true;  // 不覆盖数字段，放行
+    for (size_t i = 0; i < engine_start && i < engine_input.size(); ++i) {
+        if (engine_input[i] >= '0' && engine_input[i] <= '9') { ++digits_before; in_unassigned = true; }
+        else if (engine_input[i] != '\'' && engine_input[i] != ' ' && in_unassigned) return true;  // 不覆盖数字段，放行
     }
-    if (rime_start < rime_input.size() && !(rime_input[rime_start] >= '0' && rime_input[rime_start] <= '9')) return true;
+    if (engine_start < engine_input.size() && !(engine_input[engine_start] >= '0' && engine_input[engine_start] <= '9')) return true;
     int j = 0;
     for (char c : comment) {
         if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
@@ -820,16 +820,16 @@ bool T9Processor::MatchesLetterConstraints(size_t rime_start, const std::string&
 
 
 
-int T9Processor::QueryRimeConsumedDigits(
+int T9Processor::QueryEngineConsumedDigits(
     const std::optional<std::string>& candidate_pinyin,
     const std::string& candidate_text,
     T9CommitCapture* capture,
     bool* out_is_t9_user,
     size_t* out_end) const {
-    // 方案 A：右选消费优先采用 RIME 候选的实际匹配范围。
+    // 方案 A：右选消费优先采用 引擎候选的实际匹配范围。
     // RIME 已通过 schema 的 speller/algebra（含 derive/abbrev 派生规则）
     // 精确计算出候选在输入中的匹配结束位置（Candidate::end()），
-    // 其坐标基于 RIME 引擎当前 input 字符串（可能含分隔符）。
+    // 其坐标基于 引擎当前 input 字符串（可能含分隔符）。
     // 换算规则：消费数字位数 = input[0:end) 中数字字符的个数。
     // Table/English candidates can have an empty comment. Their real end position
     // is still authoritative when the displayed text identifies the candidate.
@@ -837,7 +837,7 @@ int T9Processor::QueryRimeConsumedDigits(
     const std::string requested_comment = candidate_pinyin.value_or("");
     auto* ctx = engine_->context();
     if (!ctx) return -1;
-    const std::string& rime_input = ctx->input();
+    const std::string& engine_input = ctx->input();
     const auto& comp = ctx->composition();
     const bool match_text = !candidate_text.empty();
     for (const auto& seg : comp) {
@@ -896,12 +896,12 @@ int T9Processor::QueryRimeConsumedDigits(
             size_t end = genuine->end();
             if (out_end) *out_end = end;
             int digits = 0;
-            size_t limit = std::min(end, rime_input.size());
+            size_t limit = std::min(end, engine_input.size());
             for (size_t k = 0; k < limit; ++k) {
-                if (rime_input[k] >= '0' && rime_input[k] <= '9') ++digits;
+                if (engine_input[k] >= '0' && engine_input[k] <= '9') ++digits;
             }
-            T9LOG(">> QueryRimeConsumedDigits: pinyin='%s' end=%zu inputLen=%zu -> digits=%d",
-                  requested_comment.c_str(), end, rime_input.size(), digits);
+            T9LOG(">> QueryEngineConsumedDigits: pinyin='%s' end=%zu inputLen=%zu -> digits=%d",
+                  requested_comment.c_str(), end, engine_input.size(), digits);
             return digits;
         }
     }
@@ -921,16 +921,16 @@ void T9Processor::BuildHandlerContext(T9RightCommitHandler::Context& out) {
     // 回调注入
     out.sync_state = [] {};  // T9Processor 直接持有 state_machine_，无需同步
     out.update_candidates = [](bool) {};  // Kotlin 端会从 RIME composition 读取
-    // 对应 Kotlin rimeBridge.setLastRimeInput(it)：仅更新 last_rime_input_ 缓存，
-    // 不直接修改 RIME 引擎的 input。RIME input 的真正同步留给 forceSendToRime
+    // 对应 Kotlin T9EngineBridge.setLastEngineInput(it)：仅更新 last_engine_input_ 缓存，
+    // 不直接修改引擎的 input。引擎 input 的真正同步留给上层的 resendInputToEngine。
     // （即 ReplaceFullPinyin），由服务层在 partial commit 后调用。
-    // 若在此处调 SyncRimeInput 修改 RIME input，会破坏后续 rimeEngine.selectCandidate
-    // 的调用环境（RIME 候选词列表已变更），导致双重消费/异常上屏。
-    out.set_rime_input = [this](const std::optional<std::string>& input) {
+    // 若在此处调 SyncEngineInput 修改 引擎输入，会破坏后续 inputEngine.selectCandidate
+    // 的调用环境（引擎候选词列表已变更），导致双重消费/异常上屏。
+    out.set_engine_input = [this](const std::optional<std::string>& input) {
         if (input.has_value()) {
-            last_rime_input_ = *input;
+            last_engine_input_ = *input;
         } else {
-            last_rime_input_.clear();
+            last_engine_input_.clear();
         }
     };
 }
@@ -945,13 +945,13 @@ void T9Processor::ApplyHandlerContext(const T9RightCommitHandler::Context& ctx) 
 }
 
 // ════════════════════════════════════════
-// InferFirstSyllableFromRime — 从 RIME 候选 comment 推断首音节
+// InferFirstSyllableFromCandidates — 从 引擎候选 comment 推断首音节
 // ════════════════════════════════════════
 
-std::optional<SyllableOption> T9Processor::InferFirstSyllableFromRime(const std::string& digits) {
-    // 对应 Kotlin T9RimeBridge.inferFirstSyllableFromRime
-    T9_SCOPED_TIMER_TAG("T9Processor", "InferFirstSyllableFromRime");
-    T9_PERF_SCOPED_TIMER("[T9] InferFirstSyllableFromRime");
+std::optional<SyllableOption> T9Processor::InferFirstSyllableFromCandidates(const std::string& digits) {
+    // 对应 Kotlin T9EngineBridge.inferFirstSyllableFromEngine
+    T9_SCOPED_TIMER_TAG("T9Processor", "InferFirstSyllableFromCandidates");
+    T9_PERF_SCOPED_TIMER("[T9] InferFirstSyllableFromCandidates");
     Context* ctx = engine_->context();
     if (ctx && ctx->HasMenu()) {
         Menu* menu = ctx->composition().back().menu.get();
@@ -988,7 +988,7 @@ std::optional<SyllableOption> T9Processor::InferFirstSyllableFromRime(const std:
 // ════════════════════════════════════════
 
 void T9Processor::LogPreeditState() {
-    // 异步 flush 模型下，此处引擎 composition 为上次 FlushRimeInput 后的状态，
+    // 异步 flush 模型下，此处引擎 composition 为上次 FlushEngineInput 后的状态，
     // 读取/Prepare 候选意义有限且会引入额外翻译开销（menu->Prepare），
     // 因此仅记录本地 buffer 状态。候选区实际由 JNI 层在 flush 后统一拉取。
     T9_PERFLOG("[T9_PREEDIT] input='%s' buf='%s'",
@@ -997,42 +997,42 @@ void T9Processor::LogPreeditState() {
 }
 
 // ════════════════════════════════════════
-// SendToRime / SyncRimeInput — RIME 交互
+// SendToEngine / SyncEngineInput — 引擎交互
 // ════════════════════════════════════════
 
-void T9Processor::SendToRime() {
-    // 对应 Kotlin sendToRime。
+void T9Processor::SendToEngine() {
+    // 对应 Kotlin sendToEngine。
     //
     // 异步 flush 模型（对标 Kotlin 版异步投递）：
     //   本方法只计算"待发送内容"并标记 pending_action_ / pending_input_，
-    //   不再直接调用引擎（set_input / Clear 等延迟到 FlushRimeInput 执行，
+    //   不再直接调用引擎（set_input / Clear 等延迟到 FlushEngineInput 执行，
     //   由应用层在 processKey 之后的后台线程触发）。
-    //   埋点范围因此不含引擎 compose 耗时，与 Kotlin 版 t9_send_to_rime 口径一致。
-    T9_SCOPED_TIMER_TAG("T9Processor", "SendToRime");
-    T9_PERF_SCOPED_TIMER("[T9] SendToRime");
+    //   埋点范围因此不含引擎 compose 耗时，与 Kotlin 版 t9_send_to_engine 口径一致。
+    T9_SCOPED_TIMER_TAG("T9Processor", "SendToEngine");
+    T9_PERF_SCOPED_TIMER("[T9] SendToEngine");
     if (input_buffer_.is_empty()) {
-        // 空 buffer：统一 kClear（清 RIME input + composition）。
+        // 空 buffer：统一 kClear（清 引擎输入 + composition）。
         // 修复（2026-08-05，设备实证"几4"）：旧逻辑在 pending commit（待撤销右选，
         // 如右选"几"的 TailConsume）时只清 composition 不清 input，回退删空数字后
-        // RIME input 残留（partial 文本"几" + 残留 input '4' = "几4"）。
-        // pending commit 的 input 恢复由 undo 时的 SendToRime 重新设置，无需保留旧 input。
-        last_rime_input_.clear();
+        // 引擎输入 残留（partial 文本"几" + 残留 input '4' = "几4"）。
+        // pending commit 的 input 恢复由 undo 时的 SendToEngine 重新设置，无需保留旧 input。
+        last_engine_input_.clear();
         pending_input_.clear();
-        pending_action_ = RimePendingAction::kClear;
+        pending_action_ = EnginePendingAction::kClear;
         return;
     }
     // 僵尸 RC 状态：consumed > 0 且无 unassigned 且无 selections 且有 pending RightCommit。
     // 所有未分配数字已删完，consumed 部分仍存在（来自 RightCommit）。
     // 不向 RIME 发送 digit_sequence，否则 RIME 会生成 preedit（如 "ce"），
-    // 导致预编辑文本错误拼接（partialCommit="策" + rimePreedit="ce" = "策ce"）。
+    // 导致预编辑文本错误拼接（partialCommit="策" + enginePreedit="ce" = "策ce"）。
     // 正确做法：清 RIME composition 和 input，仅由 partial commit 文本驱动预编辑显示。
     // pending commit 判定用 undo_model_（回退真相源，对应原命令模式 HasPendingRightCommit）；
     // buffer 侧保持 IsZombieRCBufferState。
     if (input_buffer_.IsZombieRCBufferState() && undo_model_.HasPendingCommit()) {
-        last_rime_input_.clear();
+        last_engine_input_.clear();
         pending_input_.clear();
-        pending_action_ = RimePendingAction::kZombieClear;
-        T9LOG("SendToRime: zombie RC, pending clear (digitSeq='%s')",
+        pending_action_ = EnginePendingAction::kZombieClear;
+        T9LOG("SendToEngine: zombie RC, pending clear (digitSeq='%s')",
               input_buffer_.digit_sequence.c_str());
         return;
     }
@@ -1041,14 +1041,14 @@ void T9Processor::SendToRime() {
     // 无拼音注释 → C++ SelectCandidate 收到空 pinyin → 误判 full commit。
     //
     // 策略：
-    //   - 用 ToPreeditString()（拼音格式）与 last_rime_input_ 比较，
-    //     判断 RIME input 是否需要变化。拼音格式对 left choice 敏感
+    //   - 用 ToPreeditString()（拼音格式）与 last_engine_input_ 比较，
+    //     判断 引擎输入 是否需要变化。拼音格式对 left choice 敏感
     //     （如 "b" vs "c"），避免 digit_sequence 相同时跳过更新。
-    //   - 用 ToRimeInputString()（数字码格式）实际设置 RIME input，
+    //   - 用 ToEngineInputString()（数字码格式）实际设置 引擎输入，
     //     确保 spelling_hints 生成 comment。
 
     // ═══ 快速路径：无 selections + 无 consumed 时直接用 digit_sequence ═══
-    // 跳过 ToPreeditString/ToRimeInputString 的完整字符串构建（含多次 string 拷贝），
+    // 跳过 ToPreeditString/ToEngineInputString 的完整字符串构建（含多次 string 拷贝），
     // 直接使用最原始的 digit_sequence。这是用户输入过程中最高频的路径。
     // 修复（2026-08-06）：分隔符越界位置钳制到末尾（与 ToBuffer 一致），
     // 消除"分隔符存在但越界 → 退化发送无分隔符序列"的边界分支。
@@ -1063,64 +1063,64 @@ void T9Processor::SendToRime() {
                 raw_input.insert(raw_input.begin() + pos, manual_delimiter_);
             }
         }
-        if (raw_input == last_rime_input_) return;
-        last_rime_input_ = raw_input;
-        T9LOG("SendToRime (fast-path): '%s'", raw_input.c_str());
+        if (raw_input == last_engine_input_) return;
+        last_engine_input_ = raw_input;
+        T9LOG("SendToEngine (fast-path): '%s'", raw_input.c_str());
         pending_input_ = std::move(raw_input);
-        pending_action_ = RimePendingAction::kSetInput;
+        pending_action_ = EnginePendingAction::kSetInput;
         return;
     }
 
     std::string preedit = input_buffer_.ToPreeditString(manual_delimiter_);
-    std::string rime_input = input_buffer_.ToRimeInputString(manual_delimiter_);
+    std::string engine_input = input_buffer_.ToEngineInputString(manual_delimiter_);
 
-    // 分隔符已由 ToRimeInputString/ToPreeditString 通过 separator_positions 处理，
+    // 分隔符已由 ToEngineInputString/ToPreeditString 通过 separator_positions 处理，
     // 不再需要在此处追加。
 
-    if (preedit == last_rime_input_) return;
-    last_rime_input_ = preedit;
-    T9LOG("SendToRime: '%s' (preedit='%s', digitSeq='%s')",
-          rime_input.c_str(), preedit.c_str(),
+    if (preedit == last_engine_input_) return;
+    last_engine_input_ = preedit;
+    T9LOG("SendToEngine: '%s' (preedit='%s', digitSeq='%s')",
+          engine_input.c_str(), preedit.c_str(),
           input_buffer_.digit_sequence.c_str());
-    pending_input_ = std::move(rime_input);
-    pending_action_ = RimePendingAction::kSetInput;
+    pending_input_ = std::move(engine_input);
+    pending_action_ = EnginePendingAction::kSetInput;
 }
 
-void T9Processor::FlushRimeInput() {
-    // 异步 flush：执行 SendToRime 标记的待发送动作，真正触发引擎 compose。
-    // 由应用层在 processKey 之后的后台线程调用（持有 RimeEngine.rimeLock）。
+void T9Processor::FlushEngineInput() {
+    // 异步 flush：执行 SendToEngine 标记的待发送动作，真正触发引擎 compose。
+    // 由应用层在 processKey 之后的后台线程调用（持有 InputEngine.engineLock）。
     // 埋点体现引擎调用本身耗时（含 compose_total），供对比观察。
-    T9_SCOPED_TIMER_TAG("T9Processor", "FlushRimeInput");
-    T9_PERF_SCOPED_TIMER("[T9] FlushRimeInput");
+    T9_SCOPED_TIMER_TAG("T9Processor", "FlushEngineInput");
+    T9_PERF_SCOPED_TIMER("[T9] FlushEngineInput");
     // 新 input 的候选集即将生成，作废上一轮 Phrase 码缓存（t9_filter 将重建）。
     ClearPhraseCodeCache();
     switch (pending_action_) {
-        case RimePendingAction::kNone:
+        case EnginePendingAction::kNone:
             return;
-        case RimePendingAction::kSetInput:
+        case EnginePendingAction::kSetInput:
             engine_->context()->set_input(pending_input_);
             break;
-        case RimePendingAction::kClear:
+        case EnginePendingAction::kClear:
             engine_->context()->Clear();
             break;
-        case RimePendingAction::kZombieClear:
+        case EnginePendingAction::kZombieClear:
             engine_->context()->ClearNonConfirmedComposition();
             engine_->context()->set_input("");
             break;
     }
-    pending_action_ = RimePendingAction::kNone;
+    pending_action_ = EnginePendingAction::kNone;
     pending_input_.clear();
 }
 
-void T9Processor::SyncRimeInput(const std::optional<std::string>& input) {
-    // 对应 Kotlin setRimeInput 回调
+void T9Processor::SyncEngineInput(const std::optional<std::string>& input) {
+    // 对应 Kotlin setEngineInput 回调
     if (input.has_value()) {
-        last_rime_input_ = *input;
+        last_engine_input_ = *input;
         if (!input->empty()) {
             engine_->context()->set_input(*input);
         }
     } else {
-        last_rime_input_.clear();
+        last_engine_input_.clear();
     }
 }
 
@@ -1260,7 +1260,7 @@ void T9Processor::ReplaceFullPinyin(const std::string& pinyin) {
     //   pinyin == CLEAR_COMPOSITION_ONLY → ClearComposition(0)
     //   pinyin == CLEAR_ALL → ClearComposition(1)
     //   pinyin 为空 → ClearComposition(0)
-    //   其他 → 直接设置 RIME input
+    //   其他 → 直接设置 引擎输入
     if (pinyin.empty()) {
         ClearComposition(0);
         return;
@@ -1270,7 +1270,7 @@ void T9Processor::ReplaceFullPinyin(const std::string& pinyin) {
     // 时 diff_pos 逻辑无法正确处理残留 segments 与新 input 的差异，
     // 导致 BuildSyllableGraph → CommonPrefixSearch 找不到候选项）。
     engine_->context()->Clear();
-    SyncRimeInput(pinyin);
+    SyncEngineInput(pinyin);
     T9LOG("ReplaceFullPinyin: '%s'", pinyin.c_str());
 }
 
@@ -1285,10 +1285,10 @@ bool T9Processor::ReplaceEditableSuffix(const std::string& pinyin) {
     separator_consumed_digits_.reset();
     last_choice_consumed_digits_.reset();
     DeriveStateMachineFromUndoModel();
-    last_rime_input_.clear();
-    pending_action_ = RimePendingAction::kNone;
+    last_engine_input_.clear();
+    pending_action_ = EnginePendingAction::kNone;
     pending_input_.clear();
-    SendToRime();
+    SendToEngine();
     return true;
 }
 
@@ -1299,9 +1299,9 @@ void T9Processor::ClearComposition(int mode) {
     if (mode == 0) {
         // CLEAR_COMPOSITION_ONLY
         ctx->ClearNonConfirmedComposition();
-        last_rime_input_.clear();
+        last_engine_input_.clear();
         // 外部清理优先：作废未 flush 的 pending 内容
-        pending_action_ = RimePendingAction::kNone;
+        pending_action_ = EnginePendingAction::kNone;
         pending_input_.clear();
         T9LOG("ClearComposition: CLEAR_COMPOSITION_ONLY");
     } else {
@@ -1311,8 +1311,8 @@ void T9Processor::ClearComposition(int mode) {
         undo_model_.Clear();  // 段模型同步：清空全部段状态
         separator_consumed_digits_.reset();
         last_choice_consumed_digits_.reset();
-        last_rime_input_.clear();
-        pending_action_ = RimePendingAction::kNone;
+        last_engine_input_.clear();
+        pending_action_ = EnginePendingAction::kNone;
         pending_input_.clear();
         ctx->Clear();
         T9LOG("ClearComposition: CLEAR_ALL");

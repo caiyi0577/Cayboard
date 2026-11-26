@@ -19,13 +19,13 @@ object FileLogger {
     private const val MAX_LOG_FILES = 10
     /** 所有 APP 日志合计上限；常驻进程写满单个文件就轮转，不再只在启动时检查。 */
     private const val MAX_TOTAL_LOG_BYTES = 30L * 1024 * 1024
-    private val ACTIVE_NAME = Regex("""kime_\d{8}(-[a-z0-9]+)?\.log""")
+    private val ACTIVE_NAME = Regex("""cayboard_\d{8}(-[a-z0-9]+)?\.log""")
     private const val QUEUE_CAPACITY = 4096
     
     private var logFile: File? = null
     private var logsDir: File? = null
     private var isInitialized = false
-    /** 各进程写自己的文件（:asr → kime_日期-asr.log），不再几个进程追加同一个文件。 */
+    /** 各进程写自己的文件（:asr → cayboard_日期-asr.log），不再几个进程追加同一个文件。 */
     private var processSuffix = ""
     private var openedDay: LocalDate? = null
 
@@ -53,7 +53,7 @@ object FileLogger {
 
     /** 当天正在写的文件名（含其他进程的），清理日志时必须保留。 */
     fun isActiveLogName(name: String, today: LocalDate = LocalDate.now()): Boolean =
-        ACTIVE_NAME.matches(name) && name.startsWith("kime_${fileDateFormat.format(today)}")
+        ACTIVE_NAME.matches(name) && name.startsWith("cayboard_${fileDateFormat.format(today)}")
     
     fun init(context: Context) {
         if (isInitialized) return
@@ -69,7 +69,7 @@ object FileLogger {
             
             openLogFile()
             cleanOldLogs()
-            cleanRimeLogs(context)
+            cleanEngineLogs(context)
             cleanOrphanedLogs()
             
             running = true
@@ -85,13 +85,13 @@ object FileLogger {
     private fun openLogFile() = synchronized(writeLock) {
         val day = LocalDate.now()
         val today = fileDateFormat.format(day)
-        logFile = File(logsDir!!, "kime_$today$processSuffix.log")
+        logFile = File(logsDir!!, "cayboard_$today$processSuffix.log")
         
         if (logFile!!.exists() && logFile!!.length() > MAX_LOG_SIZE) {
             val ts = rotatedFormat.format(LocalDateTime.now())
-            val newLogFile = File(logsDir!!, "kime_$ts$processSuffix.log")
+            val newLogFile = File(logsDir!!, "cayboard_$ts$processSuffix.log")
             logFile!!.renameTo(newLogFile)
-            logFile = File(logsDir!!, "kime_$today$processSuffix.log")
+            logFile = File(logsDir!!, "cayboard_$today$processSuffix.log")
         }
         
         writer?.close()
@@ -216,7 +216,7 @@ object FileLogger {
         try {
             logsDir?.let { dir ->
                 val logFiles = dir.listFiles()
-                    ?.filter { it.name.startsWith("kime_") && it.name.endsWith(".log") }
+                    ?.filter { isAppLogName(it.name) }
                     ?.sortedByDescending { it.lastModified() }
                     ?: emptyList()
                 
@@ -237,7 +237,7 @@ object FileLogger {
     
     fun getAllLogFiles(): List<File> {
         return logsDir?.listFiles()
-            ?.filter { it.name.startsWith("kime_") && it.name.endsWith(".log") }
+            ?.filter { isAppLogName(it.name) }
             ?.sortedByDescending { it.lastModified() }
             ?: emptyList()
     }
@@ -245,7 +245,7 @@ object FileLogger {
     fun clearAllLogs() {
         try {
             logsDir?.listFiles()
-                ?.filter { it.name.startsWith("kime_") }
+                ?.filter { isAppLogName(it.name) }
                 ?.forEach { it.delete() }
             
             openLogFile()
@@ -260,7 +260,7 @@ object FileLogger {
         try {
             logsDir?.let { dir ->
                 dir.listFiles()
-                    ?.filter { it.name.endsWith(".log") && !it.name.startsWith("kime_") }
+                    ?.filter { it.name.endsWith(".log") && !isAppLogName(it.name) }
                     ?.forEach { file ->
                         if (file.length() > MAX_LOG_SIZE) {
                             file.delete()
@@ -272,26 +272,29 @@ object FileLogger {
         }
     }
 
-    private fun cleanRimeLogs(context: Context) {
+    private fun cleanEngineLogs(context: Context) {
         try {
-            val rimeLogDir = File(File(context.filesDir, "rime"), "logs")
-            if (!rimeLogDir.exists()) return
-            rimeLogDir.listFiles()
+            val engineLogDir = File(File(context.filesDir, "cayboard_input"), "logs")
+            if (!engineLogDir.exists()) return
+            engineLogDir.listFiles()
                 ?.filter { it.isFile && it.name.endsWith(".log") }
                 ?.sortedByDescending { it.lastModified() }
                 ?.drop(MAX_LOG_FILES)
                 ?.forEach { file ->
                     file.delete()
                 }
-            rimeLogDir.listFiles()
+            engineLogDir.listFiles()
                 ?.filter { it.isFile && it.name.endsWith(".log") && it.length() > MAX_LOG_SIZE }
                 ?.forEach { file ->
                     file.delete()
                 }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to clean rime logs", e)
+            Log.e(TAG, "Failed to clean input engine logs", e)
         }
     }
+
+    private fun isAppLogName(name: String): Boolean =
+        name.startsWith("cayboard_") || name.startsWith(com.cayboard.engine.compat.LegacyNames.OLD_APP_LOG_PREFIX)
 
     fun reopenLogFile() {
         openLogFile()

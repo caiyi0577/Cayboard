@@ -9,7 +9,7 @@ import org.junit.rules.TemporaryFolder
 class CellDictionaryTest {
     @get:Rule val temp = TemporaryFolder()
     private fun store() = CellDictionaryStore(temp.newFolder())
-    private val pack = CellDictionaryRime.packName("rime_ice")
+    private val pack = CellDictionaryEngine.packName("cayboard_pinyin")
 
     @Test fun `selection is persistent but activation is explicit and downloads start disabled`() {
         val store = store()
@@ -42,10 +42,10 @@ class CellDictionaryTest {
     @Test fun `unavailable dictionaries cannot be selected or partially applied`() {
         val store = store()
         assertThrows(IllegalArgumentException::class.java) { store.select("sogou_999", true) }
-        val rime = temp.newFolder()
-        val custom = File(rime, "t9_pinyin.custom.yaml").apply { writeText("patch:\n  x: y\n") }
+        val inputData = temp.newFolder()
+        val custom = File(inputData, "t9_pinyin.custom.yaml").apply { writeText("patch:\n  x: y\n") }
         assertThrows(IllegalArgumentException::class.java) {
-            CellDictionaryRime.prepare(rime, store, listOf(SchemaMeta("t9_pinyin", "九键")), setOf("sogou_999"))
+            CellDictionaryEngine.prepare(inputData, store, listOf(SchemaMeta("t9_pinyin", "九键")), setOf("sogou_999"))
         }
         assertEquals("patch:\n  x: y\n", custom.readText())
     }
@@ -53,75 +53,75 @@ class CellDictionaryTest {
     @Test fun `managed append preserves personal dictionaries and unrelated user patches`() {
         for (source in listOf("# header\npatch:\n  \"translator/packs\": [user_simp, extra]\n  other: 42\n",
             "patch:\r\n    translator/packs:\r\n      - user_simp\r\n    other: 42\r\n",
-            "patch:\n  translator:\n    dictionary: rime_ice\n    packs: [user_simp]\n")) {
-            val patched = CellDictionaryRime.patch(source, pack)
+            "patch:\n  translator:\n    dictionary: cayboard_pinyin\n    packs: [user_simp]\n")) {
+            val patched = CellDictionaryEngine.patch(source, pack)
             assertTrue(patched.contains(pack))
-            assertEquals(patched, CellDictionaryRime.patch(patched, pack))
-            assertEquals(source, CellDictionaryRime.patch(patched, null))
+            assertEquals(patched, CellDictionaryEngine.patch(patched, pack))
+            assertEquals(source, CellDictionaryEngine.patch(patched, null))
         }
     }
 
     @Test fun `new patch works without a patch block and unsupported yaml is left alone`() {
         for (source in listOf("", "# comment\n", "other: 42\n...\n", "patch:")) {
-            assertTrue(CellDictionaryRime.patch(source, pack).contains(pack))
+            assertTrue(CellDictionaryEngine.patch(source, pack).contains(pack))
         }
         for (source in listOf("patch: {other: 42}", "patch:\n  translator/packs/+: [someone_else]\n",
             "patch:\n  translator/packs/@next: someone_else\n")) {
-            assertThrows(Exception::class.java) { CellDictionaryRime.patch(source, pack) }
+            assertThrows(Exception::class.java) { CellDictionaryEngine.patch(source, pack) }
         }
     }
 
     @Test fun `packs follow language scheme and primary dictionary rather than layout`() {
         val store = store()
         val entry = store.install(scelFixture())
-        val rime = temp.newFolder()
+        val inputData = temp.newFolder()
         val schemas = listOf(SchemaMeta("t9_pinyin", "九键"), SchemaMeta("pinyin_simp", "拼音"),
             SchemaMeta("double_pinyin_flypy", "双拼"), SchemaMeta("luna_pinyin", "明月"),
             SchemaMeta("japanese", "日语"), SchemaMeta("wubi86", "五笔"), SchemaMeta("custom_unknown", "未知"))
         schemas.forEach { schema ->
-            File(rime, "${schema.schemaId}.schema.yaml").writeText("translator:\n  dictionary: ${if (schema.schemaId == "luna_pinyin") "luna_pinyin" else "rime_ice"}\n  packs: [user_simp]\n")
+            File(inputData, "${schema.schemaId}.schema.yaml").writeText("translator:\n  dictionary: ${if (schema.schemaId == "luna_pinyin") "luna_pinyin" else "cayboard_pinyin"}\n  packs: [user_simp]\n")
         }
-        File(rime, "pinyin_simp.custom.yaml").writeText("# user notes only\n")
-        val bindings = CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id))
+        File(inputData, "pinyin_simp.custom.yaml").writeText("# user notes only\n")
+        val bindings = CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id))
         assertEquals(4, bindings.size)
         assertEquals(2, bindings.map { it.pack }.distinct().size)
-        assertFalse(File(rime, "japanese.custom.yaml").exists())
-        assertFalse(File(rime, "wubi86.custom.yaml").exists())
-        assertTrue(File(rime, "$pack.dict.yaml").readText().contains("cyime_cells/cell_${entry.id}"))
-        assertTrue(File(rime, "cyime_cells/cell_${entry.id}.dict.yaml").readText().contains("你好\tni hao"))
-        val before = File(rime, "$pack.dict.yaml").lastModified()
-        CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id))
-        assertEquals(before, File(rime, "$pack.dict.yaml").lastModified())
-        CellDictionaryRime.prepare(rime, store, schemas, emptySet())
-        assertFalse(File(rime, "t9_pinyin.custom.yaml").readText().contains(pack))
-        assertTrue(File(rime, "pinyin_simp.custom.yaml").readText().startsWith("# user notes only\n"))
+        assertFalse(File(inputData, "japanese.custom.yaml").exists())
+        assertFalse(File(inputData, "wubi86.custom.yaml").exists())
+        assertTrue(File(inputData, "$pack.dict.yaml").readText().contains("cayboard_cells/cell_${entry.id}"))
+        assertTrue(File(inputData, "cayboard_cells/cell_${entry.id}.dict.yaml").readText().contains("你好\tni hao"))
+        val before = File(inputData, "$pack.dict.yaml").lastModified()
+        CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id))
+        assertEquals(before, File(inputData, "$pack.dict.yaml").lastModified())
+        CellDictionaryEngine.prepare(inputData, store, schemas, emptySet())
+        assertFalse(File(inputData, "t9_pinyin.custom.yaml").readText().contains(pack))
+        assertTrue(File(inputData, "pinyin_simp.custom.yaml").readText().startsWith("# user notes only\n"))
     }
 
     @Test fun `english words get a table per keyboard beside the bundled english`() {
         val store = store()
         val entry = store.install("你好 ni hao\nAme\nN0tail\n".toByteArray())
         assertEquals(2, entry.english)
-        val rime = temp.newFolder()
-        val schemas = listOf(SchemaMeta("t9_pinyin", "九键"), SchemaMeta("pinyin_14jian", "14键"), SchemaMeta("rime_ice", "拼音"))
-        schemas.forEach { File(rime, "${it.schemaId}.schema.yaml").writeText("translator:\n  dictionary: rime_ice\n") }
-        CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id))
-        assertFalse(File(rime, "rime_ice.custom.yaml").readText().contains(CellDictionaryEnglish.NAMESPACE))
-        assertTrue(File(rime, "rime_ice.custom.yaml").readText().contains("translator/packs/+"))
-        CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id), includeEnglish = true)
+        val inputData = temp.newFolder()
+        val schemas = listOf(SchemaMeta("t9_pinyin", "九键"), SchemaMeta("pinyin_14jian", "14键"), SchemaMeta("cayboard_pinyin", "拼音"))
+        schemas.forEach { File(inputData, "${it.schemaId}.schema.yaml").writeText("translator:\n  dictionary: cayboard_pinyin\n") }
+        CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id))
+        assertFalse(File(inputData, "cayboard_pinyin.custom.yaml").readText().contains(CellDictionaryEnglish.NAMESPACE))
+        assertTrue(File(inputData, "cayboard_pinyin.custom.yaml").readText().contains("translator/packs/+"))
+        CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id), includeEnglish = true)
         for ((schema, kind) in listOf("t9_pinyin" to CellDictionaryEnglish.Kind.T9,
-                "pinyin_14jian" to CellDictionaryEnglish.Kind.MERGED, "rime_ice" to CellDictionaryEnglish.Kind.ALPHABETIC)) {
-            val custom = File(rime, "$schema.custom.yaml").readText()
-            assertTrue(custom.contains("${kind.translator}@cyime_cells_en"))
+                "pinyin_14jian" to CellDictionaryEnglish.Kind.MERGED, "cayboard_pinyin" to CellDictionaryEnglish.Kind.ALPHABETIC)) {
+            val custom = File(inputData, "$schema.custom.yaml").readText()
+            assertTrue(custom.contains("${kind.translator}@cayboard_cells_en"))
             assertTrue(custom.contains("\"schema/dependencies/+\": [\"${kind.dictionary}\"]"))
-            assertTrue(File(rime, "${kind.dictionary}.schema.yaml").readText().contains("dictionary: ${kind.dictionary}"))
+            assertTrue(File(inputData, "${kind.dictionary}.schema.yaml").readText().contains("dictionary: ${kind.dictionary}"))
         }
-        assertTrue(File(rime, "user_cyime_cells_en9.dict.yaml").readText().contains("Ame\t263\t"))
-        assertTrue(File(rime, "user_cyime_cells_en9.dict.yaml").readText().contains("N0tail\t608245\t"))
-        val k14 = File(rime, "user_cyime_cells_en14.dict.yaml").readText()
+        assertTrue(File(inputData, "user_cayboard_cells_en9.dict.yaml").readText().contains("Ame\t263\t"))
+        assertTrue(File(inputData, "user_cayboard_cells_en9.dict.yaml").readText().contains("N0tail\t608245\t"))
+        val k14 = File(inputData, "user_cayboard_cells_en14.dict.yaml").readText()
         assertTrue(k14.contains("Ame\tAmE\t") && !k14.contains("N0tail"))  // 14 keys have no digits
-        assertTrue(File(rime, "user_cyime_cells_en26.dict.yaml").readText().contains("Ame\tame\t"))
-        CellDictionaryRime.prepare(rime, store, schemas, emptySet())
-        assertFalse(File(rime, "rime_ice.custom.yaml").readText().contains("cyime_cells_en"))
+        assertTrue(File(inputData, "user_cayboard_cells_en26.dict.yaml").readText().contains("Ame\tame\t"))
+        CellDictionaryEngine.prepare(inputData, store, schemas, emptySet())
+        assertFalse(File(inputData, "cayboard_pinyin.custom.yaml").readText().contains("cayboard_cells_en"))
         store.remove(entry.id)
         assertTrue(store.englishWords(entry.id).isEmpty())
     }
@@ -153,30 +153,30 @@ class CellDictionaryTest {
     @Test fun `english words merge beside the custom phrase translator`() {
         val phrase = "patch:\n  \"engine/translators/+\":\n    - table_translator@custom_phrase\n  \"custom_phrase\":\n    dictionary: \"\"\n"
         for (kind in CellDictionaryEnglish.Kind.entries) {
-            val patched = CellDictionaryRime.patch(phrase, pack, kind)
+            val patched = CellDictionaryEngine.patch(phrase, pack, kind)
             assertTrue(patched.contains("table_translator@custom_phrase"))
-            assertTrue(patched.contains("${kind.translator}@cyime_cells_en"))
-            if (kind != CellDictionaryEnglish.Kind.T9) assertTrue(patched.contains("\"engine/translators/@next\": \"${kind.translator}@cyime_cells_en\""))
-            assertEquals(patched, CellDictionaryRime.patch(patched, pack, kind))
-            assertEquals(phrase, CellDictionaryRime.patch(patched, null))
+            assertTrue(patched.contains("${kind.translator}@cayboard_cells_en"))
+            if (kind != CellDictionaryEnglish.Kind.T9) assertTrue(patched.contains("\"engine/translators/@next\": \"${kind.translator}@cayboard_cells_en\""))
+            assertEquals(patched, CellDictionaryEngine.patch(patched, pack, kind))
+            assertEquals(phrase, CellDictionaryEngine.patch(patched, null))
         }
         val full = phrase + "  \"engine/translators/@next\": other\n"
-        assertTrue(CellDictionaryRime.patch(full, pack, CellDictionaryEnglish.Kind.ALPHABETIC).contains("engine/translators/@after last"))
+        assertTrue(CellDictionaryEngine.patch(full, pack, CellDictionaryEnglish.Kind.ALPHABETIC).contains("engine/translators/@after last"))
         val occupied = full + "  \"engine/translators/@after last\": another\n"
-        assertThrows(IllegalArgumentException::class.java) { CellDictionaryRime.patch(occupied, pack, CellDictionaryEnglish.Kind.ALPHABETIC) }
-        assertTrue(CellDictionaryRime.patch(full, pack, CellDictionaryEnglish.Kind.T9).contains("@before last"))
+        assertThrows(IllegalArgumentException::class.java) { CellDictionaryEngine.patch(occupied, pack, CellDictionaryEnglish.Kind.ALPHABETIC) }
+        assertTrue(CellDictionaryEngine.patch(full, pack, CellDictionaryEnglish.Kind.T9).contains("@before last"))
     }
 
     @Test fun `unsupported later schema does not leave earlier schema partially edited`() {
-        val rime = temp.newFolder()
+        val inputData = temp.newFolder()
         val store = store()
         val entry = store.install(scelFixture())
         val schemas = listOf(SchemaMeta("t9_pinyin", "九键"), SchemaMeta("pinyin_simp", "拼音"))
-        schemas.forEach { File(rime, "${it.schemaId}.schema.yaml").writeText("translator:\n  dictionary: rime_ice\n") }
-        File(rime, "pinyin_simp.custom.yaml").writeText("patch: {translator/packs: [custom]}\n")
-        assertThrows(Exception::class.java) { CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id)) }
-        assertFalse(File(rime, "t9_pinyin.custom.yaml").exists())
-        assertFalse(File(rime, "$pack.dict.yaml").exists())
+        schemas.forEach { File(inputData, "${it.schemaId}.schema.yaml").writeText("translator:\n  dictionary: cayboard_pinyin\n") }
+        File(inputData, "pinyin_simp.custom.yaml").writeText("patch: {translator/packs: [custom]}\n")
+        assertThrows(Exception::class.java) { CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id)) }
+        assertFalse(File(inputData, "t9_pinyin.custom.yaml").exists())
+        assertFalse(File(inputData, "$pack.dict.yaml").exists())
     }
 
     @Test fun `failed engine activation restores old packs and retains pending switches for retry`() {
@@ -325,17 +325,17 @@ class CellDictionaryTest {
         val text = store.dictionaryFile(entry.id).readText()
         assertTrue(text.endsWith("阿爸\ta ba\t100\n阿坝\ta ba\t100\n三月\tsan yue\t100\n世界\tshi jie\t100\n"))
         assertTrue(directoryHasNoTemp(store.directory))
-        val rime = temp.newFolder()
-        val schemas = listOf(SchemaMeta("rime_ice", "拼音"))
-        File(rime, "rime_ice.schema.yaml").writeText("translator:\n  dictionary: rime_ice\n")
-        CellDictionaryRime.prepare(rime, store, schemas, setOf(entry.id))
-        assertEquals(text, File(rime, "cyime_cells/cell_${entry.id}.dict.yaml").readText())
+        val inputData = temp.newFolder()
+        val schemas = listOf(SchemaMeta("cayboard_pinyin", "拼音"))
+        File(inputData, "cayboard_pinyin.schema.yaml").writeText("translator:\n  dictionary: cayboard_pinyin\n")
+        CellDictionaryEngine.prepare(inputData, store, schemas, setOf(entry.id))
+        assertEquals(text, File(inputData, "cayboard_cells/cell_${entry.id}.dict.yaml").readText())
     }
 
     @Test fun `a small file picked by the user still goes through the scel and json readers`() {
         val store = store()
         assertEquals(store.install(scelFixture()).id, store.installFile(scelFixture().inputStream()).id)
-        val json = "{\"format\": \"cyime.dictionary.v1\", \"name\": \"我的词库\", \"language\": \"zh\", " +
+        val json = "{\"format\": \"cayboard.dictionary.v1\", \"name\": \"我的词库\", \"language\": \"zh\", " +
             "\"scheme\": \"pinyin\", \"entries\": [{\"word\": \"你好\", \"code\": \"ni hao\"}]}"
         assertEquals("我的词库", store.installFile(("  \n" + json).byteInputStream()).name)
         val big = ByteArray(ScelDictionary.MAX_BYTES + 1) { ' '.code.toByte() }.also { it[it.size - 1] = '{'.code.toByte() }

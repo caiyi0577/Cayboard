@@ -111,12 +111,12 @@ import com.cayboard.viewmodel.KeyboardViewModel
 import com.cayboard.association.AssociationService
 import com.cayboard.clipboard.ClipboardManager
 import com.cayboard.speech.RecognitionState
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.T9InputController
-import com.cayboard.rime.buildT9DisplayState
-import com.cayboard.rime.inlineOffset
-import com.cayboard.rime.resolveRimeCandidateIndex
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.T9InputController
+import com.cayboard.engine.buildT9DisplayState
+import com.cayboard.engine.inlineOffset
+import com.cayboard.engine.resolveEngineCandidateIndex
 
 import com.cayboard.settings.SchemaConfigHelper
 import com.cayboard.settings.SchemaManager
@@ -209,7 +209,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     override val savedStateRegistry: SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
 
-    internal val rimeEngine = RimeEngine.getInstance()
+    internal val inputEngine = InputEngine.getInstance()
     internal val inputReadiness = InputReadiness(android.os.SystemClock::uptimeMillis)
     private val inputDrops = InputDropLog(android.os.SystemClock::uptimeMillis, { FileLogger.w("InputDrop", it) })
     /** When the current editor connection started; only for [noteInputDropped]. */
@@ -241,7 +241,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     
     private val inputLatencyWindow = InputLatencyWindow()
     private val inputLatencyByKind = InputLatencyByKind()
-    internal val inputCommands = com.cayboard.rime.InputCommandQueue(serviceScope, keyProcessingDispatcher,
+    internal val inputCommands = com.cayboard.engine.InputCommandQueue(serviceScope, keyProcessingDispatcher,
         reportLatency = { wait, execution ->
             if (wait >= 100 || execution >= 100) FileLogger.w("InputLatency", "queue_wait_ms=$wait action_ms=$execution")
             inputLatencyWindow.record(wait, execution)?.let { timing ->
@@ -278,7 +278,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     internal val uiState = mutableStateOf(InputUIState())
     internal val candidateState = mutableStateOf(CandidateState())
     internal val glideCandidatePreview = mutableStateOf("")
-    internal val glideRimePreview = mutableStateOf<com.cayboard.rime.RimeProcessResult?>(null)
+    internal val glideEnginePreview = mutableStateOf<com.cayboard.engine.EngineProcessResult?>(null)
     internal val glideEnglishPreview = mutableStateOf<com.cayboard.ui.keyboard.GlideEnglishPreview?>(null)
     private val clipboardItemsState = mutableStateOf<List<com.cayboard.clipboard.ClipboardItem>>(emptyList())
     private val voiceAmplitudeState = mutableFloatStateOf(0f)
@@ -470,7 +470,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     @Volatile internal var lastSwipeDelete: ImeDistanceBackspace? = null
     /** 累积的 partial commit 段列表（多段选词场景下逐段追加，文本+拼音同源，供调频/回滚） */
     internal val t9PartialSegments = mutableListOf<T9PartialSegment>()
-    /** 键盘回调引用，用于在 RIME selectCandidate 前同步通知 T9 控制器 */
+    /** 键盘回调引用，用于在候选提交前同步通知 T9 控制器 */
     internal var keyboardCallbacks: KeyboardCallbacks? = null
     private var keyboardReportsChinese = true
     internal var isChineseMode: Boolean
@@ -532,7 +532,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             maybeCollapseCandidatePage()
             return
         }
-        keyRouter.postRimeJob("finish_delete_drag") {
+        keyRouter.postEngineJob("finish_delete_drag") {
             withContext(Dispatchers.Main) {
                 if (generation == deleteDragGeneration) {
                     deleteDragActive.value = false
@@ -543,7 +543,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     }
 
     private val expandedCandidateLoader by lazy {
-        ExpandedCandidateLoader(serviceScope, keyProcessingDispatcher, rimeEngine::readCandidateBatch)
+        ExpandedCandidateLoader(serviceScope, keyProcessingDispatcher, inputEngine::readCandidateBatch)
     }
 
     /** Expanded candidates belong to an engine revision and editor session, never display text. */
@@ -570,7 +570,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         loadExpandedCandidates(initial = snapshot.expandedCandidates)
     }
 
-    private fun loadExpandedCandidates(initial: List<com.cayboard.rime.RimeCandidate> = emptyList()) {
+    private fun loadExpandedCandidates(initial: List<com.cayboard.engine.EngineCandidate> = emptyList()) {
         val snapshot = candidateState.value
         val session = uiState.value.inputSessionId
         val admission = inputReadiness.ticket() ?: return
@@ -605,7 +605,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         traditionalBridge = { if (traditionalChineseOutput()) traditionalScriptBridge else null },
     )
     private val traditionalScriptBridge by lazy {
-        PredictionManager.ScriptBridge(toSimplified = rimeEngine::toSimplified, toTraditional = rimeEngine::toTraditional)
+        PredictionManager.ScriptBridge(toSimplified = inputEngine::toSimplified, toTraditional = inputEngine::toTraditional)
     }
     
     /** 这次说话写进哪个框：开始说话时焦点在翻译栏、剪贴板搜索这些键盘自己的输入框，就一直写那个框（11-11）。 */
@@ -636,7 +636,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         },
         // 写进键盘自己的框时，应用输入框里没有语音的组合区，也不发到电脑。
         onComposingWritten = { if (!voiceTarget.internal) markInputBoxComposing() },
-        traditionalConverter = { if (traditionalChineseOutput()) rimeEngine::toTraditional else null },
+        traditionalConverter = { if (traditionalChineseOutput()) inputEngine::toTraditional else null },
         onSessionStart = { voiceTarget.begin() },
     )
 
@@ -787,7 +787,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     
     private fun registerSharedPrefsListener() {
         val prefs = SettingsPreferences.getPrefsPublic(this)
-        rimeEngine.doublePinyinKeysPreedit = com.cayboard.settings.SpellingPatches.doublePinyinRawPreedit(this)
+        inputEngine.doublePinyinKeysPreedit = com.cayboard.settings.SpellingPatches.doublePinyinRawPreedit(this)
         sharedPrefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key?.startsWith(com.cayboard.settings.HardwareKeyboardPreferences.PREFIX) == true) {
                 uiState.value = uiState.value.copy(hardwareOptions = com.cayboard.settings.HardwareKeyboardPreferences.read(this))
@@ -803,14 +803,14 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                     decor?.requestApplyInsets()
                 }
                 SettingsPreferences.KEY_INPUT_TEXT_LOCATION -> syncInlinePinyinLocation()
-                RimeConfigHelper.DEPLOYMENT_REVISION, com.cayboard.settings.LanguagePreferences.KEY -> {
+                EngineConfig.DEPLOYMENT_REVISION, com.cayboard.settings.LanguagePreferences.KEY -> {
                     val languagesOnly = key == com.cayboard.settings.LanguagePreferences.KEY
                     // 进共享日志：键盘用着用着突然「正在加载词库」，看是哪项设置变化引起的重新准备。
-                    FileLogger.w(TAG, "initRimeEngine requested by $key")
-                    val pending = rimeInitializationJob
+                    FileLogger.w(TAG, "initInputEngine requested by $key")
+                    val pending = engineInitializationJob
                     if (pending?.isActive == true) {
-                        pending.invokeOnCompletion { serviceScope.launch { initRimeEngine(languagesOnly) } }
-                    } else initRimeEngine(languagesOnly)
+                        pending.invokeOnCompletion { serviceScope.launch { initInputEngine(languagesOnly) } }
+                    } else initInputEngine(languagesOnly)
                 }
                 com.cayboard.settings.LanguagePreferences.SCHEMAS_READY_KEY -> sessionController.updateSchemaName()
                 com.cayboard.settings.InputModes.ORDER_KEY -> {
@@ -821,12 +821,12 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                 com.cayboard.settings.SpellingPatches.REVISION -> schemaController.applySpellingPatches()
                 // 九键双拼的显示在引擎显示层换，下一次按键就用新设置；26 键随 REVISION 重新部署。
                 com.cayboard.settings.SpellingPatches.DOUBLE_PINYIN_RAW_PREEDIT_KEY -> {
-                    rimeEngine.doublePinyinKeysPreedit = com.cayboard.settings.SpellingPatches.doublePinyinRawPreedit(this)
+                    inputEngine.doublePinyinKeysPreedit = com.cayboard.settings.SpellingPatches.doublePinyinRawPreedit(this)
                 }
                 // Saved custom phrases: an open session re-reads them only when its schema is selected again.
                 // Not tied to an editor: the keyboard may be hidden while phrases are edited in settings.
                 com.cayboard.settings.PersonalDictManager.CUSTOM_PHRASE_REVISION -> inputCommands.submit {
-                    if (!rimeEngine.reloadQueuedSchema()) return@submit
+                    if (!inputEngine.reloadQueuedSchema()) return@submit
                     t9PartialSegments.clear()
                     withContext(Dispatchers.Main) { updateUI() }
                 }
@@ -887,7 +887,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         com.cayboard.ui.keyboard.HandwritingFooterBounds.reporter = handwritingFooterBoundsReporter
         com.cayboard.ui.keyboard.CursorLineMetrics.requester = cursorLineRequester
         // 键盘开着换到九键（14 键、注音）：补读新方案的词组模型，不等头几键读盘。
-        rimeEngine.onSchemaSwitched = schemaSwitchPrefetch
+        inputEngine.onSchemaSwitched = schemaSwitchPrefetch
         // 记录与打字速度有关的本机状态（用户词库体积、可选模型、内存余量），只记数量不记内容。
         serviceScope.launch(Dispatchers.IO) {
             delay(5_000)
@@ -917,7 +917,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         // A large value: only the service was recreated, and the resident engine needs no reload.
         FileLogger.w(TAG, "CayboardInputMethodService created processAgeMs=" +
             (android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()) +
-            " engineResident=${RimeEngine.isInitialized()}" +
+            " engineResident=${InputEngine.isInitialized()}" +
             // 非 0：手机「应用双开/分身/工作资料」里的输入法，是另一份数据、另一套词库编译。
             " user=${android.os.Process.myUid() / 100_000}")
         hardwareInputManager.registerInputDeviceListener(hardwareInputListener, mainHandler)
@@ -939,7 +939,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                 if (inputReadiness.ticket() != null) sessionController.updateSchemaName()
             }
         }
-        initRimeEngine()
+        initInputEngine()
         
         serviceScope.launch(Dispatchers.IO) {
             try {
@@ -991,41 +991,41 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         SettingsPreferences.getPrefsPublic(this)
             .getBoolean(com.cayboard.ui.keyboard.KeyboardInputPreferences.TRADITIONAL_OUTPUT_KEY, false)
     
-    private var rimeInitializationJob: kotlinx.coroutines.Job? = null
+    private var engineInitializationJob: kotlinx.coroutines.Job? = null
 
     /** [languagesOnly]：设置里只改了启用的语言。方案已部署好时静默刷新语言列表，不弹「正在准备」遮罩；
      * 真要部署（新开的语言带方案）时由 prepareAutomatically 报出在准备哪种语言。 */
-    private fun initRimeEngine(languagesOnly: Boolean = false) {
-        if (rimeInitializationJob?.isActive == true) return
-        val quiet = languagesOnly && RimeEngine.isInitialized() && SettingsPreferences.isDeploymentDone(this)
+    private fun initInputEngine(languagesOnly: Boolean = false) {
+        if (engineInitializationJob?.isActive == true) return
+        val quiet = languagesOnly && InputEngine.isInitialized() && SettingsPreferences.isDeploymentDone(this)
         val startedAt = android.os.SystemClock.elapsedRealtime()
-        val engineResident = RimeEngine.isInitialized()
+        val engineResident = InputEngine.isInitialized()
         // 上一个服务已经把方案切好的会话（换输入法再切回、系统重建服务）：之后没部署、没换会话就不再重切。
-        val liveSchemaGeneration = rimeEngine.liveSchemaGeneration()
+        val liveSchemaGeneration = inputEngine.liveSchemaGeneration()
         inputReadiness.deployment(true)
-        Log.d(TAG, "initRimeEngine: Starting initialization...")
+        Log.d(TAG, "initInputEngine: Starting initialization...")
         
         // Parsing all layout YAMLs can take seconds on first launch. Keep the service
         // main thread responsive; the existing loading overlay gates input until the
         // configVersion publication and engine initialization have both completed.
         if (!quiet) uiState.value = uiState.value.copy(isDeploying = true, deploymentMessage = "正在加载键盘配置...")
         
-        rimeInitializationJob = serviceScope.launch(Dispatchers.IO) {
+        engineInitializationJob = serviceScope.launch(Dispatchers.IO) {
             try {
                 KeysConfigHelper.loadConfig(this@CayboardInputMethodService)
 
-                RimeEngine.setDeploymentCallback { isDeploying, message ->
+                InputEngine.setDeploymentCallback { isDeploying, message ->
                     // A native "finished" callback only means nativeInitialize returned.
                     // Deployment and schema restoration still have to finish before typing.
                     if (isDeploying) notifyDeploymentStatus(true, message)
                 }
 
                 if (!quiet) notifyDeploymentStatus(true, "正在准备词库，首次使用需要稍候...")
-                RimeConfigHelper.prepareAutomatically(this@CayboardInputMethodService) { notifyDeploymentStatus(true, it) }
-                check(rimeEngine.ensureSession(180_000L)) { "输入会话未就绪" }
+                EngineConfig.prepareAutomatically(this@CayboardInputMethodService) { notifyDeploymentStatus(true, it) }
+                check(inputEngine.ensureSession(180_000L)) { "输入会话未就绪" }
 
                 withContext(Dispatchers.Main) {
-                    val availableSchemas = rimeEngine.getAvailableSchemas()
+                    val availableSchemas = inputEngine.getAvailableSchemas()
                     val storedSchema = SettingsPreferences.getCurrentSchema(this@CayboardInputMethodService)
                     val selectableSchemas = selectableWithStored(storedSchema, availableSchemas.toList(),
                         { SchemaManager.getEnabledSchemas(this@CayboardInputMethodService) }, ::isHandwritingSchema,
@@ -1034,16 +1034,16 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                         storedSchema, selectableSchemas,
                         com.cayboard.settings.LanguagePreferences.enabled(this@CayboardInputMethodService))
                     if (savedSchema != storedSchema) SettingsPreferences.setCurrentSchema(this@CayboardInputMethodService, savedSchema)
-                    val currentSchema = rimeEngine.getCurrentSchema()
-                    Log.d(TAG, "initRimeEngine: currentSchema=$currentSchema, savedSchema=$savedSchema, availableSchemas=${availableSchemas.joinToString()}")
+                    val currentSchema = inputEngine.getCurrentSchema()
+                    Log.d(TAG, "initInputEngine: currentSchema=$currentSchema, savedSchema=$savedSchema, availableSchemas=${availableSchemas.joinToString()}")
                     
                     when {
                         isHandwritingSchema(savedSchema) -> {
-                            // 手写方案：不要调 rimeEngine.switchSchema（Rime 没有手写引擎），
+                            // 手写方案：不要调 inputEngine.switchSchema（输入引擎没有手写方案），
                             // 也不要覆盖 savedSchema（由 onStartInput 恢复 UI）
-                            Log.d(TAG, "initRimeEngine: savedSchema is handwriting, keeping current Rime schema")
+                            Log.d(TAG, "initInputEngine: savedSchema is handwriting, keeping current input schema")
                             // UI 布局恢复：冷启动时第一次 onStartInput 先于引擎初始化完成，
-                            // RimeEngine.isInitialized()=false 会跳过 handwriting UI 恢复，
+                            // InputEngine.isInitialized()=false 会跳过 handwriting UI 恢复，
                             // 此处必须补切，否则第一次弹出键盘停留在默认全键盘
                             val hwDir = com.cayboard.model.ModelStorage.getModelDir(
                                 this@CayboardInputMethodService, "ochwpro"
@@ -1063,7 +1063,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                                 // 手写模型按"用键盘时加载"管理：不在此预载，
                                 // HandwritingKeyboardLayout 创建时（LaunchedEffect）负责加载
                             } else {
-                                FileLogger.w(TAG, "initRimeEngine: handwriting model missing, keep full keyboard")
+                                FileLogger.w(TAG, "initInputEngine: handwriting model missing, keep full keyboard")
                                 android.widget.Toast.makeText(
                                     this@CayboardInputMethodService,
                                     "请先下载手写模型",
@@ -1072,36 +1072,36 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                             }
                         }
                         savedSchema in availableSchemas && savedSchema == currentSchema && liveSchemaGeneration != null &&
-                            rimeEngine.liveSchemaGeneration() == liveSchemaGeneration -> {
+                            inputEngine.liveSchemaGeneration() == liveSchemaGeneration -> {
                             // 会话还是上次完整切好方案的那个（期间没部署、没新建会话）：重切同一方案只会重建翻译器和词典，
                             // 内存紧时要 20 多秒，键盘一直显示「正在加载词库」（平板 11-05..11-08，用户 11-09）。
                             withContext(Dispatchers.IO) { schemaController.applyPageSizeSetting(savedSchema) }
-                            FileLogger.w(TAG, "initRimeEngine: kept live schema $savedSchema")
+                            FileLogger.w(TAG, "initInputEngine: kept live schema $savedSchema")
                         }
                         savedSchema in availableSchemas -> {
                             // 即使 savedSchema == currentSchema 也要调用 switchSchema，
                             // 因为 nativeCreateSession 后 schema 的 processor/translator 等
                             // 可能未完全初始化，switchSchema 会触发完整的初始化流程
-                            Log.d(TAG, "initRimeEngine: Switching to saved schema: $savedSchema")
+                            Log.d(TAG, "initInputEngine: Switching to saved schema: $savedSchema")
                             withContext(Dispatchers.IO) {
                                 schemaController.applyPageSizeSetting(savedSchema)
-                                check(rimeEngine.switchSchema(savedSchema)) { "输入方案加载失败" }
+                                check(inputEngine.switchSchema(savedSchema)) { "输入方案加载失败" }
                             }
                         }
                         SchemaManager.isSchemaCompiled(this@CayboardInputMethodService, savedSchema) -> {
-                            Log.d(TAG, "initRimeEngine: Schema compiled but not in get_schema_list, switching anyway")
+                            Log.d(TAG, "initInputEngine: Schema compiled but not in get_schema_list, switching anyway")
                             withContext(Dispatchers.IO) {
                                 schemaController.applyPageSizeSetting(savedSchema)
-                                check(rimeEngine.switchSchema(savedSchema)) { "输入方案加载失败" }
+                                check(inputEngine.switchSchema(savedSchema)) { "输入方案加载失败" }
                             }
                         }
                         availableSchemas.isNotEmpty() -> {
                             // savedSchema 不可用且未编译，退而求其次用第一个可用方案
                             val fallbackSchema = availableSchemas.first()
-                            Log.d(TAG, "initRimeEngine: savedSchema '$savedSchema' not available, falling back to '$fallbackSchema'")
+                            Log.d(TAG, "initInputEngine: savedSchema '$savedSchema' not available, falling back to '$fallbackSchema'")
                             withContext(Dispatchers.IO) {
                                 schemaController.applyPageSizeSetting(fallbackSchema)
-                                check(rimeEngine.switchSchema(fallbackSchema)) { "输入方案加载失败" }
+                                check(inputEngine.switchSchema(fallbackSchema)) { "输入方案加载失败" }
                             }
                             SettingsPreferences.setCurrentSchema(this@CayboardInputMethodService, fallbackSchema)
                         }
@@ -1111,10 +1111,10 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                     // onStartInput 在部署进行中会跳过 schema 切换与选项恢复，
                     // 部署完成后这里补齐 UI 状态，保证键盘可用
                     withContext(Dispatchers.IO) { sessionController.restorePersistedSchemaOptions() }
-                    val ascii = editorInputPolicy.engineAsciiOverride() ?: rimeEngine.isAsciiMode()
+                    val ascii = editorInputPolicy.engineAsciiOverride() ?: inputEngine.isAsciiMode()
                     uiState.value = uiState.value.copy(isAsciiMode = ascii)
                     keyboardViewModel.dispatch(com.cayboard.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(
-                        ascii, rimeEngine.getCurrentSchema()))
+                        ascii, inputEngine.getCurrentSchema()))
                     updateUI()
                     inputReadiness.completeStartup()
                     uiState.value = uiState.value.copy(isDeploying = false, deploymentMessage = "")
@@ -1124,28 +1124,28 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                         EditorInputPreparation(this@CayboardInputMethodService).schedule(false,
                             EditorInfoClassifier.isNumberEditor(it))
                     }
-                    FileLogger.w(TAG, "initRimeEngine: ready in ${android.os.SystemClock.elapsedRealtime() - startedAt} ms " +
+                    FileLogger.w(TAG, "initInputEngine: ready in ${android.os.SystemClock.elapsedRealtime() - startedAt} ms " +
                         "engineResident=$engineResident")
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                FileLogger.e(TAG, "initRimeEngine: Failed to initialize Rime engine", e)
+                FileLogger.e(TAG, "initInputEngine: Failed to initialize input engine", e)
                 notifyDeploymentStatus(true, "输入准备未完成，3 秒后自动重试")
                 delay(3_000)
-                withContext(Dispatchers.Main) { rimeInitializationJob = null; initRimeEngine() }
+                withContext(Dispatchers.Main) { engineInitializationJob = null; initInputEngine() }
             }
         }
         
         // Watchdog reports timeout without permitting input against an unready engine.
-        // withTimeout cannot cancel native JNI calls; if rimeEngine.initialize() hangs
-        // in librime, the IO coroutine would block forever. This watchdog ensures the
+        // withTimeout cannot cancel native JNI calls; if inputEngine.initialize() hangs
+        // in a native engine call, the IO coroutine would block forever. This watchdog ensures the
         // user gets an explicit error; keyboard dismissal remains available.
         // 首次编译最多等 120s + ensureSession 60s + 10s 缓冲
-        val attempt = rimeInitializationJob
+        val attempt = engineInitializationJob
         serviceScope.launch(Dispatchers.Main) {
             delay(190_000L)
-            if (rimeInitializationJob === attempt && attempt?.isActive == true && uiState.value.isDeploying) {
-                FileLogger.w(TAG, "initRimeEngine: Watchdog triggered - native init appears stuck, keeping input blocked")
+            if (engineInitializationJob === attempt && attempt?.isActive == true && uiState.value.isDeploying) {
+                FileLogger.w(TAG, "initInputEngine: Watchdog triggered - native init appears stuck, keeping input blocked")
                 uiState.value = uiState.value.copy(
                     isDeploying = true,
                     deploymentMessage = "准备时间较长，仍在后台处理中，可先切换输入法"
@@ -1275,7 +1275,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         stopVoiceForClosedEditor(ToolPanelEditTextHolder.editText)
         if (!keepQuery) clipboardManager.boardQuery.value = ""
         if (candidateState.value.isComposing) {
-            keyRouter.postRimeJob { keyRouter.endQueuedComposition(); withContext(Dispatchers.Main) { updateUI() } }
+            keyRouter.postEngineJob { keyRouter.endQueuedComposition(); withContext(Dispatchers.Main) { updateUI() } }
         }
         uiState.value = uiState.value.copy(clipboardSearchVisible = false, toolPanelInputFocused = false,
             enterKeyText = editorEnterKeyText())
@@ -2089,7 +2089,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                                 },
                                 predictionTransition = if (settingsPreviewEditor) null else predictionManager.transitionPending,
                                 glideCandidatePreview = glideCandidatePreview,
-                                glideRimePreview = glideRimePreview,
+                                glideEnginePreview = glideEnginePreview,
                                 glideEnglishPreview = glideEnglishPreview,
                                 voiceAmplitudeState = this@CayboardInputMethodService.voiceAmplitudeState,
                                 voiceSpectrumState = this@CayboardInputMethodService.voiceSpectrumState,
@@ -2510,7 +2510,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
 
     /** 引擎换方案后的回调（见 onCreate）：键盘开着时给新方案补读，活在 IO 线程做。 */
     private val schemaSwitchPrefetch: (String) -> Unit = { schemaId ->
-        DictionaryPrefetch.onSchemaSwitched(this, serviceScope, rimeEngine, schemaId)
+        DictionaryPrefetch.onSchemaSwitched(this, serviceScope, inputEngine, schemaId)
     }
 
     private var hardwareCursorImmediateOnly = false
@@ -2663,7 +2663,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                 val pageDirection = hardwareCandidatePageDirection(keyCode, hasInput = true,
                     modified = false, options = uiState.value.hardwareOptions)
                 if (pageDirection == 0) {
-                    // Rime also binds -= and [] to paging. An explicitly disabled group
+                    // The engine also binds -= and [] to paging. An explicitly disabled group
                     // must use the ordinary symbol-key path, not reach that second binding.
                     if (inputReadiness.ticket() != null && !keyRouter.hasPendingCandidateCommit) {
                         textCommit.commitLiteralText(symbol, hardware = true)
@@ -2777,7 +2777,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     override fun executeCommand(name: String) {
         when (name) {
             "clear_composition" -> {
-                keyRouter.postRimeJob {
+                keyRouter.postEngineJob {
                     keyRouter.endQueuedComposition()
                     withContext(Dispatchers.Main) {
                         mainHandler.post { updateUI() }
@@ -3045,8 +3045,8 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                         candidateState.value.pendingEnglishText, inputCommands.hasPendingCommands)) return@collect
                 recentClipboardItemsState.value = items
                 if (items.isNotEmpty()) {
-                    // 清空Rime联想词等
-                    rimeEngine.clearComposition()
+                    // 清空引擎联想词等
+                    inputEngine.clearComposition()
                     candidateState.value = candidateState.value.copy(
                         candidates = clipboardBarTexts(items),
                         clipboardExtractedCount = com.cayboard.clipboard.ClipboardLinkChoices.extractedCount(items),
@@ -3077,7 +3077,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         super.onStartInputView(info, restarting)
         KeyboardPanelLaunch.previewVisible = settingsPreviewEditor
         KeyLatencyProbe.refresh(window.window)
-        DictionaryPrefetch.onShow(this, serviceScope, rimeEngine)
+        DictionaryPrefetch.onShow(this, serviceScope, inputEngine)
         info?.let { updateEnterKeyText(it) }
         updateHardwareKeyboardConnection()
         applyCompactMode()
@@ -3224,7 +3224,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                     hostSelectionIsCurrent(newSelStart)) {
                     // 日语：在输入框里点了读音中间，接着打的字插在那里（11-05 用户反馈：句中光标处输入的内容出现在句末）。
                     inlineComposition.moveCaret(offset)
-                    keyRouter.postRimeJob("japanese_caret") { japaneseInputController.placeCaret(offset) }
+                    keyRouter.postEngineJob("japanese_caret") { japaneseInputController.placeCaret(offset) }
                 }
             }
         }
@@ -3587,7 +3587,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         KeyboardPanelLaunch.previewVisible = false
         DictionaryPrefetch.onHide()
         // 九键换回 26 键后收起：九键词组模型读进来的页不再算在输入法头上。
-        serviceScope.launch(Dispatchers.IO) { rimeEngine.releaseT9ModelIfUnused(rimeEngine.getCurrentSchema()) }
+        serviceScope.launch(Dispatchers.IO) { inputEngine.releaseT9ModelIfUnused(inputEngine.getCurrentSchema()) }
         if (!lockCompositionSuspended) discardInlinePinyinBeforeFrameworkFinish()
         // The search bar belongs to this keyboard session; leaving restores learning.
         closeClipboardSearch(openBoard = false)
@@ -3732,7 +3732,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         }
         calculatorEngine.clear()
         keyRouter.englishAutoSpace.disarm()
-        if (!lockCompositionSuspended) inputCommands.submit { rimeEngine.clearQueuedComposition(); rimeEngine.clearQueuedT9Composition() }
+        if (!lockCompositionSuspended) inputCommands.submit { inputEngine.clearQueuedComposition(); inputEngine.clearQueuedT9Composition() }
         t9PartialSegments.clear()
         // 录音已在本方法入口停止；这里仅重置语音 UI。
         if (uiState.value.isVoiceMode || voiceRecordingStarted) {
@@ -3809,30 +3809,30 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         if (session != uiState.value.inputSessionId) return
         if (gesture != glidePreviewGesture) {
             glidePreviewGesture = gesture
-            glidePreviewRevision = rimeEngine.glidePreviewRevision()
+            glidePreviewRevision = inputEngine.glidePreviewRevision()
         }
         val revision = glidePreviewRevision
         val seq = ++glidePreviewSequence
         if (code.isEmpty()) return
-        keyRouter.postRimeJob("glide_preview") {
-            if (seq != glidePreviewSequence) return@postRimeJob
-            val result = rimeEngine.glidePreview(code, revision)
+        keyRouter.postEngineJob("glide_preview") {
+            if (seq != glidePreviewSequence) return@postEngineJob
+            val result = inputEngine.glidePreview(code, revision)
             if (result == null) {
                 withContext(Dispatchers.Main) {
                     if (seq == glidePreviewSequence && session == uiState.value.inputSessionId &&
-                        !rimeEngine.isCandidateRevisionCurrent(revision)) {
-                        glideRimePreview.value = null
+                        !inputEngine.isCandidateRevisionCurrent(revision)) {
+                        glideEnginePreview.value = null
                         glideInputPreview.end()
                     }
                 }
-                return@postRimeJob
+                return@postEngineJob
             }
             val transformed = candidateTransform.transformFor(result)
             val shown = transformed?.let { result.copy(candidates = it.candidates.toTypedArray()) } ?: result
             withContext(Dispatchers.Main) {
                 if (seq != glidePreviewSequence || session != uiState.value.inputSessionId ||
-                    !rimeEngine.isCandidateRevisionCurrent(revision)) return@withContext
-                glideRimePreview.value = shown
+                    !inputEngine.isCandidateRevisionCurrent(revision)) return@withContext
+                glideEnginePreview.value = shown
                 if (TerminalEditor.inputTextLocation(this@CayboardInputMethodService) == SettingsPreferences.INPUT_TEXT_INPUT_BOX)
                     glideInputPreview.showComplete(shown.preeditText, session)
                 else glideInputPreview.end()
@@ -3842,14 +3842,14 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     internal fun endGlidePreview() {
         glidePreviewSequence++
         glidePreviewGesture = -1
-        glideRimePreview.value = null
+        glideEnginePreview.value = null
         glideEnglishPreview.value = null
         glidePreviewRouter.end()
     }
 
     internal fun holdGlidePreview(): Long? {
         val token = ++glidePreviewSequence
-        return token.takeIf { glideRimePreview.value != null }
+        return token.takeIf { glideEnginePreview.value != null }
     }
 
     internal fun isGlidePreviewHeld(token: Long): Boolean = token == glidePreviewSequence
@@ -3857,7 +3857,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     internal fun finishGlidePreview(token: Long, keepComposition: Boolean) {
         if (token != glidePreviewSequence) return
         if (keepComposition) glideInputPreview.release() else glideInputPreview.end()
-        glideRimePreview.value = null
+        glideEnginePreview.value = null
         glidePreviewGesture = -1
         glidePreviewSequence++
     }
@@ -3868,14 +3868,14 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         val session = uiState.value.inputSessionId
         val schema = uiState.value.currentSchemaId
         val input = candidateState.value.inputText
-        keyRouter.postRimeJob("lock_resume_candidates") {
-            val result = rimeEngine.readQueuedResult()
+        keyRouter.postEngineJob("lock_resume_candidates") {
+            val result = inputEngine.readQueuedResult()
             val matches = result != null && result.inputText == input && !result.isAsciiMode
-            if (!matches || result == null) return@postRimeJob
+            if (!matches || result == null) return@postEngineJob
             val transformed = candidateTransform.transformFor(result)
             withContext(Dispatchers.Main) {
                 if (uiState.value.inputSessionId != session || uiState.value.currentSchemaId != schema ||
-                    !rimeEngine.isCandidateRevisionCurrent(result.engineRevision)) return@withContext
+                    !inputEngine.isCandidateRevisionCurrent(result.engineRevision)) return@withContext
                 sessionController.updateUIWithResult(
                     transformed?.let { result.copy(candidates = it.candidates.toTypedArray()) } ?: result,
                     transformed?.actions ?: emptyList(), updateInputBoxComposition = false)
@@ -3936,7 +3936,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     }
 
     /** Point the native cursor into our composing text only, never into surrounding prose. */
-    internal fun showInlineEditCaret(frame: com.cayboard.rime.PinyinEditSession) {
+    internal fun showInlineEditCaret(frame: com.cayboard.engine.PinyinEditSession) {
         val code = inlineComposition.text ?: return
         if (uiState.value.inputTarget.isInternal || TerminalEditor.inputTextLocation(this) != SettingsPreferences.INPUT_TEXT_INPUT_BOX) return
         val offset = frame.inlineOffset(code) ?: return
@@ -3962,13 +3962,13 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         val caret = snapshot[1].toIntOrNull() ?: return
         val confirmed = snapshot[2].toIntOrNull()?.coerceIn(0, input.length) ?: return
         if (caret !in confirmed until input.length) return
-        val raw = com.cayboard.rime.PinyinEditBuffer.normalized(input.drop(confirmed),
-            com.cayboard.rime.PinyinEditBuffer.keepsCase(schema))
+        val raw = com.cayboard.engine.PinyinEditBuffer.normalized(input.drop(confirmed),
+            com.cayboard.engine.PinyinEditBuffer.keepsCase(schema))
         val prefix = snapshot[3]
         val groups = if (uiState.value.inputProfile.layout == com.cayboard.settings.InputLayout.MERGED14)
-            com.cayboard.rime.merged14Groups else com.cayboard.settings.CustomKeyboardLayouts.forSchema(schema)?.mergedGroups.orEmpty()
-        val display = com.cayboard.rime.PinyinEditDisplay(raw, snapshot[4].removePrefix(prefix).trim(), groups = groups)
-        val frame = com.cayboard.rime.PinyinEditSession(sessionId, schema, input,
+            com.cayboard.engine.merged14Groups else com.cayboard.settings.CustomKeyboardLayouts.forSchema(schema)?.mergedGroups.orEmpty()
+        val display = com.cayboard.engine.PinyinEditDisplay(raw, snapshot[4].removePrefix(prefix).trim(), groups = groups)
+        val frame = com.cayboard.engine.PinyinEditSession(sessionId, schema, input,
             input.take(confirmed), prefix, display.text, display.displayOffset(caret - confirmed), false)
         showInlineEditCaret(frame)
     }
@@ -4122,7 +4122,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     }
 
     override fun onDestroy() {
-        if (rimeEngine.onSchemaSwitched === schemaSwitchPrefetch) rimeEngine.onSchemaSwitched = null
+        if (inputEngine.onSchemaSwitched === schemaSwitchPrefetch) inputEngine.onSchemaSwitched = null
         KeyboardPanelLaunch.previewVisible = false
         if (com.cayboard.ui.keyboard.HandwritingFooterBounds.reporter === handwritingFooterBoundsReporter)
             com.cayboard.ui.keyboard.HandwritingFooterBounds.reporter = null
@@ -4138,13 +4138,13 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         sharedPrefsListener?.let {
             SettingsPreferences.getPrefsPublic(this).unregisterOnSharedPreferenceChangeListener(it)
         }
-        RimeEngine.setDeploymentCallback { _, _ -> }
+        InputEngine.setDeploymentCallback { _, _ -> }
         if (::clipboardManager.isInitialized) {
             clipboardManager.release()
         }
         _viewModelStore.clear()
         feedbackManager.release()
-        // The Rime engine is process-wide (the Application prepares it too). Keep it resident: the system
+        // The input engine is process-wide (the Application prepares it too). Keep it resident: the system
         // recreates this service when another keyboard was used in between, and destroying the engine here
         // made the next keyboard open reload every dictionary behind "正在加载词库".
         AssociationManager.release()
@@ -4361,13 +4361,10 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             compositionRefreshJob?.cancel()
             val session = uiState.value.inputSessionId
             compositionRefreshJob = launch(keyProcessingDispatcher) {
-                val composition = rimeEngine.readQueuedComposition() ?: return@launch
-                val t9 = isT9Schema(uiState.value.currentSchemaId) && composition.input.isNotEmpty() &&
-                    !com.cayboard.settings.SensitiveInputState.active && !isSecretEditor() && !uiState.value.inputTarget.isInternal
-                val rankedCandidates = if (t9) {
-                    val durable = rimeEngine.t9Lookup(composition.input)
-                    t9UserHabitMemory.rerank(composition.input, composition.candidates, durable)
-                } else composition.candidates
+                val composition = inputEngine.readQueuedComposition() ?: return@launch
+                val rankedCandidates = personalizedCandidateOrder(
+                    composition.input, composition.candidates, composition.isAsciiMode, composition.hasPrevPage,
+                )
                 val rankedComposition = if (rankedCandidates.contentEquals(composition.candidates)) composition
                     else composition.copy(candidates = rankedCandidates)
                 val transformed = if (composition.input.isNotEmpty()) candidateTransform.transform(
@@ -4377,7 +4374,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
                 ) else null
                 withContext(Dispatchers.Main) {
                     if (!inputReadiness.accepts(admission) || uiState.value.inputSessionId != session ||
-                        !rimeEngine.isCandidateRevisionCurrent(composition.engineRevision)) return@withContext
+                        !inputEngine.isCandidateRevisionCurrent(composition.engineRevision)) return@withContext
                     if (transformed != null) sessionController.applyComposition(
                         rankedComposition.copy(candidates = transformed.candidates.toTypedArray()), transformed.actions,
                     ) else sessionController.applyComposition(rankedComposition)
@@ -4588,11 +4585,46 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
 
     /** 候选词变换协调器（插件 candidate_transform 能力，hotPath：key-processing 线程同步调用）。 */
     internal val candidateTransform = CandidateTransformCoordinator(this)
-    internal val t9Reranker by lazy { com.cayboard.rime.BundledT9Reranker(this) }
+    internal val t9Reranker by lazy { com.cayboard.engine.BundledT9Reranker(this) }
     /** Offline per-digit candidate habits; kept separate from the bundled neural reranker. */
-    internal val t9UserHabitMemory by lazy { com.cayboard.rime.T9UserHabitMemory(this) }
-    internal val t9LearningCoordinator by lazy {
-        com.cayboard.rime.T9LearningCoordinator(rimeEngine, serviceScope)
+    internal val candidateChoiceMemory by lazy { com.cayboard.engine.CandidateChoiceMemory(this) }
+    private val t9LearningCoordinator by lazy {
+        com.cayboard.engine.T9LearningCoordinator(inputEngine, serviceScope)
+    }
+
+    internal fun canPersonalizeCandidates(): Boolean {
+        val state = uiState.value
+        val editorOptions = currentInputEditorInfo?.imeOptions ?: return false
+        return state.inputProfile.language == com.cayboard.settings.InputLanguage.CHINESE &&
+            !state.inputTarget.isInternal && !com.cayboard.settings.SensitiveInputState.active &&
+            !isSecretEditor() &&
+            editorOptions and android.view.inputmethod.EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING == 0
+    }
+
+    private fun personalizedCandidateOrder(
+        input: String,
+        candidates: Array<com.cayboard.engine.EngineCandidate>,
+        asciiMode: Boolean,
+        hasPreviousPage: Boolean,
+    ): Array<com.cayboard.engine.EngineCandidate> {
+        if (input.isEmpty() || asciiMode || hasPreviousPage || t9PartialSegments.isNotEmpty() ||
+            !canPersonalizeCandidates()) return candidates
+        val scheme = uiState.value.currentSchemaId
+        val previous = candidateChoiceMemory.previous(scheme, input)
+        val durable = if (isT9Schema(scheme)) inputEngine.t9Lookup(input) else emptyList()
+        return com.cayboard.engine.orderPersonalizedCandidates(candidates, previous, durable)
+    }
+
+    internal fun personalizeCandidates(result: com.cayboard.engine.EngineProcessResult): com.cayboard.engine.EngineProcessResult {
+        val ranked = personalizedCandidateOrder(result.inputText, result.candidates, result.isAsciiMode, result.hasPrevPage)
+        return if (ranked === result.candidates) result else result.copy(candidates = ranked)
+    }
+
+    internal fun recordCandidateChoice(choice: com.cayboard.engine.LearnedCandidateChoice) {
+        candidateChoiceMemory.remember(choice)
+        if (choice.isT9) {
+            t9LearningCoordinator.enqueue(choice.input, choice.candidate.comment, choice.candidate.text)
+        }
     }
 
     override fun commitText(text: String) {
@@ -4700,7 +4732,7 @@ class CayboardInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         caret: CommitCaret = CommitCaret.NONE): TextCommitResult {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Editor commits belong to Main" }
         if (InputCommandOwner.current.get() == null) {
-            check(com.cayboard.rime.RimeCommandContext.validity.get() == null) {
+            check(com.cayboard.engine.EngineCommandContext.validity.get() == null) {
                 "Queued editor delivery lost its command owner"
             }
             // Explicit boundary for synchronous Main callbacks (clipboard/handwriting/voice).

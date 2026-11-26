@@ -10,20 +10,20 @@ import java.io.File
 
 /**
  * 「希腊字母」（默认关，用户 11-02 转来的请求）：打 xita、pi、alpha 时第 3 个候选给出 θ Θ、π Π、α Α。
- * 一个 Lua 滤镜（app/data/cyime_greek_letters.lua），九键、14 键方案直接带，26 键雾凇和小鹤双拼由 tasks-chinese.gradle.kts 插入。
+ * 一个 Lua 滤镜（app/data/cayboard_greek_letters.lua），九键、14 键方案直接带，26 键雾凇和小鹤双拼由 tasks-chinese.gradle.kts 插入。
  */
 class GreekLettersSchemaTest {
-    private val chinese = File("src/main/assets/rime_chinese")
-    private val generated = File("build/generated/chinese-assets/rime_ice")
-    private val filter = "    - lua_filter@*cyime_greek_letters\n"
+    private val chinese = File("src/main/assets/cayboard_chinese")
+    private val generated = File("build/generated/chinese-assets/cayboard_pinyin")
+    private val filter = "    - lua_filter@*cayboard_greek_letters\n"
 
     private fun assertFilterPlaced(name: String, text: String) {
         assertTrue(name, text.split(filter).size == 2)
         // 在调整次序的滤镜（简拼、单音节）之后：第 3 位就是最终位置；繁体转换之前，和符号名同一段。
-        assertTrue(name, text.indexOf("    - simplifier@cyime_symbols\n") < text.indexOf(filter))
+        assertTrue(name, text.indexOf("    - simplifier@cayboard_symbols\n") < text.indexOf(filter))
         assertTrue(name, text.indexOf(filter) < text.indexOf("    - simplifier@traditionalize"))
         // 方案开关里不登记，选项只由设置写，读不到就是关。
-        assertFalse(name, text.contains("- name: cyime_greek_letters"))
+        assertFalse(name, text.contains("- name: cayboard_greek_letters"))
     }
 
     @Test fun nineAndFourteenKeySchemasCarryTheFilter() {
@@ -36,13 +36,13 @@ class GreekLettersSchemaTest {
     }
 
     @Test fun fullPinyinAndDoublePinyinGetTheFilterAtBuild() {
-        assertTrue(File(generated, "lua/cyime_greek_letters.lua").isFile)
-        assertFilterPlaced("rime_ice", File(generated, "rime_ice.schema.yaml").readText())
+        assertTrue(File(generated, "lua/cayboard_greek_letters.lua").isFile)
+        assertFilterPlaced("cayboard_pinyin", File(generated, "cayboard_pinyin.schema.yaml").readText())
         assertFilterPlaced("double_pinyin_flypy", File(generated, "double_pinyin_flypy.schema.yaml").readText())
     }
 
     @Test fun namesCoverTheAskedSpellingsAndSkipCommonOneSyllableReadings() {
-        val lua = File("data/cyime_greek_letters.lua").readText()
+        val lua = File("data/cayboard_greek_letters.lua").readText()
         val names = Regex("""\{ "(.)", "(.)", "([a-z ]+)" \}""").findAll(lua)
             .flatMap { m -> m.groupValues[3].split(' ').map { it to m.groupValues[1] } }.toList()
         assertEquals("同一个名字只能对应一个字母", names.size, names.map { it.first }.toSet().size)

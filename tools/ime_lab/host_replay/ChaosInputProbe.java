@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -14,17 +14,17 @@ import java.util.Random;
  * rounds per schema.
  */
 public final class ChaosInputProbe {
-  static final String[] SCHEMAS = {"t9_pinyin", "rime_ice", "pinyin_14jian"};
+  static final String[] SCHEMAS = {"t9_pinyin", "cayboard_pinyin", "pinyin_14jian"};
   static final ArrayDeque<String> trace = new ArrayDeque<>();
   static final List<String> violations = new ArrayList<>();
   static int steps;
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
     long seed = Long.parseLong(args[2]);
     int rounds = Integer.parseInt(args[3]);
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user.getPath(), user.getPath());
     try {
       for (String s : SCHEMAS) e.nativeEnsureT9SchemaPatches(s);
@@ -55,7 +55,7 @@ public final class ChaosInputProbe {
 
   static boolean t9(String schema) { return schema.equals("t9_pinyin"); }
 
-  static void round(RimeEngine e, String schema, Random r, int round) {
+  static void round(InputEngine e, String schema, Random r, int round) {
     trace.clear();
     appClear(e, schema);
     int ops = 10 + r.nextInt(30);
@@ -87,18 +87,18 @@ public final class ChaosInputProbe {
     return String.valueOf(",.;/-".charAt(r.nextInt(5)));
   }
 
-  static void type(RimeEngine e, String schema, String k) { key(e, schema, k, k.charAt(0)); }
+  static void type(InputEngine e, String schema, String k) { key(e, schema, k, k.charAt(0)); }
 
-  static void key(RimeEngine e, String schema, String name, int code) {
+  static void key(InputEngine e, String schema, String name, int code) {
     log(name);
     e.nativeProcessKey(code, 0);
     flush(e, schema);
   }
 
-  static void flush(RimeEngine e, String schema) { if (t9(schema)) e.nativeT9FlushRimeInput(); }
+  static void flush(InputEngine e, String schema) { if (t9(schema)) e.nativeT9FlushInput(); }
 
   /** Choose a candidate, as the app does: T9 consumes the reading itself, others select in Rime. */
-  static void choose(RimeEngine e, String schema, Random r) {
+  static void choose(InputEngine e, String schema, Random r) {
     String[][] rows = e.nativeInspectCandidates(12);
     if (rows.length == 0) { log("CHOOSE(none)"); return; }
     int index = r.nextInt(rows.length);
@@ -106,18 +106,18 @@ public final class ChaosInputProbe {
     log("CHOOSE " + index + " " + text);
     if (t9(schema)) {
       e.nativeT9SelectCandidate(rows[index][1], text, text.codePointCount(0, text.length()));
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     } else e.nativeSelectCandidateByGlobalIndex(index);
   }
 
   /** What the app does when input ends (Enter, clear gesture, cursor move, panels): see ImeKeyRouter.endQueuedComposition. */
-  static void appClear(RimeEngine e, String schema) {
+  static void appClear(InputEngine e, String schema) {
     log("CLEAR");
-    if (t9(schema)) { e.nativeT9ClearComposition(1); e.nativeT9FlushRimeInput(); }
+    if (t9(schema)) { e.nativeT9ClearComposition(1); e.nativeT9FlushInput(); }
     e.nativeSetInput("");
   }
 
-  static void freshAfterClear(RimeEngine e, String schema, Random r, int round) {
+  static void freshAfterClear(InputEngine e, String schema, Random r, int round) {
     String input = e.nativeGetInput();
     if (!input.isEmpty()) violation(schema, round, "code left after clear: '" + input + "'");
     String a = randomKey(schema, r).toLowerCase(), b = randomKey(schema, r).toLowerCase();
@@ -132,7 +132,7 @@ public final class ChaosInputProbe {
   }
 
   /** Backspace must always be able to empty the code. */
-  static void drain(RimeEngine e, String schema, int round) {
+  static void drain(InputEngine e, String schema, int round) {
     int limit = e.nativeGetInput().length() * 3 + 12;
     for (int i = 0; i < limit && !e.nativeGetInput().isEmpty(); i++) { e.nativeProcessKey(0xff08, 0); flush(e, schema); }
     log("DRAIN");

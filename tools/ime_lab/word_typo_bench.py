@@ -7,7 +7,7 @@ slip, where the intended word lands while typing and after the pause (RefineOmis
   word_typo_bench.py score RESULT.tsv [...]     first / top 3 / top 5 / top 20, before and after the pause
 
 Words: the 300 two-, 150 three- and 100 four-character words with the highest weight in the built
-cn_dicts/base.dict.yaml (default app/build/generated/chinese-assets/rime_ice/...). Sentences: the held-out everyday
+cn_dicts/base.dict.yaml (default app/build/generated/chinese-assets/cayboard_pinyin/...). Sentences: the held-out everyday
 clauses fixture (3+ syllables). Each gets one seeded slip of every kind: sub (a measured touch-box neighbour of the
 key, typo_bench.neighbor_map), omit (one letter left out, not the first), swap (two adjacent letters reversed),
 double (a letter typed twice), extra (a neighbour inserted after a letter). omit/double/extra never touch the last
@@ -74,7 +74,7 @@ def slips(code, near, rng):
 
 
 def make(path, base_dict=None):
-    base_dict = base_dict or REPO / "app/build/generated/chinese-assets/rime_ice/cn_dicts/base.dict.yaml"
+    base_dict = base_dict or REPO / "app/build/generated/chinese-assets/cayboard_pinyin/cn_dicts/base.dict.yaml"
     near = dict(entry.split(":") for entry in typo_bench.neighbor_map().split(";"))
     fixture = json.loads((HERE / "fixtures/everyday_clauses_20261009.json").read_text(encoding="utf-8"))
     sentences = [(c["text"], " ".join(c["pinyin"])) for c in fixture["cases"] if len(c["pinyin"]) >= 3]

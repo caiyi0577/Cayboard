@@ -43,7 +43,7 @@ import java.io.File
 /**
  * 翻译栏（插件 display: live，照三星键盘的翻译）：左边圆钮、中间一行输入框、右边关闭，高 48dp。
  * 三个时刻（没填接口、空栏、打了字在译）× 浅色/深色；下面画一行假的候选栏对齐看。
- * 设了 CYIME_RENDER_OUT=<目录> 时出图 tool-panel-bar.png。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时出图 tool-panel-bar.png。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "w1300dp-h800dp-mdpi")
@@ -81,7 +81,7 @@ class ToolPanelBarRenderTest {
         rule.waitForIdle()
         assertEquals(2 * moments.size, fields.size)
         assertEquals(4, rule.onAllNodesWithText("EN").fetchSemanticsNodes().size)
-        System.getenv("CYIME_RENDER_OUT")?.takeIf { it.isNotEmpty() }?.let { out ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.takeIf { it.isNotEmpty() }?.let { out ->
             val root = rule.activity.window.decorView
             val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
             rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

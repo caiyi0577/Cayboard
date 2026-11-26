@@ -18,7 +18,7 @@ guarded runner:
   python -I scripts/guarded-device-run.py --serial TABLET_SERIAL -- \
     python tools/ime_lab/background_motion_bench.py --serial TABLET_SERIAL \
       --host-cmd "am start -n md.obsidian/.MainActivity" --host-window md.obsidian \
-      --out D:/CyIME-Data/diagnostics/background-motion-<date>
+      --out D:/Cayboard-Data/diagnostics/background-motion-<date>
 """
 import argparse
 import json

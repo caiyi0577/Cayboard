@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.service.CandidateState
 import com.cayboard.service.commitAssociationSelection
@@ -61,7 +61,7 @@ import java.io.File
 
 /**
  * 上屏后的联想不放收起键盘按钮，最右箭头与组词共用展开/返回语义。
- * 设了 CYIME_RENDER_OUT=<目录> 时另出一张各主题的对照图 association-hide.png。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时另出一张各主题的对照图 association-hide.png。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w900dp-h1400dp-hdpi")
@@ -148,10 +148,10 @@ class AssociationHideButtonTest {
             onRequestExpandedCandidates = { engineRequests++ }, onAssociationSelect = { index ->
                 check(commitAssociationSelection(snapshot.value, index, { committed.add(it) }, { _, _ -> false }))
             })
-        // The post-commit list is supplied by the service. A Windows UI test has no Android Rime JNI.
+        // The post-commit list is supplied by the service. A Windows UI test has no Android input-engine JNI.
         doReturn(mock<T9InputController>()).whenever(viewModel).bindT9Controller(callbacks)
         rule.setContent {
-            KeyboardView(viewModel, KeyboardUiState(currentSchemaId = "rime_ice"), callbacks,
+            KeyboardView(viewModel, KeyboardUiState(currentSchemaId = "cayboard_pinyin"), callbacks,
                 modifier = Modifier.width(400.dp).height(284.dp).testTag("feedback-keyboard"),
                 candidateState = snapshot, inputSessionManagedByHost = true)
         }
@@ -192,7 +192,7 @@ class AssociationHideButtonTest {
     }
 
     private fun saveWindow(name: String, cropTag: String? = null) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }
@@ -205,7 +205,7 @@ class AssociationHideButtonTest {
     }
 
     @Test fun renderAssociationHideButton() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         KeyboardThemes.initFromConfig(ApplicationProvider.getApplicationContext<Context>())
         val themes = listOf(Triple("soft_blue", false, "柔和蓝·浅"), Triple("soft_blue", true, "柔和蓝·深"),

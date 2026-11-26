@@ -57,7 +57,7 @@ import kotlin.math.sin
 
 /**
  * 悬浮键盘绕中心旋转：平时按保存的角度显示、点到的键；调节界面里按住旋转手柄拖动的角度、确认保存。
- * 设了 CYIME_RENDER_OUT 时另外把几种角度/位置和调节界面拼成一张图。
+ * 设了 CAYBOARD_RENDER_OUT 时另外把几种角度/位置和调节界面拼成一张图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w400dp-h640dp-mdpi")
@@ -326,7 +326,7 @@ class FloatingRotationRenderTest {
     }
 
     @Test fun renderSheet() {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         show()
         data class Case(val label: String, val deg: Float, val x: Int, val y: Int, val resize: Boolean = false)
         val cases = listOf(
@@ -364,7 +364,7 @@ class FloatingRotationRenderTest {
             canvas.drawBitmap(bmp, x, y + 34f, null)
         }
         File(out).mkdirs()
-        File(out, "${System.getenv("CYIME_RENDER_NAME") ?: "floating-rotation"}.png").outputStream().use {
+        File(out, "${System.getenv("CAYBOARD_RENDER_NAME") ?: "floating-rotation"}.png").outputStream().use {
             sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }

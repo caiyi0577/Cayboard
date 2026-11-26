@@ -108,7 +108,7 @@ sealed interface KeyboardDispatchAction {
     /** ?123 切换（按当前 modeChangeTarget 走） */
     data class ModeChange(val targetIsNumber: Boolean, val isAsciiMode: Boolean) : KeyboardDispatchAction
 
-    /** ASCII 模式由外部（Rime）改变 */
+    /** ASCII 模式由输入引擎改变 */
     data class AsciiModeChanged(val isAsciiMode: Boolean, val schemaId: String) : KeyboardDispatchAction
 
     /** 输⼊会话开始 */

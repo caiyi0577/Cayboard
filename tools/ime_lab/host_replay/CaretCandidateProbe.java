@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
@@ -6,19 +6,19 @@ import java.util.Arrays;
  * Candidates follow the code caret (2026-10-30 report): xu'yao|jia'ge with the caret after yao must
  * offer 需要 first, not the whole 需要价格, and choosing it must leave jia'ge to continue.
  * Arguments: the built library directory and a copied deployed user directory listing
- * t9_pinyin and rime_ice.
+ * t9_pinyin and cayboard_pinyin.
  */
 public final class CaretCandidateProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File logs = new File(args[1], "logs");
     if (!logs.isDirectory() && !logs.mkdirs()) throw new Exception("cannot create native log directory");
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(args[1], args[1]);
     int failures = 0;
     try {
       e.nativeEnsureT9SchemaPatches("t9_pinyin");
-      if (!new File(args[1], "build/t9_pinyin.schema.yaml").isFile() || !new File(args[1], "build/rime_ice.schema.yaml").isFile()) e.nativeStartMaintenance(true);
+      if (!new File(args[1], "build/t9_pinyin.schema.yaml").isFile() || !new File(args[1], "build/cayboard_pinyin.schema.yaml").isFile()) e.nativeStartMaintenance(true);
       long until = System.currentTimeMillis() + 600000;
       while (e.nativeIsMaintaining()) {
         if (System.currentTimeMillis() > until) throw new Exception("deployment timeout");
@@ -32,12 +32,12 @@ public final class CaretCandidateProbe {
     if (failures != 0) System.exit(1);
   }
 
-  static int t9(RimeEngine e) throws Exception {
+  static int t9(InputEngine e) throws Exception {
     if (!e.nativeSwitchSchema("t9_pinyin")) throw new Exception("t9_pinyin unavailable");
     e.nativeSetOption("ascii_mode", false);
     e.nativeT9ClearComposition(1);
-    e.nativeT9FlushRimeInput();
-    for (char c : "9892654243".toCharArray()) { e.nativeProcessKey(c, 0); e.nativeT9FlushRimeInput(); }
+    e.nativeT9FlushInput();
+    for (char c : "9892654243".toCharArray()) { e.nativeProcessKey(c, 0); e.nativeT9FlushInput(); }
     print("t9 end", e);
     String input = e.nativeGetInput();
     e.nativeSetCaret(caretAfterKeys(input, 5));
@@ -48,7 +48,7 @@ public final class CaretCandidateProbe {
     int index = find(rows, "需要");
     if (index >= 0) {
       boolean full = e.nativeT9SelectCandidate(rows[index][1], "需要", 2);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       String remaining = e.nativeT9GetRemainingDigits();
       System.out.println("t9 select full=" + full + " remaining='" + remaining + "'");
       // As the app does after a partial choice (T9InputController.refreshRemainingInput).
@@ -59,12 +59,12 @@ public final class CaretCandidateProbe {
       if (find(after, "价格") < 0) { System.out.println("FAIL t9: 价格 not offered after 需要"); fail++; }
     }
     e.nativeT9ClearComposition(1);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
     return fail;
   }
 
-  static int full(RimeEngine e) throws Exception {
-    if (!e.nativeSwitchSchema("rime_ice")) throw new Exception("rime_ice unavailable");
+  static int full(InputEngine e) throws Exception {
+    if (!e.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("cayboard_pinyin unavailable");
     e.nativeSetOption("ascii_mode", false);
     for (char c : "xuyaojiage".toCharArray()) e.nativeProcessKey(c, 0);
     print("26 end", e);
@@ -100,7 +100,7 @@ public final class CaretCandidateProbe {
     return -1;
   }
 
-  static void print(String label, RimeEngine e) {
+  static void print(String label, InputEngine e) {
     String[] s = e.nativePinyinEditSnapshot();
     String[][] rows = e.nativeInspectCandidates(6);
     StringBuilder b = new StringBuilder();

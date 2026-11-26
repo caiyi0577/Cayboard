@@ -14,8 +14,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
@@ -31,8 +31,8 @@ class T9EnglishImeTest {
         val context = instrumentation.targetContext
         assertEquals("Use a touch-only test device; a virtual PC keyboard enables compact mode",
             android.content.res.Configuration.KEYBOARD_NOKEYS, context.resources.configuration.keyboard)
-        val engine = RimeEngine.getInstance()
-        assertTrue(RimeConfigHelper.prepareEngine(context))
+        val engine = InputEngine.getInstance()
+        assertTrue(EngineConfig.prepareEngine(context))
         val previous = engine.getCurrentSchema()
         fun shell(command: String): String =
             ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command))

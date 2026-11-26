@@ -23,7 +23,7 @@ import com.cayboard.translate.TranslationResult
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SchemaInfo
 import com.cayboard.speech.RecognitionState
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.ui.keyboard.KeyboardCallbacks
 import com.cayboard.ui.keyboard.KeyboardDispatchAction
 import com.cayboard.ui.keyboard.KeyboardLayoutState
@@ -270,7 +270,7 @@ class KeyboardViewModel(application: Application) : AndroidViewModel(application
             if (pinyin.isNullOrBlank()) controller.onRightCandidateSelectedByDirectCommit(revision)
             else controller.onRightCandidateSelected(pinyin, text, textLength, revision)
         }
-        callbacks.onT9ForceSendToRime = { controller.refreshRemainingInput() }
+        callbacks.onT9ResendInput = { controller.refreshRemainingInput() }
         callbacks.onT9RunLiteralInput = { controller.enqueueLiteralInput(it) }
         callbacks.onT9CompositionCleared = { controller.resetDisplayAfterCommit() }
         callbacks.onFilterT9Candidates = { candidates, comments -> candidates to comments }

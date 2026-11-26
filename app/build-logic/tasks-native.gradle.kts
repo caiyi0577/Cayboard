@@ -276,9 +276,9 @@ val buildTrie by tasks.registering {
     }
 }
 
-// ── librime native 构建输入保障（修"改了 C++ 代码 Run 不重编"）──
-// 1) librime-t9 权威源码在顶层 jni/librime-t9，编译副本 plugins/librime-t9 由
-//    Rime.cmake 在 configure 时 file(COPY) 同步。Gradle 感知不到权威源码变化、
+// ── 原生解码器构建输入保障（修"改了 C++ 代码 Run 不重编"）──
+// 1) 九键模块权威源码在顶层 jni/librime-t9，编译副本 plugins/librime-t9 由
+//    CayboardNativeEngine.cmake 在 configure 时 file(COPY) 同步。Gradle 感知不到权威源码变化、
 //    不重新 configure 时副本就是旧的。改为构建期同步（Copy 增量：源变才拷，
 //    拷后副本 mtime 更新，ninja 据此重编对应文件）。
 val syncT9Plugin by tasks.registering {
@@ -295,7 +295,7 @@ val syncT9Plugin by tasks.registering {
     }
 }
 
-// 2) 把 librime 核心/插件源码目录声明为 native 构建任务的显式输入：
+// 2) 把解码引擎核心/插件源码目录声明为 native 构建任务的显式输入：
 //    AGP 对 CMake 任务的 up-to-date 判断不覆盖 submodule 源文件，
 //    缺失该输入时 Android Studio 的 Run 会直接跳过 ninja，
 //    改动（尤其 librime/src 核心改动）不会进 APK。

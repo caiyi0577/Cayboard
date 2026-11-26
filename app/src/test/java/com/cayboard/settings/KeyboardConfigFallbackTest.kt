@@ -7,7 +7,7 @@ import org.junit.Test
 
 /**
  * 验证 keyboard.* 配置的字段级一路 fallback 合并：
- * xime.custom.yaml → xime.yaml → 代码默认值。
+ * cayboard.custom.yaml → cayboard.yaml → 代码默认值。
  */
 class KeyboardConfigFallbackTest {
 
@@ -24,12 +24,12 @@ class KeyboardConfigFallbackTest {
     @Test
     fun `fonts 只配置部分字段时仅显式字段非 null`() {
         val partial = KeysConfigHelper.parseKeyboardFontsYamlText(
-            "keyboard:\n  fonts:\n    comment_font: \"rime/fonts/a.ttf\"\n"
+            "keyboard:\n  fonts:\n    comment_font: \"cayboard_input/fonts/a.ttf\"\n"
         )
         assertNull(partial?.keyFont)
         assertNull(partial?.keyLabelFont)
         assertNull(partial?.candidateFont)
-        assertEquals("rime/fonts/a.ttf", partial?.commentFont)
+        assertEquals("cayboard_input/fonts/a.ttf", partial?.commentFont)
     }
 
     @Test

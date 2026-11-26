@@ -44,7 +44,7 @@ import java.io.File
 
 /**
  * 一致性修复的出图核对：光标调整遮罩（盖在 26 键上）、颜文字空页，
- * 柔和蓝 / 黑白 / iOS 渐变 / 薰衣草紫 × 深浅色 × 毛玻璃。只在设了 CYIME_RENDER_OUT 时出图。
+ * 柔和蓝 / 黑白 / iOS 渐变 / 薰衣草紫 × 深浅色 × 毛玻璃。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1300dp-h400dp-xhdpi")
@@ -53,7 +53,7 @@ class SurfaceConsistencyRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderOverlaysAcrossThemes() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
@@ -75,7 +75,7 @@ class SurfaceConsistencyRenderTest {
                         val keyboardBg = Modifier.background(palette.background)
                         Box(Modifier.requiredSize(480.dp, 300.dp).then(keyboardBg)) {
                             KeyboardLayout({}, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
-                                KeyboardUiState(currentSchemaId = "rime_ice", themeId = theme, isDarkTheme = dark),
+                                KeyboardUiState(currentSchemaId = "cayboard_pinyin", themeId = theme, isDarkTheme = dark),
                                 false, Modifier.requiredSize(480.dp, 300.dp).hiddenDuringCursorControl(true))
                             CursorControlOverlay(palette.background, palette.text, Modifier.requiredSize(480.dp, 300.dp))
                         }
@@ -99,10 +99,10 @@ class SurfaceConsistencyRenderTest {
             File(out, "$name.png").outputStream().use { crop.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
         for (t in listOf("soft_blue", "pure_black", "transparent_glass", "lavender_purple")) for (d in listOf(false, true)) for (g in listOf(false, true)) {
-            KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+            KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
             // 面板底色按设置里的主题取渐变/图片（KeyboardPanelBackground），不设的话 iOS 渐变出图成纯黑。
             com.cayboard.settings.SettingsPreferences.getPrefsPublic(app).edit().putString("keyboard_theme", t).commit()
-            rule.runOnIdle { vm.resetKeyboard(false, "rime_ice"); theme = t; dark = d; glass = g }
+            rule.runOnIdle { vm.resetKeyboard(false, "cayboard_pinyin"); theme = t; dark = d; glass = g }
             rule.waitForIdle()
             shot("$t-${if (d) "dark" else "light"}-${if (g) "glass" else "solid"}")
         }

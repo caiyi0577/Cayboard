@@ -19,16 +19,16 @@ import org.mockito.kotlin.whenever
 /** 日语 26 键长音键：默认 L 键就是长音；可选 L 右侧单独 ー 键或代替 Shift，ー 键送 - 进罗马字转换（ko-hi- → コーヒー）。 */
 class JapaneseChoonpuKeyTest {
     @get:Rule val temp = TemporaryFolder()
-    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("xime.yaml")).readText()
+    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("cayboard.yaml")).readText()
 
     @Before fun loadActualLayout() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { defaults.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { defaults.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         val context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         KeysConfigHelper.loadConfig(context)
     }
@@ -72,7 +72,7 @@ class JapaneseChoonpuKeyTest {
             assertEquals(mode, japaneseLongVowelKey(mode, false, japanese))
             assertNull(japaneseLongVowelKey(mode, true, japanese))
             assertNull(japaneseLongVowelKey(mode, false, InputProfiles.describe("japanese_kana")))
-            assertNull(japaneseLongVowelKey(mode, false, InputProfiles.describe("rime_ice")))
+            assertNull(japaneseLongVowelKey(mode, false, InputProfiles.describe("cayboard_pinyin")))
         }
     }
 
@@ -81,7 +81,7 @@ class JapaneseChoonpuKeyTest {
         assertTrue(japaneseChoonpuIsCode("-", false, japanese))
         // 英数模式、中文：- 仍是标点，按原来的路径上屏。
         assertFalse(japaneseChoonpuIsCode("-", true, japanese))
-        assertFalse(japaneseChoonpuIsCode("-", false, InputProfiles.describe("rime_ice")))
+        assertFalse(japaneseChoonpuIsCode("-", false, InputProfiles.describe("cayboard_pinyin")))
         assertFalse(japaneseChoonpuIsCode("_", false, japanese))
         assertFalse(japaneseChoonpuIsCode("ー", false, japanese))
     }

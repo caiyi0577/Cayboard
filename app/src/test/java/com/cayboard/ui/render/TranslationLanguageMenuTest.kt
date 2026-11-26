@@ -74,7 +74,7 @@ class TranslationLanguageMenuTest {
             rule.runOnIdle { dark=mode }
             rule.onNodeWithTag("option-menu").assertHeightIsEqualTo(240.dp)
             rule.onNodeWithTag("option-menu-options").assert(hasScrollAction())
-            System.getenv("CYIME_RENDER_OUT")?.let {dir ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let {dir ->
                 val view=rule.activity.window.decorView
                 val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
                 rule.runOnIdle {view.draw(android.graphics.Canvas(bitmap))}

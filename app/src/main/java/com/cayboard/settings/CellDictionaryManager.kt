@@ -11,13 +11,13 @@ object CellDictionaryManager {
     }
 
     fun prepare(context: Context, ids: Set<String> = store(context).read().applied,
-        english: Boolean = store(context).read().appliedEnglish, wordRevision: Int? = null): List<CellDictionaryRime.Binding> {
+        english: Boolean = store(context).read().appliedEnglish, wordRevision: Int? = null): List<CellDictionaryEngine.Binding> {
         val store = store(context)
         val bundled = runCatching { bundledUpdates(context) }.getOrDefault(CellWordUpdates.empty)
         // Main dictionary words apply with or without cell dictionaries (CellWordUpdates.main).
         val updates = if (wordRevision != null) store.wordUpdates(wordRevision, bundled)
         else runCatching { store.wordUpdates(store.read().appliedWordRevision, bundled) }.getOrDefault(bundled)
-        return CellDictionaryRime.prepare(SchemaManager.getRimeDir(context), store,
+        return CellDictionaryEngine.prepare(SchemaManager.getInputDataDir(context), store,
             SchemaManager.discoverSchemas(context), ids, english, updates)
     }
 

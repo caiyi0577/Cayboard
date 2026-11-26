@@ -32,10 +32,10 @@ import time
 import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REMOTE = "/data/local/tmp/cyime-demo.txt"
+REMOTE = "/data/local/tmp/cayboard-demo.txt"
 # Plays the monkey-format scripts through InputManager (inject/Inject.java, built by inject/build.sh):
 # `monkey -f` freezes and thaws the rotation on every run, which flips a tablet lying upside down.
-INJECT_DEX = "/data/local/tmp/cyime-inject.dex"
+INJECT_DEX = "/data/local/tmp/cayboard-inject.dex"
 T9 = {c: d for d, letters in {"2": "abc", "3": "def", "4": "ghi", "5": "jkl", "6": "mno",
                               "7": "pqrs", "8": "tuv", "9": "wxyz"}.items() for c in letters}
 # Kana nine-key: tap, left, up, right, down (app/.../JapaneseKanaInput.kt); the modifier key
@@ -374,7 +374,7 @@ def cmd_run(args):
     if not args.dry and rotation(args.serial) % 2 != layouts["rotation"] % 2:
         raise SystemExit("screen orientation differs from the calibrated layouts")
     if not args.dry:
-        dex = os.path.join(args.data, "cyime-inject.dex")
+        dex = os.path.join(args.data, "cayboard-inject.dex")
         if not os.path.exists(dex):
             raise SystemExit(f"missing {dex}; run inject/build.sh first")
         adb(args.serial, "push", "-q", dex, INJECT_DEX)
@@ -392,7 +392,7 @@ def record(args, plan, runner, segment):
     os.makedirs(args.record, exist_ok=True)
     index = plan["segments"].index(segment) + 1
     name = f"{index:02d}-{segment['name'].replace(' ', '')}"
-    remote = f"/sdcard/cyime-demo-{index:02d}.mp4"
+    remote = f"/sdcard/cayboard-demo-{index:02d}.mp4"
     proc = subprocess.Popen(["adb", "-s", args.serial, "shell", "screenrecord", "--bit-rate", "24000000",
                              "--time-limit", "180", remote])
     time.sleep(1.5)  # screenrecord needs a moment before the first frame
@@ -600,10 +600,10 @@ def cmd_record_ink(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--serial", default=os.environ.get("CYIME_TABLET_SERIAL"))
+    parser.add_argument("--serial", default=os.environ.get("CAYBOARD_TABLET_SERIAL"))
     parser.add_argument("--script", default=os.path.join(HERE, "demo.yaml"))
     parser.add_argument("--layouts", default=os.path.join(HERE, "layouts", "sm-x800.json"))
-    parser.add_argument("--data", default="D:/CyIME-Data/demo-video")
+    parser.add_argument("--data", default="D:/Cayboard-Data/demo-video")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run")
     run.add_argument("--segment", action="append")

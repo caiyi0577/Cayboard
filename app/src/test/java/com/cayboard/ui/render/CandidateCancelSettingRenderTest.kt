@@ -40,7 +40,7 @@ import java.io.File
 
 /**
  * 「候选栏取消按钮」默认打开（用户 10-31），手动关过的不变；开关下面的图例随开关变化。
- * [renderLegend] 只在设置了 CYIME_RENDER_OUT=<目录> 时出图：开、关各一张，玻璃、不透明各一张，
+ * [renderLegend] 只在设置了 CAYBOARD_RENDER_OUT=<目录> 时出图：开、关各一张，玻璃、不透明各一张，
  * 每张横排浅色、深色、纯白、纯黑四个主题，手机大小的候选词页。
  */
 @RunWith(AndroidJUnit4::class)
@@ -106,7 +106,7 @@ class CandidateCancelSettingRenderTest {
     }
 
     @Test fun renderLegend() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         KeyboardThemes.initFromConfig(context)
         com.cayboard.ui.keyboard.AppFonts.initialize(context)

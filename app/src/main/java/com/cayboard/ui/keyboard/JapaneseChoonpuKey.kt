@@ -15,7 +15,7 @@ import com.cayboard.viewmodel.ShiftMode
 enum class JapaneseLongVowelKey(val label: String) {
     L_KEY("L 键"), SEPARATE("L 右侧单独键"), SHIFT("代替 Shift");
 
-    /** L 键是不是长音；不是时 L 是字母 l（翻译器选项 `_cyime_l_letter`，显示规则见 JapaneseRomajiPreedit）。 */
+    /** L 键是不是长音；不是时 L 是字母 l（翻译器选项 `_cayboard_l_letter`，显示规则见 JapaneseRomajiPreedit）。 */
     val lIsLongVowel: Boolean get() = this == L_KEY
 
     companion object {

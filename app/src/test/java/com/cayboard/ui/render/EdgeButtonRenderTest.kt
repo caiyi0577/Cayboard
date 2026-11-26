@@ -40,7 +40,7 @@ import java.io.File
 
 /**
  * 候选栏两端「<」「^」按钮在各主题下的样子，用真实 CandidateBar 代码在电脑上渲染成一张对比图。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
  * 玻璃开时候选栏后面垫一张彩色“壁纸”，才看得出半透明。
  */
 @RunWith(AndroidJUnit4::class)
@@ -50,7 +50,7 @@ class EdgeButtonRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderEdgeButtons() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
@@ -61,12 +61,12 @@ class EdgeButtonRenderTest {
             Triple("pure_black", false, "黑白·纯白"), Triple("pure_black", true, "黑白·纯黑"),
             Triple("cream_beige", true, "奶油米白·深"),
         )
-        val strengths = (System.getenv("CYIME_RENDER_STRENGTHS") ?: "0.45").split(",").map { it.trim().toFloat() }
-        val styles = (System.getenv("CYIME_RENDER_STYLES") ?: "CIRCLE").split(",").map {
+        val strengths = (System.getenv("CAYBOARD_RENDER_STRENGTHS") ?: "0.45").split(",").map { it.trim().toFloat() }
+        val styles = (System.getenv("CAYBOARD_RENDER_STYLES") ?: "CIRCLE").split(",").map {
             com.cayboard.ui.keyboard.EdgeButtonStyle.valueOf(it.trim()) }
-        val widths = (System.getenv("CYIME_RENDER_WIDTHS") ?: System.getenv("CYIME_RENDER_WIDTH") ?: "420")
+        val widths = (System.getenv("CAYBOARD_RENDER_WIDTHS") ?: System.getenv("CAYBOARD_RENDER_WIDTH") ?: "420")
             .split(",").map { it.trim().toInt() }
-        val themeFilter = System.getenv("CYIME_RENDER_THEMES")?.split(",")?.map { it.trim() }
+        val themeFilter = System.getenv("CAYBOARD_RENDER_THEMES")?.split(",")?.map { it.trim() }
         rule.setContent {
             Column(Modifier.background(Color(0xFF808080)).padding(4.dp)) {
                 for (width in widths) for (style in styles) for (strength in strengths) for (glass in listOf(false, true)) for ((id, dark, label) in themes) {

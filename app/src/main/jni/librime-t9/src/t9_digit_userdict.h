@@ -22,8 +22,8 @@ class T9DigitUserDict {
   // 设置持久化路径并打开 leveldb（仅首次调用生效）。
   static void SetFilePath(const std::string& path);
 
-  // 从 RIME input 构建查找键（"54482" / "54482:ji"）。
-  static std::string BuildLookupKey(const std::string& rime_input);
+  // 从 引擎输入 构建查找键（"54482" / "54482:ji"）。
+  static std::string BuildLookupKey(const std::string& engine_input);
 
   // 关闭并重新打开 leveldb，将 memtable 刷为 .ldb 文件。
   static void CompactDb();

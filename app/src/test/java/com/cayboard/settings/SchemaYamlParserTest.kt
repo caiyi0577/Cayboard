@@ -30,7 +30,7 @@ class SchemaYamlParserTest {
         assertEquals("自定义方案", SchemaManager.parseSchemaYaml(f)?.name)
     }
 
-    @Test fun `inline and indentless Rime switches retain their declared names`() {
+    @Test fun `inline and indentless schema switches retain their declared names`() {
         val file = writeSchema("switches: [{name: ascii_mode, states: [中文, 西文]}]")
         assertEquals("ascii_mode", SchemaManager.parseSchemaSwitches(file).single().name)
         file.writeText("switches:\n# 方案选项\n- name: full_shape\n  states: [半角, 全角]\nengine: {}")
@@ -62,7 +62,7 @@ class SchemaYamlParserTest {
         val entry = SchemaManager.parseSchemaYaml(file)!!.toSchemaInfo()
         assertEquals(InputLanguage.JAPANESE, entry.profile.language)
         assertEquals(InputScheme.ROMAJI, entry.profile.scheme)
-        assertEquals(EngineProfile.Rime("my_romaji"), entry.profile.engineProfile)
+        assertEquals(EngineProfile.Decoder("my_romaji"), entry.profile.engineProfile)
     }
 
     @get:Rule

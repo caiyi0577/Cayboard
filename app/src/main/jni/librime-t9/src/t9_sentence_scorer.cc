@@ -22,7 +22,7 @@
 namespace rime {
 namespace {
 // One engine-owned CPU session, one worker, bounded inputs and score cache.
-// RimeEngine serializes access; finalize releases every allocation.
+// InputEngine serializes access; finalize releases every allocation.
 struct SentenceScorer {
   Ort::Env environment{ORT_LOGGING_LEVEL_ERROR, "Cayboard-T9"};
   Ort::Session session{nullptr};

@@ -1,8 +1,8 @@
 """手写公式识别基线：笔迹轨迹 → LaTeX，用 Google MathWriting 训练，看看这条路能做到什么程度。
 
 三个子命令：
-    python mathwriting_baseline.py prep  --src D:/CyIME-Data/datasets/mathwriting/converted --out D:/CyIME-Data/datasets/mathwriting/prepared
-    python mathwriting_baseline.py train --data D:/CyIME-Data/datasets/mathwriting/prepared --out D:/CyIME-Data/handwriting_training/latex-baseline/<日期> [--minutes 30]
+    python mathwriting_baseline.py prep  --src D:/Cayboard-Data/datasets/mathwriting/converted --out D:/Cayboard-Data/datasets/mathwriting/prepared
+    python mathwriting_baseline.py train --data D:/Cayboard-Data/datasets/mathwriting/prepared --out D:/Cayboard-Data/handwriting_training/latex-baseline/<日期> [--minutes 30]
     python mathwriting_baseline.py eval  --data … --ckpt …/last.pt [--samples 训练模式导出.jsonl]
 
 做法（基线，不追求最好）：

@@ -13,7 +13,7 @@ $result = & $Adb -P $Port -s $Serial shell am instrument -w -r -e class 'com.cay
 if (($result -join "`n") -notmatch 'OK \(1 test\)') { throw ($result -join "`n") }
 foreach ($style in @('neon','glass','facet','frost')) {
     foreach ($suffix in @('','_foreground')) {
-        $name = "cyime_$style$suffix"
+        $name = "cayboard_$style$suffix"
         & $Adb -P $Port -s $Serial pull "/sdcard/Android/data/com.cayboard/files/$name.png" (Join-Path $drawable "$name.png")
         if ($LASTEXITCODE) { throw "Failed to export $name" }
     }
@@ -21,15 +21,15 @@ foreach ($style in @('neon','glass','facet','frost')) {
     @"
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/cyime_${style}_background" />
-    <foreground android:drawable="@drawable/cyime_${style}_foreground" />
+    <background android:drawable="@drawable/cayboard_${style}_background" />
+    <foreground android:drawable="@drawable/cayboard_${style}_foreground" />
 </adaptive-icon>
-"@ | Set-Content -Encoding utf8 (Join-Path $adaptive "cyime_$style.xml")
+"@ | Set-Content -Encoding utf8 (Join-Path $adaptive "cayboard_$style.xml")
     @"
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="$color" />
 </shape>
-"@ | Set-Content -Encoding utf8 (Join-Path $resources "drawable/cyime_${style}_background.xml")
+"@ | Set-Content -Encoding utf8 (Join-Path $resources "drawable/cayboard_${style}_background.xml")
 }
 Write-Host 'Exported four icon materials from the production generator. Rebuild APK to package them.'

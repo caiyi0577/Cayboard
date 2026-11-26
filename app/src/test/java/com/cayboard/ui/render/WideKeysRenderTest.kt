@@ -21,7 +21,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.ui.keyboard.KeyboardCallbacks
@@ -48,7 +48,7 @@ import java.io.File
 /**
  * 「加宽按键」改前 / 改后：手机竖屏 360dp 与 411dp 宽，键盘体高 232dp（四行 56dp + 底部 8dp）。
  * 每个主题组合一张总图：行是 26 键、14 键、九键、数字、常用符号、符号，列是 360-off / 360-on / 411-off / 411-on。
- * 只在设了 CYIME_RENDER_OUT 时出图。
+ * 只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w420dp-h900dp-xhdpi")
@@ -65,11 +65,11 @@ class WideKeysRenderTest {
     private fun schemaFor(layout: String) = when (layout) {
         "14" -> "pinyin_14jian"
         "t9", "num" -> "t9_pinyin"
-        else -> "rime_ice"
+        else -> "cayboard_pinyin"
     }
 
     @Test fun renderWideKeys() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)

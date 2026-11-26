@@ -14,7 +14,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.*
+import com.cayboard.engine.*
 import com.cayboard.settings.*
 import com.cayboard.ui.theme.KeyboardThemes
 import java.io.File
@@ -29,20 +29,20 @@ class ChineseDefaultsImeTest {
     @Test fun installedDefaultsOffer26KeysAndOptional14KeysCommitChinese(): Unit = runBlocking {
         val i = InstrumentationRegistry.getInstrumentation()
         val context = i.targetContext
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         lateinit var editor: EditText
         assertEquals("soft_blue", SettingsPreferences.getKeyboardTheme(context))
         assertEquals(1, SettingsPreferences.getDarkMode(context))
         assertTrue(KeyboardThemes.getThemeById("dynamic").isDynamic)
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
         engine.initialize(user, shared)
-        assertTrue(RimeConfigHelper.ensureDeployment(context))
+        assertTrue(EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession())
         val initiallyEnabled = SchemaManager.getEnabledSchemas(context)
         assertTrue(initiallyEnabled.containsAll(CayboardInputDefaults.recommended))
         assertFalse(initiallyEnabled.any { it in com.cayboard.settings.BuiltinLetterLayouts.ids })
         val discovered = SchemaManager.discoverSchemas(context).associateBy { it.schemaId }
-        assertEquals("中文26键", discovered["rime_ice"]?.name)
+        assertEquals("中文26键", discovered["cayboard_pinyin"]?.name)
         assertEquals("中文14键", discovered["pinyin_14jian"]?.name)
         CayboardInputDefaults.recommended.forEach { assertTrue("$it 已编译", SchemaManager.isSchemaCompiled(context, it)) }
         shell("ime enable ${context.packageName}/com.cayboard.service.CayboardInputMethodService")
@@ -83,12 +83,12 @@ class ChineseDefaultsImeTest {
             assertEquals("上滑不能留下字母编码", "", engine.getInput())
         }
         try {
-            chooseMode("rime_ice")
+            chooseMode("cayboard_pinyin")
             rule.waitUntil(5000) { rule.onAllNodesWithText("n", ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
             assertEquals(26, KeysConfigHelper.getKeyRows(false).flatten().count { it.length == 1 && it[0].isLetter() })
             typeAndCommit(listOf("n","i","h","a","o"), "chinese-26-default")
             SchemaManager.setEnabledSchemas(context, initiallyEnabled + "pinyin_14jian")
-            assertTrue(RimeConfigHelper.ensureDeployment(context))
+            assertTrue(EngineConfig.ensureDeployment(context))
             chooseMode("pinyin_14jian")
             rule.waitUntil(5000) { rule.onAllNodesWithText("bn", ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
             assertEquals("qwerty_14", KeysConfigHelper.mergedSectionForSchema("pinyin_14jian"))

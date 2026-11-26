@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.ui.keyboard.CandidateBar
@@ -66,7 +66,7 @@ import java.io.File
  * 键盘卡片四角（用户 10-31）：顶部圆角开/关 × 底部圆角开/关 × 悬浮，每张图一行一种布局（26 键、九键；
  * 改的只是卡片外形，14 键与 26 键同一个卡片，26 键的按键表是全局的，同一张图里不混画 14 键）。
  * 每个主题 × 深浅 × 玻璃 × 视觉样式一张。看两件事：顶部关掉后是直角；霓光描边等样式的候选栏描边
- * 沿着卡片的圆角走，不在顶角被切掉。只在设了 CYIME_RENDER_OUT 时出图；CYIME_RENDER_THEMES 只画其中几个主题。
+ * 沿着卡片的圆角走，不在顶角被切掉。只在设了 CAYBOARD_RENDER_OUT 时出图；CAYBOARD_RENDER_THEMES 只画其中几个主题。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1960dp-h900dp-mdpi")
@@ -90,16 +90,16 @@ class KeyboardCornerRenderTest {
     private data class Corner(val label: String, val floating: Boolean, val bottom: Boolean, val top: Boolean)
 
     private val layouts = listOf("26", "t9")
-    private fun schemaFor(layout: String) = if (layout == "t9") "t9_pinyin" else "rime_ice"
+    private fun schemaFor(layout: String) = if (layout == "t9") "t9_pinyin" else "cayboard_pinyin"
 
     // 一组一个 activity：一次画太多张在 Robolectric 里会卡住（见 KeyShapeRenderTest）。
     @Test fun renderSolid() = render(glass = false)
     @Test fun renderGlass() = render(glass = true)
 
     private fun render(glass: Boolean) {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
-        val only = System.getenv("CYIME_RENDER_THEMES")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val only = System.getenv("CAYBOARD_RENDER_THEMES")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
         KeysConfigHelper.applyLetterLayouts()
@@ -108,7 +108,7 @@ class KeyboardCornerRenderTest {
             on { leftPanelState } doReturn T9InputController.LeftPanelState.IDLE
             on { firstOptions } doReturn emptyList()
         }
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         val models = layouts.associateWith { KeyboardViewModel(app) }
         var theme by mutableStateOf("soft_blue")
         var dark by mutableStateOf(false)

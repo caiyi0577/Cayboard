@@ -27,7 +27,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 DEFAULT_FIXTURE = HERE / "fixtures/daily_chat_20261003.json"
 PASSES = ["digits:continuous", "digits:paused"]
-REMOTE_PATTERN = re.compile(r"/data/local/tmp/cyime-chat-audit-\d{8}T\d{6}-[0-9a-f]{8}\Z")
+REMOTE_PATTERN = re.compile(r"/data/local/tmp/cayboard-chat-audit-\d{8}T\d{6}-[0-9a-f]{8}\Z")
 ABI_DIRECTORIES = {"arm64-v8a": "arm64", "armeabi-v7a": "arm", "x86_64": "x86_64", "x86": "x86"}
 
 
@@ -143,7 +143,7 @@ def compile_runner(command, tools, output):
     source_dir = build / "src"
     source_dir.mkdir()
     sources = []
-    for source in (HERE / "android_replay/ChatReplay.java", HERE / "android_replay/RimeEngine.java"):
+    for source in (HERE / "android_replay/ChatReplay.java", HERE / "android_replay/InputEngine.java"):
         target = source_dir / source.name
         target.write_bytes(source.read_bytes())
         sources.append(target)
@@ -159,16 +159,16 @@ def compile_runner(command, tools, output):
 def extract_libraries(apk, abi, directory):
     directory.mkdir()
     with zipfile.ZipFile(apk) as archive:
-        if "assets/rime-bundled-manifest.tsv" not in archive.namelist():
-            raise ValueError("APK has no bundled Rime manifest.")
+        if "assets/cayboard-bundled-manifest.tsv" not in archive.namelist():
+            raise ValueError("APK has no bundled input manifest.")
         prefix = f"lib/{abi}/"
         for name in archive.namelist():
             if name.startswith(prefix) and name.endswith(".so"):
                 leaf = name[len(prefix):]
-                if not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", leaf):
+                if leaf != "cayboard_jni.so" and not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", leaf):
                     raise ValueError(f"Invalid native-library ZIP entry: {name}")
                 (directory / leaf).write_bytes(archive.read(name))
-    if not (directory / "librime_jni.so").is_file():
+    if not (directory / "cayboard_jni.so").is_file():
         raise ValueError(f"APK has no T9 engine for device ABI {abi}.")
 
 
@@ -211,10 +211,10 @@ def snapshot_engine(command, args, remote, output, abi):
         command.shell("cp", source, remote + "/base.apk")
         lib_dir = source.rsplit("/", 1)[0] + "/lib/" + ABI_DIRECTORIES[abi]
         names = command.shell("ls", lib_dir).splitlines()
-        if "librime_jni.so" not in names:
+        if "cayboard_jni.so" not in names:
             raise ValueError("Installed native libraries are unavailable; provide --apk instead.")
         for name in names:
-            if not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", name):
+            if name != "cayboard_jni.so" and not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", name):
                 raise ValueError(f"Unexpected installed library filename: {name}")
             library_source = lib_dir + "/" + name
             library_hash = remote_hash(command, library_source)
@@ -227,10 +227,10 @@ def snapshot_engine(command, args, remote, output, abi):
         engine.update(package=args.package, apk_path=source, apk_sha256=before)
     if args.library_dir:
         override = args.library_dir.resolve()
-        if not (override / "librime_jni.so").is_file():
-            raise ValueError("--library-dir must contain librime_jni.so compiled for the device ABI.")
+        if not (override / "cayboard_jni.so").is_file():
+            raise ValueError("--library-dir must contain cayboard_jni.so compiled for the device ABI.")
         for path in sorted(override.glob("*.so")):
-            if not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", path.name):
+            if path.name != "cayboard_jni.so" and not re.fullmatch(r"lib[A-Za-z0-9_.+-]+\.so", path.name):
                 raise ValueError("Invalid override library filename.")
             command.adb_run("push", str(path), remote + "/lib/" + path.name)
             if remote_hash(command, remote + "/lib/" + path.name) != digest(path):
@@ -311,13 +311,13 @@ def run_replay(args):
         (output / "input-fixture.json").write_bytes(fixture_bytes)
         save(output / "fixture.json", fixture)
     command = Commands(adb, output / "commands.log")
-    remote = "/data/local/tmp/cyime-chat-audit-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
+    remote = "/data/local/tmp/cayboard-chat-audit-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
     for name, default in (("variant", "digits"), ("schema", "t9_pinyin"), ("schema_patch", "")):
         if not hasattr(args, name):
             setattr(args, name, default)
     letters = args.variant.startswith("letters")
     if letters != (args.schema != "t9_pinyin"):
-        raise ValueError("--variant letters goes with a 26-key --schema (rime_ice); digits with t9_pinyin")
+        raise ValueError("--variant letters goes with a 26-key --schema (cayboard_pinyin); digits with t9_pinyin")
     protocol = dict(key_delay_ms=args.key_delay_ms, row_limit=20, boundary_limit=100,
                     settle_timeout_ms=5000, modes=["continuous"] if letters else ["continuous", "paused"],
                     variant=args.variant, schema=args.schema, schema_patch=args.schema_patch, runtime="android")
@@ -347,7 +347,7 @@ def run_replay(args):
         command.adb_run("push", str(output / "fixture.json"), remote + "/fixture.json")
         print(f"Replaying {len(fixture['cases'])} cases on {command.serial}; immediate + paused", flush=True)
         command.shell("env", "CLASSPATH=" + remote + "/replay.dex", "LD_LIBRARY_PATH=" + remote + "/lib",
-                      "app_process", "/system/bin", "com.cyime.audit.ChatReplay", "--apk", remote + "/base.apk",
+                      "app_process", "/system/bin", "com.cayboard.audit.ChatReplay", "--apk", remote + "/base.apk",
                       "--lib-dir", remote + "/lib", "--root", remote + "/run", "--corpus", remote + "/fixture.json",
                       "--output", remote + "/replay.jsonl", "--modes", ",".join(protocol["modes"]),
                       "--key-delay-ms", args.key_delay_ms, "--variant", args.variant, "--schema", args.schema,
@@ -441,7 +441,7 @@ def main(argv=None):
     run.add_argument("--keep-device", action="store_true", help="Retain this run's isolated device resources for diagnostics")
     run.add_argument("--variant", choices=["digits", "letters", "letters14"], default="digits",
                      help="letters: type each case's full pinyin into a 26-key --schema; letters14: the same on the 14-key keyboard (--schema pinyin_14jian); latency and first choices only")
-    run.add_argument("--schema", default="t9_pinyin", help="Rime schema to deploy and replay (rime_ice with --variant letters)")
+    run.add_argument("--schema", default="t9_pinyin", help="Input schema to deploy and replay (cayboard_pinyin with --variant letters)")
     run.add_argument("--schema-patch", default="",
                      help='"key=value;..." written as <schema>.custom.yaml before deployment, e.g. '
                           '"translator/max_sentences=1;t9/sentence_rescore=false" to measure a setting off')

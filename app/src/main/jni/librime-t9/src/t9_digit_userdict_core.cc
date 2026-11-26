@@ -29,10 +29,10 @@ double T9DigitUserDictCore::FormulaP(double s, double u, double t, double d) {
 }
 
 // static
-std::string T9DigitUserDictCore::BuildLookupKey(const std::string& rime_input) {
+std::string T9DigitUserDictCore::BuildLookupKey(const std::string& engine_input) {
   std::string left_pinyin;
   std::string digits;
-  for (char c : rime_input) {
+  for (char c : engine_input) {
     if (c >= '2' && c <= '9') {
       digits += c;
     } else if (std::isalpha(static_cast<unsigned char>(c))) {

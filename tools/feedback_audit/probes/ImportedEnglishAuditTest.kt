@@ -5,7 +5,7 @@ import android.content.res.AssetManager
 import com.cayboard.association.AssociationService
 import com.cayboard.service.PredictionManager
 import com.cayboard.settings.CellDictionaryManager
-import com.cayboard.settings.CellDictionaryRime
+import com.cayboard.settings.CellDictionaryEngine
 import com.cayboard.settings.SchemaMeta
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -30,27 +30,27 @@ class ImportedEnglishAuditTest {
         whenever(assets.list("")).thenReturn(arrayOf("english_trie.bin"))
         whenever(assets.open("english_trie.bin")).thenAnswer { trie.inputStream() }
         val prediction = PredictionManager(app, this, {})
-        val word = "cyimequokka"
-        suspend fun hasWord() = prediction.getEnglishAssociations("cyimequok").any { it.equals(word, true) }
+        val word = "cayboardquokka"
+        suspend fun hasWord() = prediction.getEnglishAssociations("cayboardquok").any { it.equals(word, true) }
         assertTrue("Bundled completion must work", "hello" in prediction.getEnglishAssociations("hel"))
         assertFalse("Unique word must initially be absent", hasWord())
         val store = CellDictionaryManager.store(app)
         val entry = store.install("你好 ni hao\n$word\n".toByteArray())
         assertEquals(listOf(word), store.englishWords(entry.id))
         val rime = temp.newFolder()
-        val schemas = listOf(SchemaMeta("rime_ice", "拼音"))
-        File(rime, "rime_ice.schema.yaml").writeText("translator:\n  dictionary: rime_ice\n")
+        val schemas = listOf(SchemaMeta("cayboard_pinyin", "拼音"))
+        File(rime, "cayboard_pinyin.schema.yaml").writeText("translator:\n  dictionary: cayboard_pinyin\n")
         fun apply(enabled: Boolean) {
             val ids = if (enabled) setOf(entry.id) else emptySet()
             store.select(entry.id, enabled)
             store.selectEnglish(enabled)
             store.activate(ids, enabled) { active, english, _ ->
-                CellDictionaryRime.prepare(rime, store, schemas, active, includeEnglish = english)
+                CellDictionaryEngine.prepare(rime, store, schemas, active, includeEnglish = english)
             }
         }
         apply(true)
         assertTrue(store.read().appliedEnglish)
-        assertTrue(File(rime, "user_cyime_cells_en26.dict.yaml").readText().contains(word))
+        assertTrue(File(rime, "user_cayboard_cells_en26.dict.yaml").readText().contains(word))
         val withDictionary = hasWord()
         apply(false)
         assertFalse("Disabling the import should remove the word", hasWord())

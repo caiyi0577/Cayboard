@@ -116,7 +116,7 @@ internal fun markPreeditCaret(preedit: String, input: String, caret: Int, confir
     val tail = input.drop(confirmed)
     fun separator(c: Char) = c == ' ' || c == '\''
     // 从末尾往前数出未选定编码对应的显示字符，确认它们就是这些字母。
-    // Rime 只转换光标前的编码，光标后原样接在末尾；只核对这一段，双拼也能标出光标。
+    // 输入引擎只转换光标前的编码，光标后原样接在末尾；只核对这一段，双拼也能标出光标。
     var index = preedit.length
     var matched = 0
     val after = tail.length - (caret - confirmed)

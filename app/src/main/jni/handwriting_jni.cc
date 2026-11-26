@@ -15,8 +15,8 @@
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 // 每次推理的输出维度/候选数日志默认关闭（叠写一笔触发多次推理，正常时纯刷屏）；
-// 需要排查时在 CMakeLists 的目标上加 -DXIME_HW_VERBOSE 重新编译即可打开
-// #define XIME_HW_VERBOSE
+// 需要排查时在 CMakeLists 的目标上加 -DCAYBOARD_HW_VERBOSE 重新编译即可打开
+// #define CAYBOARD_HW_VERBOSE
 
 static OrtSession* g_hw_session = nullptr;
 static OrtAllocator* g_hw_allocator = nullptr;
@@ -307,7 +307,7 @@ Java_com_cayboard_handwriting_HandwritingNativeEngine_nativePredict(
         return nullptr;
     }
 
-#ifdef XIME_HW_VERBOSE
+#ifdef CAYBOARD_HW_VERBOSE
     LOGD("Output shape: [%ld]", (long)output_dims[0]);
     for (size_t i = 0; i < dims_count; i++) {
         LOGD("  dim[%zu] = %ld", i, (long)output_dims[i]);
@@ -370,7 +370,7 @@ Java_com_cayboard_handwriting_HandwritingNativeEngine_nativePredict(
 
     api->ReleaseValue(output_tensor);
 
-#ifdef XIME_HW_VERBOSE
+#ifdef CAYBOARD_HW_VERBOSE
     LOGD("Predicted %lld candidates", (long long)k);
 #endif
     return result;

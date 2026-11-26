@@ -52,7 +52,7 @@ import java.io.File
 /**
  * 候选栏两端按钮（用户 11-03）：最多两个——左边取消「<」，最右展开；收起键盘只在空闲时有。
  * B站反馈（10-31）的「候选词间距加宽」默认关，关着时样子不变。
- * 设了 CYIME_RENDER_OUT=<目录> 时出对照图 candidate-feedback-0.png（原样）、-1.png（加宽间距），各主题。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时出对照图 candidate-feedback-0.png（原样）、-1.png（加宽间距），各主题。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w900dp-h1400dp-hdpi")
@@ -142,7 +142,7 @@ class CandidateBarFeedbackTest {
                 val canvas = android.graphics.Canvas(bmp)
                 canvas.translate(-rect.left, -rect.top)
                 root.draw(canvas)
-                System.getenv("CYIME_RENDER_OUT")?.let { out ->
+                System.getenv("CAYBOARD_RENDER_OUT")?.let { out ->
                     File(out, "$tag-$phase.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 }
                 bmp
@@ -280,7 +280,7 @@ class CandidateBarFeedbackTest {
     }
 
     @Test fun renderCandidateFeedback() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         com.cayboard.ui.keyboard.AppFonts.initialize(context)
         val themes = listOf(Triple("soft_blue", false, "柔和蓝·浅"), Triple("soft_blue", true, "柔和蓝·深"),

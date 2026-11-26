@@ -8,7 +8,7 @@
 - rare：较少用的字（GB2312 里常用度接下来的 RARE 个，有读音的，偏旁部件不要），附加是第一个读音，写在题目下方；
 - word：常用两字词（两个字都是 char），附加是拼音（空格分开、不带声调），手写的词题和滑行的中文、九键题共用。
 
-来源：hanzi_frequency.tsv（字的常用度）、hanzi_pinyin.tsv（读音）、rime/pinyin_simp.dict.yaml（词和权重）。
+来源：hanzi_frequency.tsv（字的常用度）、hanzi_pinyin.tsv（读音）、cayboard_base/pinyin_simp.dict.yaml（词和权重）。
 去掉 BLOCK 里的不雅词。用法：python tools/handwriting_training/build_contribute_pool.py
 """
 from __future__ import annotations
@@ -59,7 +59,7 @@ def readings(assets: pathlib.Path) -> dict[str, str]:
 def words(assets: pathlib.Path, common: set[str], count: int) -> list[tuple[str, str]]:
     best: dict[str, tuple[int, str]] = {}
     in_body = False
-    for line in (assets / "rime/pinyin_simp.dict.yaml").read_text(encoding="utf-8").splitlines():
+    for line in (assets / "cayboard_base/pinyin_simp.dict.yaml").read_text(encoding="utf-8").splitlines():
         if line == "...":
             in_body = True
             continue

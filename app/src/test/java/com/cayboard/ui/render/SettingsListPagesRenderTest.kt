@@ -39,7 +39,7 @@ import java.io.File
 
 /**
  * 统一样式后的三张列表页放在一起看：「导入词库」、布局管理、已安装的方案（已启用的组合一张卡片），
- * 再加「键盘布局」页看新图标。浅色、深色各一张。只在设置了 CYIME_RENDER_OUT 时出图。
+ * 再加「键盘布局」页看新图标。浅色、深色各一张。只在设置了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1840dp-h1000dp-mdpi")
@@ -48,12 +48,12 @@ class SettingsListPagesRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderListPages() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
         val dark = mutableStateOf(false)
-        val schemas = listOf(SchemaMeta("rime_ice", "中文26键"), SchemaMeta("t9_pinyin", "中文九键", "3.0.0", "Dvel"),
+        val schemas = listOf(SchemaMeta("cayboard_pinyin", "中文26键"), SchemaMeta("t9_pinyin", "中文九键", "3.0.0", "Dvel"),
             SchemaMeta(InputModes.ENGLISH, "英文"))
         rule.setContent {
             CayboardTheme(darkTheme = dark.value) {

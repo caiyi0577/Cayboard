@@ -6,7 +6,7 @@ text<TAB>spelling<TAB>ln(count / count of the text's main reading) for the readi
 xxdi from xx地. Duplicates follow Rime: the first imported table wins. cn_dicts/tencent is skipped
 (one reading per word, and a million lines the Gradle task would have to hold).
 
-    python tools/ime_lab/reading_table.py app/build/generated/chinese-assets/rime_ice out.txt
+    python tools/ime_lab/reading_table.py app/build/generated/chinese-assets/cayboard_pinyin out.txt
 """
 import argparse
 import math
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 def imports(root: Path):
-    text = (root / "rime_ice.dict.yaml").read_text(encoding="utf-8")
+    text = (root / "cayboard_pinyin.dict.yaml").read_text(encoding="utf-8")
     block = text.split("import_tables:", 1)[1].split("\n...", 1)[0]
     return re.findall(r"(?m)^  - ([^\s#]+)", block)
 

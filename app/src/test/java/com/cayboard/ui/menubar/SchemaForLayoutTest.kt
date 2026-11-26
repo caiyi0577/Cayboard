@@ -16,7 +16,7 @@ import org.junit.Test
 
 /** 布局面板点一下布局就切换，不用再点方案；布局没有当前方案时照样切换，但要标出来并提示。 */
 class SchemaForLayoutTest {
-    private val entries = listOf("rime_ice", "double_pinyin_flypy", "double_pinyin_flypy_14jian", "pinyin_14jian", "t9_pinyin")
+    private val entries = listOf("cayboard_pinyin", "double_pinyin_flypy", "double_pinyin_flypy_14jian", "pinyin_14jian", "t9_pinyin")
         .map { SchemaInfo(it, it, "", "", "") }
     private fun entry(id: String) = (entries + extra).first { it.schemaId == id }
     private val extra = listOf("double_pinyin_mspy", "wubi86").map { SchemaInfo(it, it, "", "", "") }
@@ -31,8 +31,8 @@ class SchemaForLayoutTest {
         InputProfileSelection.switchLayout(list, entry(id), layoutId, all)
 
     @Test fun keepsCurrentSchemeWhenTheLayoutHasIt() {
-        assertEquals("pinyin_14jian", switch("rime_ice", "qwerty_14")?.entry?.schemaId)
-        assertEquals(true, switch("rime_ice", "qwerty_14")?.keepsScheme)
+        assertEquals("pinyin_14jian", switch("cayboard_pinyin", "qwerty_14")?.entry?.schemaId)
+        assertEquals(true, switch("cayboard_pinyin", "qwerty_14")?.keepsScheme)
         // 小鹤双拼的 14 键条目是同一方案。
         assertEquals("double_pinyin_flypy_14jian", switch("double_pinyin_flypy", "qwerty_14")?.entry?.schemaId)
         assertEquals(true, switch("double_pinyin_flypy", "qwerty_14")?.keepsScheme)
@@ -73,7 +73,7 @@ class SchemaForLayoutTest {
         assertEquals("japanese", InputProfileSelection.switchLayout(listOf(japanese), japanese, "pinyin_colemak", all)?.entry?.schemaId)
         val chinese = all.filter { it.language == InputLanguage.CHINESE }
         assertEquals("pinyin_cyletix10",
-            InputProfileSelection.switchLayout(chinese, all.first { it.schemaId == "rime_ice" }, "pinyin_cyletix10", all)?.entry?.schemaId)
+            InputProfileSelection.switchLayout(chinese, all.first { it.schemaId == "cayboard_pinyin" }, "pinyin_cyletix10", all)?.entry?.schemaId)
     }
 
     /** 用户 10-31：假名九键跟中文九键一样排在 26 键后面；Colemak 这类借来的字母排列排最后。 */
@@ -96,6 +96,6 @@ class SchemaForLayoutTest {
     }
 
     @Test fun unknownLayoutSwitchesNothing() {
-        assertNull(switch("rime_ice", "japanese_kana"))
+        assertNull(switch("cayboard_pinyin", "japanese_kana"))
     }
 }

@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_NGRAM_FORMAT_H_
-#define CYIME_T9_NGRAM_FORMAT_H_
+#ifndef CAYBOARD_T9_NGRAM_FORMAT_H_
+#define CAYBOARD_T9_NGRAM_FORMAT_H_
 
 // File formats of the T9 word trigram model (version 2 below, compact version 3 after it), shared by tools/ime_lab/ngram/ngram_build.cc
 // and the joint decoder. Little endian, memory-mapped, sections 8-byte aligned.
@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace cyime_t9_ngram {
+namespace cayboard_t9_ngram {
 
 constexpr char kMagic[8] = {'C', 'Y', 'T', '9', 'N', 'G', 'R', '2'};
 constexpr uint32_t kVersion = 2;
@@ -114,6 +114,6 @@ inline uint64_t Hash(const char* text, size_t size) {
   return h ? h : 1;
 }
 
-}  // namespace cyime_t9_ngram
+}  // namespace cayboard_t9_ngram
 
-#endif  // CYIME_T9_NGRAM_FORMAT_H_
+#endif  // CAYBOARD_T9_NGRAM_FORMAT_H_

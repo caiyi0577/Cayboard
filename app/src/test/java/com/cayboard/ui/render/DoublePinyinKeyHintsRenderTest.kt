@@ -44,7 +44,7 @@ import java.io.File
 /**
  * 双拼键位提示：小鹤、微软（分号键）双拼 26 键，开关关/开对照；手机/平板宽度，浅、深、纯黑主题，玻璃开关。
  * 开着时键上写 zh/ch/sh（右上）和韵母（字母下面）；这里同时关掉上下角标提示，只看键位提示本身
- * （11-01 起角标提示开着时自动分层，见 keyHintsWithCornersNeverOverlap）。只在设了 CYIME_RENDER_OUT 时出图。
+ * （11-01 起角标提示开着时自动分层，见 keyHintsWithCornersNeverOverlap）。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -63,7 +63,7 @@ class DoublePinyinKeyHintsRenderTest {
     }
 
     @Test fun renderDoublePinyinKeyHints() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
@@ -110,19 +110,19 @@ class DoublePinyinKeyHintsRenderTest {
             }
         }
         // 全拼不显示。
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
-        rule.runOnIdle { schema = "rime_ice"; width = 360; height = 240; theme = "soft_blue"; dark = false; glass = false; hints = true }
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
+        rule.runOnIdle { schema = "cayboard_pinyin"; width = 360; height = 240; theme = "soft_blue"; dark = false; glass = false; hints = true }
         rule.waitForIdle()
         assertFalse("全拼不显示双拼键位提示", shown("zh"))
-        shot(out, "rime_ice-360-hints-ignored", "layout-body")
+        shot(out, "cayboard_pinyin-360-hints-ignored", "layout-body")
     }
 
     /**
      * 双拼键位提示和上下角标提示都开着（11-01 起不用「和角标一起显示」开关，自动分层）：声母、上角标在上，字母居中，韵母、下角标在下。手机、平板宽度，ZXCV 编辑角标开/关；
-     * 每个字母键上的这些字互不重叠（按文字框算，比字形本身更严）。设了 CYIME_RENDER_OUT 时另外出图。
+     * 每个字母键上的这些字互不重叠（按文字框算，比字形本身更严）。设了 CAYBOARD_RENDER_OUT 时另外出图。
      */
     @Test fun keyHintsWithCornersNeverOverlap() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
         KeyboardThemes.initFromConfig(app)

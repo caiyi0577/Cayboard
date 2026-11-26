@@ -5,7 +5,7 @@ for l in open(sys.argv[1], encoding='utf-8'):
     k, v = l.rstrip('\n').split('\t'); g[k] = v
 w8105 = {}
 body=False
-for l in open('app/build/generated/chinese-assets/rime_ice/cn_dicts/8105.dict.yaml', encoding='utf-8'):
+for l in open('app/build/generated/chinese-assets/cayboard_pinyin/cn_dicts/8105.dict.yaml', encoding='utf-8'):
     if l.strip()=='...': body=True; continue
     if not body or l.startswith('#') or not l.strip(): continue
     p=l.rstrip('\n').split('\t')

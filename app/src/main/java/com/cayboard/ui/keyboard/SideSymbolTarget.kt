@@ -19,7 +19,7 @@ enum class SideSymbolTarget(val key: String, val label: String, val where: Strin
 
     val prefKey: String get() = "side_symbols_$key"
 
-    /** 未设置时键盘使用的默认内容（九键、笔画来自 xime.yaml）。 */
+    /** 未设置时键盘使用的默认内容（九键、笔画来自 cayboard.yaml）。 */
     fun defaults(): List<String> = when (this) {
         T9 -> KeysConfigHelper.getT9SideSymbols()
         STROKE -> KeysConfigHelper.getStrokeSideSymbols()

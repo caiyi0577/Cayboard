@@ -9,7 +9,7 @@ import java.io.File
 /**
  * 启动时清掉上次进程被杀（覆盖安装、系统回收）时没来得及删的临时文件，以及不再使用的模型。
  * 这些文件只在操作正常结束时删除：下载到一半的模型、导入和方案安装的暂存、
- * 模型替换时挪开的旧目录、发布到 rime/ 途中的链接，一个就可能几百 MB。
+ * 模型替换时挪开的旧目录、发布到输入数据目录途中的链接，一个就可能几百 MB。
  */
 object StorageHousekeeping {
     private const val TAG = "StorageHousekeeping"
@@ -30,11 +30,11 @@ object StorageHousekeeping {
      * 只收集调用时已经存在的条目，所以必须在本进程开始任何下载、导入或安装之前调用；
      * 之后新建的临时文件名字带新的 UUID，不会被这次清理碰到。
      */
-    fun findLeftovers(cacheDir: File, modelsDir: File, rimeDir: File): List<File> =
+    fun findLeftovers(cacheDir: File, modelsDir: File, inputDataDir: File): List<File> =
         cacheDir.listFiles { file -> CACHE_TEMP.matches(file.name) }.orEmpty().toList() +
             modelsDir.listFiles { file -> MODEL_PREVIOUS.matches(file.name) || MODEL_STAGING.matches(file.name) ||
                 file.name in RETIRED_MODELS }.orEmpty() +
-            rimeDir.listFiles { file -> file.isFile && RUNTIME_INSTALLING.matches(file.name) }.orEmpty()
+            inputDataDir.listFiles { file -> file.isFile && RUNTIME_INSTALLING.matches(file.name) }.orEmpty()
 
     /** 返回腾出的字节数。被挪开的旧模型若原位置已空（替换中途被杀），放回原处而不是删除。 */
     fun removeLeftovers(files: List<File>): Long {
@@ -54,7 +54,7 @@ object StorageHousekeeping {
     /** 主进程启动时调用：同步列出残留（很快），后台删除。 */
     fun sweepAtStartup(context: Context, scope: CoroutineScope) {
         val leftovers = runCatching {
-            findLeftovers(context.cacheDir, StorageStats.modelsDir(context), StorageStats.rimeDir(context))
+            findLeftovers(context.cacheDir, StorageStats.modelsDir(context), StorageStats.inputDataDir(context))
         }.getOrDefault(emptyList())
         if (leftovers.isEmpty()) return
         scope.launch {

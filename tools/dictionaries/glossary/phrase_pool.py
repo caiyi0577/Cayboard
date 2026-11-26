@@ -1,10 +1,10 @@
-"""待翻译的常见短语池：rime_ice 里 2~6 字、没有整词英文（或只有逐词拼的 +）的条目，按权重排。量：假设都翻好，回放候选覆盖能到多少。"""
+"""待翻译的常见短语池：cayboard_pinyin 里 2~6 字、没有整词英文（或只有逐词拼的 +）的条目，按权重排。量：假设都翻好，回放候选覆盖能到多少。"""
 import sys, json, collections
 g = {}
 for l in open(sys.argv[1], encoding='utf-8'):
     if l.startswith('#'): continue
     k, v = l.rstrip('\n').split('\t'); g[k] = v
-D = 'app/build/generated/chinese-assets/rime_ice/cn_dicts/'
+D = 'app/build/generated/chinese-assets/cayboard_pinyin/cn_dicts/'
 lex = {}
 for f in ['base', 'ext', 'tencent']:
     body = False

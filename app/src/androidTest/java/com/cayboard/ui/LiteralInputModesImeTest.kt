@@ -18,8 +18,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.settings.InputModes
 import kotlinx.coroutines.runBlocking
@@ -34,7 +34,7 @@ class LiteralInputModesImeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
-    private val engine = RimeEngine.getInstance()
+    private val engine = InputEngine.getInstance()
     private lateinit var editor: EditText
     private val swipeDistance get() = 80f * context.resources.displayMetrics.density
     private val imeComponent get() = ComponentName(context, "com.cayboard.service.CayboardInputMethodService")
@@ -60,13 +60,13 @@ class LiteralInputModesImeTest {
         // A service-owned ComposeView outlives a test's ComposeTestRule. Reusing it in the
         // next test would keep the previous rule's disposed recomposer and invisible test root.
         stopKeyboardService()
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
         engine.initialize(user, shared)
         // This isolated IME test exercises optional Japanese schemes as well as the defaults.
         previousEnabledSchemas = com.cayboard.settings.SchemaManager.getEnabledSchemas(context)
         com.cayboard.settings.SchemaManager.setEnabledSchemas(context,
-            previousEnabledSchemas.orEmpty() + listOf("rime_ice", "t9_pinyin", "pinyin_14jian", "japanese", "japanese_kana"))
-        assertTrue(RimeConfigHelper.ensureDeployment(context))
+            previousEnabledSchemas.orEmpty() + listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian", "japanese", "japanese_kana"))
+        assertTrue(EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession())
         previousAsciiPunct = engine.getUserConfigBool("var/option/ascii_punct")
         previousFullShape = engine.getUserConfigBool("var/option/full_shape")
@@ -123,15 +123,15 @@ class LiteralInputModesImeTest {
     @Suppress("DEPRECATION") // Android still exposes this application's own running services.
     private fun stopKeyboardService() {
         val activityManager = context.getSystemService(ActivityManager::class.java)
-        val waitForEngineDestroy = RimeEngine.isInitialized() &&
+        val waitForEngineDestroy = InputEngine.isInitialized() &&
             activityManager.getRunningServices(Int.MAX_VALUE).any { it.service == imeComponent }
         shell("ime disable $imeId")
         rule.waitUntil(10_000) {
             activityManager.getRunningServices(Int.MAX_VALUE).none { it.service == imeComponent } &&
-                (!waitForEngineDestroy || !RimeEngine.isInitialized())
+                (!waitForEngineDestroy || !InputEngine.isInitialized())
         }
         // Service removal and delivery of onDestroy happen on different threads. Drain Main
-        // before initializing Rime again or allowing this test's recomposer to be disposed.
+        // before initializing the native input engine again or allowing this test's recomposer to be disposed.
         instrumentation.waitForIdleSync()
     }
 
@@ -180,7 +180,7 @@ class LiteralInputModesImeTest {
         rule.waitUntil(5000) { text().isEmpty() }
     }
 
-    @Test fun punctuationWidthWorksFromMenuIn26Keys() = verifyPunctuationWidth("rime_ice", "，")
+    @Test fun punctuationWidthWorksFromMenuIn26Keys() = verifyPunctuationWidth("cayboard_pinyin", "，")
     @Test fun punctuationWidthWorksFromMenuIn14Keys() = verifyPunctuationWidth("pinyin_14jian", "，")
     @Test fun punctuationWidthWorksFromMenuInNineKeys() = verifyPunctuationWidth("t9_pinyin", "，")
     @Test fun englishSymbolCategoryKeepsLiteralGlyphsInFullWidthChineseT9() {
@@ -305,7 +305,7 @@ class LiteralInputModesImeTest {
     }
 
     @Test fun shiftHoldAndSlideInChineseReturnToPinyinAfterRelease() {
-        chooseMode("rime_ice")
+        chooseMode("cayboard_pinyin")
         holdShiftAndType("a", "b")
         assertSettled("AB")
         slideShiftTo("p")

@@ -5,7 +5,7 @@ import com.charleskorn.kaml.YamlMap
 import com.charleskorn.kaml.YamlScalar
 import kotlinx.serialization.json.JsonPrimitive
 
-/** Repairs duplicate append lists in the direct children of a Rime patch. Cell dictionary
+/** Repairs duplicate append lists in the direct children of a schema patch. Cell dictionary
  * entries stay inside their markers so disabling the dictionary removes only its translator. */
 internal object TranslatorAppendPatch {
     private const val APPEND = "engine/translators/+"
@@ -30,7 +30,7 @@ internal object TranslatorAppendPatch {
             var until = i + 1
             for (next in i + 1 until end) {
                 val line = lines[next]
-                if (line.trim() == CellDictionaryRime.START || line.trim() == CellDictionaryRime.END) break
+                if (line.trim() == CellDictionaryEngine.START || line.trim() == CellDictionaryEngine.END) break
                 if (line.isBlank() || line.trimStart().startsWith("#")) continue
                 if (!line.startsWith(indent + " ")) break
                 until = next + 1
@@ -40,8 +40,8 @@ internal object TranslatorAppendPatch {
             val list = map.entries.values.single() as? YamlList ?: error("翻译器追加项不是列表")
             val values = list.items.map { (it as? YamlScalar)?.content ?: error("翻译器名称不是文本") }
             val managed = lines.subList(patch + 1, i).lastOrNull {
-                it.trim() == CellDictionaryRime.START || it.trim() == CellDictionaryRime.END
-            }?.trim() == CellDictionaryRime.START
+                it.trim() == CellDictionaryEngine.START || it.trim() == CellDictionaryEngine.END
+            }?.trim() == CellDictionaryEngine.START
             Entry(i, until, indent, managed, values)
         }
         val newline = if (source.contains("\r\n")) "\r" else ""

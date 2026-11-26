@@ -85,7 +85,7 @@ class HardwareSideToolbarTest {
         rule.onNodeWithText("底部候选").assertDoesNotExist()
     }
     private fun shot(name: String) {
-        System.getenv("CYIME_RENDER_OUT")?.let {dir ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let {dir ->
             val view=rule.activity.window.decorView
             val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             rule.runOnIdle {view.draw(android.graphics.Canvas(image))}

@@ -5,11 +5,24 @@ import java.io.File
 import java.io.ByteArrayOutputStream
 import org.json.JSONObject
 
-/** 统一中文词库；标准 Rime ID 不变，现有市场版本和个人补丁优先。 */
+/** 统一中文词库；现有方案 ID 不变，市场版本和个人补丁优先。 */
 object ChineseSchemas {
-    val ids = listOf("t9_pinyin", "rime_ice", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian") + BuiltinLetterLayouts.ids
-    private const val ADDED = "cyime_chinese_defaults_v1"
-    private const val DOUBLE_PINYIN_ADDED = "cyime_double_pinyin_defaults_v1"
+    val ids = listOf("t9_pinyin", "cayboard_pinyin", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian") + BuiltinLetterLayouts.ids
+    private const val ADDED = "cayboard_chinese_defaults_v1"
+    private const val LEGACY_ADDED = com.cayboard.engine.compat.LegacyNames.OLD_CHINESE_DEFAULTS
+    private const val DOUBLE_PINYIN_ADDED = "cayboard_double_pinyin_defaults_v1"
+    private const val LEGACY_DOUBLE_PINYIN_ADDED = com.cayboard.engine.compat.LegacyNames.OLD_DOUBLE_PINYIN_DEFAULTS
+
+    internal fun markDefaultsAdded(context: Context) {
+        SettingsPreferences.getPrefsPublic(context).edit().putBoolean(ADDED, true).apply()
+    }
+
+    private fun hasMigrationFlag(prefs: android.content.SharedPreferences, key: String, legacyKey: String): Boolean {
+        if (prefs.getBoolean(key, false)) return true
+        if (!prefs.getBoolean(legacyKey, false)) return false
+        prefs.edit().putBoolean(key, true).remove(legacyKey).apply()
+        return true
+    }
 
     /** Only known, unedited predecessor bytes may migrate; personal/market ownership wins above. */
     internal fun isPreviousMergedBuiltin(path: String, bytes: ByteArray): Boolean {
@@ -62,7 +75,7 @@ object ChineseSchemas {
                 children.forEach { install(directory, if (relative.isEmpty()) it else "$relative/$it") }
                 return
             }
-            // 许可随 APK 分发，不作为 Rime 配置安装。
+            // 许可随 APK 分发，不作为输入配置安装。
             if (relative.endsWith(".md") || relative == "LICENSE") return
             if (com.cayboard.model.CandidateModelAssets.isDisabledAsset(context, relative)) return
             val destination = File(target, relative)
@@ -72,9 +85,9 @@ object ChineseSchemas {
                 val bytes = readSmallAsset(context, path) ?: return
                 val current = destination.readBytes()
                 if (current.contentEquals(bytes)) return
-                val oldBuiltin = readSmallAsset(context, "rime/$relative")
+                val oldBuiltin = readSmallAsset(context, "cayboard_base/$relative")
                 val old14 = if (relative == "pinyin_14jian.schema.yaml")
-                    bytes.toString(Charsets.UTF_8).replace("dictionary: rime_ice", "dictionary: pinyin_simp").toByteArray() else null
+                    bytes.toString(Charsets.UTF_8).replace("dictionary: cayboard_pinyin", "dictionary: pinyin_simp").toByteArray() else null
                 // 仅迁移字节完全匹配的旧内置小配置，不以方案名判断用户文件。
                 if (oldBuiltin?.contentEquals(current) != true && old14?.contentEquals(current) != true &&
                     !isPreviousMergedBuiltin(relative, current)) return
@@ -92,8 +105,8 @@ object ChineseSchemas {
                 if (replacement != null) SchemaManifestManager.recordBuiltinReplacement(context, relative, destination)
             } finally { temporary.delete() }
         }
-        install("rime_ice")
-        install("rime_chinese")
+        install("cayboard_pinyin")
+        install("cayboard_chinese")
     }
 
     /** Offer the experimental layouts without enabling them or rewriting user schemas. */
@@ -106,7 +119,7 @@ object ChineseSchemas {
                 val old = destination.readText()
                 val updated = EnglishCandidatePolicy.install(old)
                 if (updated == old) continue
-                val backup = File(context.filesDir, "rime-upgrade-backups/english-policy/${destination.name}")
+                val backup = File(context.filesDir, "cayboard-upgrade-backups/english-policy/${destination.name}")
                 if (!backup.exists()) { backup.parentFile!!.mkdirs(); backup.writeText(old) }
                 val pending = File(target, "$id.schema.yaml.installing")
                 try {
@@ -118,7 +131,7 @@ object ChineseSchemas {
             if (destination.exists()) continue
             val pending = File(target, "$id.schema.yaml.installing")
             try {
-                context.assets.open("rime_ice/$id.schema.yaml").use { input ->
+                context.assets.open("cayboard_pinyin/$id.schema.yaml").use { input ->
                     pending.outputStream().use { input.copyTo(it) }
                 }
                 java.nio.file.Files.move(pending.toPath(), destination.toPath())
@@ -137,12 +150,13 @@ object ChineseSchemas {
      */
     private fun addDoublePinyinDefaults(context: Context, enabled: List<String>): List<String> {
         val prefs = SettingsPreferences.getPrefsPublic(context)
-        if (prefs.getBoolean(DOUBLE_PINYIN_ADDED, false) || !prefs.getBoolean(ADDED, false)) return enabled
+        if (hasMigrationFlag(prefs, DOUBLE_PINYIN_ADDED, LEGACY_DOUBLE_PINYIN_ADDED) ||
+            !hasMigrationFlag(prefs, ADDED, LEGACY_ADDED)) return enabled
         if (!CayboardInputDefaults.addsDoublePinyinToBar(isFreshInstall(context), com.cayboard.BuildConfig.ELDER)) {
             prefs.edit().putBoolean(DOUBLE_PINYIN_ADDED, true).apply()
             return enabled
         }
-        val available = SchemaManager.getRimeDir(context).listFiles().orEmpty()
+        val available = SchemaManager.getInputDataDir(context).listFiles().orEmpty()
             .filter { it.name.endsWith(".schema.yaml") }.map { it.name.removeSuffix(".schema.yaml") }.toSet()
         val updated = CayboardInputDefaults.withDoublePinyin(enabled, available) ?: return enabled
         if (updated != enabled) SchemaManager.setEnabledSchemas(context, updated)
@@ -152,13 +166,13 @@ object ChineseSchemas {
 
     private fun addChineseDefaults(context: Context, enabled: List<String>): List<String> {
         val prefs = SettingsPreferences.getPrefsPublic(context)
-        val available = SchemaManager.getRimeDir(context).listFiles().orEmpty()
+        val available = SchemaManager.getInputDataDir(context).listFiles().orEmpty()
             .filter { it.name.endsWith(".schema.yaml") }.map { it.name.removeSuffix(".schema.yaml") }.toSet()
         val normalized = CayboardInputDefaults.restoreStoredCompanionParents(
             CayboardInputDefaults.canonicalIds(enabled, available), available)
         // An early UI read must not consume the migration before bundled files are installed.
         if (!available.containsAll(CayboardInputDefaults.recommended)) return normalized
-        if (prefs.getBoolean(ADDED, false)) {
+        if (hasMigrationFlag(prefs, ADDED, LEGACY_ADDED)) {
             // Persist canonical IDs too: a stale custom.yaml patch otherwise overrides default.yaml at deploy time.
             val repaired = CayboardInputDefaults.withCompanions(
                 normalized.ifEmpty { CayboardInputDefaults.recommended.filter { it in available } }, available)
@@ -183,7 +197,7 @@ object ChineseSchemas {
     }.getOrDefault(false)
 
     fun displayName(id: String, original: String): String = CustomKeyboardLayouts.find(id)?.name ?: when (id) {
-        "rime_ice" -> "中文26键"
+        "cayboard_pinyin" -> "中文26键"
         QwjrtkLayout.ID -> "QWJRTK（双拇指）"
         Cyletix10Layout.ID -> "Cyletix10（实验）"
         "pinyin_simp" -> "旧版简体拼音"

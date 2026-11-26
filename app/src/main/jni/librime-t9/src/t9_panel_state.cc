@@ -113,11 +113,11 @@ std::string GetLeftPanelStateString(const T9PanelStateContext& ctx) {
 }
 
 std::string GetRemainingDigits(const T9Buffer& input_buffer) {
-    // 返回 ToRimeInputString() 而非 unassigned()：
-    // partial commit 后，forceSendToRime 需要把剩余 buffer 完整发给 RIME，
+    // 返回 ToEngineInputString() 而非 unassigned()：
+    // partial commit 后，上层 resendInputToEngine 需要把剩余 buffer 完整发给引擎，
     // 包括剩余 selections（如 "g'7"），否则只发 unassigned="7" 会丢失 selections，
-    // 导致 RIME 候选词不匹配、预编辑文本错误。
-    return input_buffer.ToRimeInputString();
+    // 导致 引擎候选词不匹配、预编辑文本错误。
+    return input_buffer.ToEngineInputString();
 }
 
 void GetFirstSyllableOptions(const std::string& digits, int max_results,

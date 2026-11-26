@@ -88,9 +88,9 @@ def export(chats, notebook, dictionary, output):
     # Raw occurrence counts, not probabilities or Rime userdb commits. A normal
     # dictionary pack compiles these through Rime's existing weight mechanism.
     body = "\n".join(f"{word}\t{code}\t{count}" for word, code, count, _ in accepted)
-    (output / "cyime_corpus_words.dict.yaml").write_text(
+    (output / "cayboard_corpus_words.dict.yaml").write_text(
         "# Private corpus frequency lexicon. Review before installation.\n---\n"
-        "name: cyime_corpus_words\nversion: '1'\nsort: by_weight\nuse_preset_vocabulary: false\n...\n"
+        "name: cayboard_corpus_words\nversion: '1'\nsort: by_weight\nuse_preset_vocabulary: false\n...\n"
         + body + "\n", encoding="utf-8")
     (output / "words.json").write_text(json.dumps([
         dict(text=w, code=c, count=n, documents=d) for w, c, n, d in accepted], ensure_ascii=False, indent=2), encoding="utf-8")

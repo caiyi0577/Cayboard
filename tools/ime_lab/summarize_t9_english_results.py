@@ -44,8 +44,8 @@ def entries(text):
 
 old_apk = ROOT / "app/build/outputs/t9-fix/Cayboard-T9-delete-fix-20261002-debug-x86_64.apk"
 with zipfile.ZipFile(old_apk) as archive:
-    old_entries = entries(archive.read("assets/rime_ice/cyime_t9_english.dict.yaml").decode())
-new_entries = entries((ROOT / "app/build/generated/chinese-assets/rime_ice/cyime_t9_english.dict.yaml").read_text(encoding="utf-8"))
+    old_entries = entries(archive.read("assets/cayboard_pinyin/cayboard_t9_english.dict.yaml").decode())
+new_entries = entries((ROOT / "app/build/generated/chinese-assets/cayboard_pinyin/cayboard_t9_english.dict.yaml").read_text(encoding="utf-8"))
 old_keys = {tuple(row[:2]) for row in old_entries}
 new_keys = {tuple(row[:2]) for row in new_entries}
 assert not old_keys - new_keys
@@ -60,7 +60,7 @@ for abi in ("arm64-v8a", "x86_64"):
         digest = hashlib.file_digest(source, "sha256").hexdigest()
     with zipfile.ZipFile(apk) as archive:
         assert {name.split("/")[1] for name in archive.namelist() if name.startswith("lib/")} == {abi}
-        assert entries(archive.read("assets/rime_ice/cyime_t9_english.dict.yaml").decode()) == new_entries
+        assert entries(archive.read("assets/cayboard_pinyin/cayboard_t9_english.dict.yaml").decode()) == new_entries
     apks.append(dict(abi=abi, path=str(apk), bytes=apk.stat().st_size, sha256=digest))
 
 samples = json.loads((OUT / "t9-long-english-final.json").read_text())

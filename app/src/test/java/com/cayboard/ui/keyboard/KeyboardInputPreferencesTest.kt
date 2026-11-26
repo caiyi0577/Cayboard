@@ -43,7 +43,7 @@ class KeyboardInputPreferencesTest {
         SettingsPreferences.setPairedSymbolsEnabled(context, false)
         SettingsPreferences.setEnterSendsEnabled(context, false)
         SettingsPreferences.setToolbarButtons(context, listOf("voice", "emoji"))
-        SettingsPreferences.setCurrentSchema(context, "rime_ice")
+        SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
         val after = KeyboardInputPreferences.read(context, isDark = false)
         assertEquals(listOf(false, false, false, false, false),
             listOf(after.datetimeCandidates, after.candidateEmoji, after.symbolNames, after.greekLetters, after.numberRow))
@@ -51,19 +51,19 @@ class KeyboardInputPreferencesTest {
         assertEquals(false, SettingsPreferences.isPairedSymbolsEnabled(context))
         assertEquals(false, SettingsPreferences.isEnterSendsEnabled(context))
         assertEquals(listOf("voice", "emoji"), SettingsPreferences.getToolbarButtons(context))
-        assertEquals("rime_ice", SettingsPreferences.getCurrentSchema(context))
+        assertEquals("cayboard_pinyin", SettingsPreferences.getCurrentSchema(context))
     }
 
-    @Test fun `choosing voice for long-press space works even while space moves the cursor`() {
+    @Test fun `choosing voice for long-press space keeps cursor gestures available`() {
         val cursorOnSpace = KeyboardInputPreferences(cursorGesture = CursorGestureMode.SPACE)
         assertEquals(SpaceHoldAction.CURSOR, cursorOnSpace.effectiveSpaceHold)
         val voice = cursorOnSpace.withSpaceHold(SpaceHoldAction.VOICE_TOGGLE)
         assertEquals(SpaceHoldAction.VOICE_TOGGLE, voice.effectiveSpaceHold)
         assertEquals(CursorGestureMode.KEYBOARD, voice.cursorGesture)
-        // 英文滑行锁着键盘滑动：移动光标关掉，不去占用滑行。
+        // 已移除字母滑行后，键盘滑动可以独立用于移动光标。
         val glide = cursorOnSpace.copy(glideTyping = true).withSpaceHold(SpaceHoldAction.REPEAT)
         assertEquals(SpaceHoldAction.REPEAT, glide.effectiveSpaceHold)
-        assertEquals(CursorGestureMode.NONE, glide.cursorGesture)
+        assertEquals(CursorGestureMode.KEYBOARD, glide.cursorGesture)
         assertEquals(true, glide.glideTyping)
         // 没占着空格时只换空格功能，移动光标方式原样不动。
         for (mode in listOf(CursorGestureMode.KEYBOARD, CursorGestureMode.NONE)) {
@@ -121,42 +121,6 @@ class KeyboardInputPreferencesTest {
         assertEquals(previous.neighborCorrection, restored.neighborCorrection)
     }
 
-    @Test fun `glide typing is off by default and the old saved default does not turn it on`() {
-        assertEquals(false, KeyboardInputPreferences.read(context).glideTyping)
-        // 旧版 save() 会把旧默认 true 连同其他设置一起写进 glide_typing：不能因此打开。
-        values["glide_typing"] = true
-        assertEquals(false, KeyboardInputPreferences.read(context).glideTyping)
-        // 用户在新版自己打开后保持打开。
-        KeyboardInputPreferences.read(context).copy(glideTyping = true).save(context)
-        assertEquals(true, KeyboardInputPreferences.read(context).glideTyping)
-        assertEquals(listOf("glide_typing_v2", "glide_typing"), com.cayboard.keyboard.ToolbarButton.GLIDE.gestureKeys())
-    }
-
-    @Test fun `chinese glide has its own switch and an english glide user does not get it`() {
-        // 用户 10-31：老版本开着英文滑行，升级后中文 26 键不能跟着滑行。
-        values["glide_typing_v2"] = true
-        values["glide_typing"] = true
-        val upgraded = KeyboardInputPreferences.read(context)
-        assertEquals(true, upgraded.glideTyping)
-        assertEquals(false, upgraded.chineseGlideTyping)
-        // 滑行实时预览（11-02 别的用户提的）同样默认关。
-        assertEquals(false, upgraded.glidePreview)
-        upgraded.save(context)
-        assertEquals(false, KeyboardInputPreferences.read(context).chineseGlideTyping)
-        // 自己打开中文滑行后保持打开，英文滑行原样不动。
-        KeyboardInputPreferences.read(context).copy(chineseGlideTyping = true).save(context)
-        val chinese = KeyboardInputPreferences.read(context)
-        assertEquals(true, chinese.chineseGlideTyping)
-        assertEquals(true, chinese.glideTyping)
-        // 只开中文滑行时同样锁住键盘滑动移光标。
-        val onlyChinese = KeyboardInputPreferences(chineseGlideTyping = true)
-        assertEquals("已被「中文滑行」锁定", InputGestureLocks.lockFor(onlyChinese,
-            InputGestureLock.Option.CURSOR_GESTURE, CursorGestureMode.KEYBOARD)?.message)
-        // 用户 11-08：开着滑行时字母键的滑动都给滑行，角标锁在「长按输入」，并说明是中文滑行锁的。
-        assertEquals(CornerInputChoice.LONG_PRESS, CornerInputChoice.of(CornerInputChoice.SWIPE.applyTo(onlyChinese)))
-        assertEquals("已被「中文滑行」锁定", InputGestureLocks.glideCornerLock(onlyChinese)?.message)
-    }
-
     @Test fun `comma and period keys are both on by default and the old saved period default does not turn it off`() {
         val fresh = KeyboardInputPreferences.read(context)
         assertEquals(true, fresh.qwertyCommaKey)
@@ -180,10 +144,9 @@ class KeyboardInputPreferencesTest {
         assertTrue(KeyboardInputPreferences.CORNER_HINT_OPACITY_KEY in KeyboardInputPreferences.watchedKeys)
     }
 
-    @Test fun `time and date candidates are off by default and stay on once turned on`() {
-        // 更新不改原有习惯（用户 10-31）：新功能默认关，在 语言与方案 › 中文输出 打开。
-        assertEquals(false, KeyboardInputPreferences().datetimeCandidates)
-        assertEquals(false, KeyboardInputPreferences.read(context).datetimeCandidates)
+    @Test fun `time and date candidates default on and persist either choice`() {
+        assertEquals(true, KeyboardInputPreferences().datetimeCandidates)
+        assertEquals(true, KeyboardInputPreferences.read(context).datetimeCandidates)
         KeyboardInputPreferences.read(context).copy(datetimeCandidates = false).save(context)
         assertEquals(false, values[KeyboardInputPreferences.DATETIME_CANDIDATES_KEY])
         assertEquals(false, KeyboardInputPreferences.read(context).datetimeCandidates)
@@ -191,10 +154,9 @@ class KeyboardInputPreferencesTest {
         assertEquals(true, KeyboardInputPreferences.read(context).datetimeCandidates)
     }
 
-    @Test fun `symbol name candidates are off by default and persist`() {
-        // 别人请求的功能默认关，不改原有习惯；在 语言与方案 › 中文输出 打开。
-        assertEquals(false, KeyboardInputPreferences().symbolNames)
-        assertEquals(false, KeyboardInputPreferences.read(context).symbolNames)
+    @Test fun `symbol name candidates default on and persist either choice`() {
+        assertEquals(true, KeyboardInputPreferences().symbolNames)
+        assertEquals(true, KeyboardInputPreferences.read(context).symbolNames)
         KeyboardInputPreferences.read(context).copy(symbolNames = true).save(context)
         assertEquals(true, values[KeyboardInputPreferences.SYMBOL_NAMES_KEY])
         assertEquals(true, KeyboardInputPreferences.read(context).symbolNames)
@@ -202,10 +164,9 @@ class KeyboardInputPreferencesTest {
         assertEquals(false, KeyboardInputPreferences.read(context).symbolNames)
     }
 
-    @Test fun `greek letter candidates are off by default and persist`() {
-        // 别人请求的功能默认关，不改原有习惯；在 语言与方案 › 中文输出 打开。
-        assertEquals(false, KeyboardInputPreferences().greekLetters)
-        assertEquals(false, KeyboardInputPreferences.read(context).greekLetters)
+    @Test fun `greek letter candidates default on and persist either choice`() {
+        assertEquals(true, KeyboardInputPreferences().greekLetters)
+        assertEquals(true, KeyboardInputPreferences.read(context).greekLetters)
         KeyboardInputPreferences.read(context).copy(greekLetters = true).save(context)
         assertEquals(true, values[KeyboardInputPreferences.GREEK_LETTERS_KEY])
         assertEquals(true, KeyboardInputPreferences.read(context).greekLetters)
@@ -263,11 +224,10 @@ class KeyboardInputPreferencesTest {
     }
 
     @Test fun `every saved setting refreshes the keyboard already on screen`() {
-        // 设置页关掉滑行输入或九键拂动后，正在显示的键盘必须立即改用新值，不能等输入法重启。
-        KeyboardInputPreferences().copy(glideTyping = false).save(context)
+        SettingsPreferences.setNumberRowEnabled(context, false)
         val unwatched = values.keys - KeyboardInputPreferences.watchedKeys
         assertTrue("save() 写入但键盘不监听：$unwatched", unwatched.isEmpty())
-        assertTrue("glide_typing" in values)
+        assertTrue(SettingsPreferences.KEY_NUMBER_ROW in values)
     }
 
     private val context = mock<Context>()
@@ -487,8 +447,7 @@ class KeyboardInputPreferencesTest {
         assertEquals(0.1f, KeyboardInputPreferences.read(context).languageMenuHoldSeconds, 0f)
     }
 
-    @Test fun `corner long press delay keeps the old 0_3 s default, persists, is bounded and caps glide takeover`() {
-        // 用户 11-08：关闭角标滑动后长按时间要能调；默认仍是原来写死的 0.3 秒。
+    @Test fun `corner long press delay persists and stays independent from retired glide input`() {
         assertEquals(0.3f, KeyboardInputPreferences().symbolLongPressSeconds, 0f)
         assertEquals(300L, KeyboardInputPreferences.read(context).symbolLongPressMs)
         KeyboardInputPreferences(symbolInputMode = SymbolInputMode.LONG_PRESS, symbolLongPressSeconds = 0.55f).save(context)
@@ -500,11 +459,8 @@ class KeyboardInputPreferencesTest {
         assertEquals(1f, normalizeSymbolLongPressSeconds(5f), 0f)
         assertEquals(0.3f, normalizeSymbolLongPressSeconds(Float.NaN), 0f)
         assertEquals(0.25f, normalizeSymbolLongPressSeconds(0.26f), 0.001f)
-        // 滑行接管的按住上限：滑动输入不变；长按输入时不晚于角标输入的那一刻。
-        assertEquals(300L, KeyboardInputPreferences(symbolLongPressSeconds = 0.15f).glideHoldMs)
-        assertEquals(150L, KeyboardInputPreferences(symbolInputMode = SymbolInputMode.LONG_PRESS, symbolLongPressSeconds = 0.15f).glideHoldMs)
-        assertEquals(300L, KeyboardInputPreferences(symbolInputMode = SymbolInputMode.LONG_PRESS, symbolLongPressSeconds = 0.8f).glideHoldMs)
-        // 开着 26 键滑行时角标被锁成长按输入，同样跟着时长走。
-        assertEquals(150L, KeyboardInputPreferences(glideTyping = true, symbolLongPressSeconds = 0.15f).glideHoldMs)
+        assertEquals(0L, KeyboardInputPreferences(symbolLongPressSeconds = 0.15f).glideHoldMs)
+        assertEquals(0L, KeyboardInputPreferences(symbolInputMode = SymbolInputMode.LONG_PRESS,
+            symbolLongPressSeconds = 0.15f).glideHoldMs)
     }
 }

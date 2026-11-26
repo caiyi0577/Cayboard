@@ -1,11 +1,11 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /** Run against a disposable user directory with the files exported by PersonalDictManagerTest
- * (CYIME_PHRASE_PROBE_DIR). Arguments: host library directory, disposable user directory. */
+ * (CAYBOARD_PHRASE_PROBE_DIR). Arguments: host library directory, disposable user directory. */
 public final class SharedShortcutProbe {
   private static final String[][] CASES = {
       {"oof", "❤️", "🟠", "🟡", "🟢"}, {"oog", "----------------", "/"},
@@ -15,11 +15,11 @@ public final class SharedShortcutProbe {
   private static void require(boolean condition, String detail) {
     if (!condition) throw new AssertionError(detail);
   }
-  private static void type(RimeEngine e, String keys, boolean t9) throws Exception {
+  private static void type(InputEngine e, String keys, boolean t9) throws Exception {
     if (t9) LayoutSyncProbe.type(e, keys);
     else for (char c : keys.toCharArray()) require(e.nativeProcessKey(c, 0), "unhandled " + c);
   }
-  private static void settle(RimeEngine e, boolean t9) throws Exception {
+  private static void settle(InputEngine e, boolean t9) throws Exception {
     if (t9) {
       long end = System.nanoTime() + 5_000_000_000L;
       while (e.nativeT9RefinementState() == 1 && System.nanoTime() < end) Thread.sleep(10);
@@ -29,7 +29,7 @@ public final class SharedShortcutProbe {
     }
     e.nativeRefineOmission();
   }
-  private static void test(RimeEngine e, String schema, boolean t9, boolean mergedTap) throws Exception {
+  private static void test(InputEngine e, String schema, boolean t9, boolean mergedTap) throws Exception {
     LayoutSyncProbe.select(e, schema);
     for (String[] row : CASES) {
       String keys = t9 ? LayoutSyncProbe.t9Code(row[0]) : mergedTap ? LayoutSyncProbe.k14Code(row[0]) : row[0];
@@ -50,7 +50,7 @@ public final class SharedShortcutProbe {
         if (t9) {
           // Android commits the text it displayed when the T9 controller consumes the whole code.
           require(e.nativeT9SelectCandidate(candidates[index][1], want, want.length()), "partial T9 commit: " + want);
-          e.nativeT9FlushRimeInput();
+          e.nativeT9FlushInput();
           require(e.nativeT9GetRemainingDigits().isEmpty(), "digits left after selecting " + want);
         } else {
           require(e.nativeSelectCandidateByGlobalIndex(index), "selection rejected: " + want);
@@ -67,7 +67,7 @@ public final class SharedShortcutProbe {
     String from = t9 ? "663" : mergedTap ? "OOD" : "oof";
     type(e, from, t9);
     require(e.nativeProcessKey(0xff08, 0), "backspace rejected");
-    if (t9) e.nativeT9FlushRimeInput();
+    if (t9) e.nativeT9FlushInput();
     require(e.nativeGetInput().equals(from.substring(0, 2)), "backspace did not retain the prefix");
     require(Arrays.stream(e.nativeInspectCandidates(8)).noneMatch(r -> r[0].equals("🟢")), "stale oof candidate");
     type(e, t9 ? "4" : mergedTap ? "G" : "g", t9);
@@ -76,14 +76,14 @@ public final class SharedShortcutProbe {
   }
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     try {
       engine.nativeEnsureT9SchemaPatches("t9_pinyin");
       LayoutSyncProbe.maintain(engine, true);
       require(engine.nativeCreateSession(), "session unavailable");
-      for (String schema : new String[]{"rime_ice", "double_pinyin_flypy", "t9_pinyin", "double_pinyin_flypy_t9",
+      for (String schema : new String[]{"cayboard_pinyin", "double_pinyin_flypy", "t9_pinyin", "double_pinyin_flypy_t9",
           "pinyin_14jian", "double_pinyin_flypy_14jian"}) {
         boolean t9 = schema.equals("t9_pinyin") || schema.endsWith("_t9");
         boolean merged = schema.endsWith("_14jian");

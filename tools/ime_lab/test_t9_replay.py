@@ -29,7 +29,7 @@ class ReplayRunnerTest(unittest.TestCase):
             replay.choose_device("List of devices attached\nlocked\tunauthorized\n")
 
     def test_split_or_missing_installed_apk_is_rejected_before_snapshot(self):
-        base = "/data/app/~~id/com.cyime-id/base.apk"
+        base = "/data/app/~~id/com.cayboard-id/base.apk"
         self.assertEqual(replay.installed_apk("package:" + base + "\n"), base)
         for invalid in ("", "package:" + base + "\npackage:/data/app/id/split_config.arm64.apk\n",
                         "package:/system/app/Cayboard/base.apk\n", "package:/data/app/id/other.apk\n"):
@@ -62,29 +62,29 @@ class ReplayRunnerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             apk = root / "input.apk"
-            self.apk(apk, {"assets/rime-bundled-manifest.tsv": "manifest",
-                           "lib/x86_64/librime_jni.so": b"other ABI"})
+            self.apk(apk, {"assets/cayboard-bundled-manifest.tsv": "manifest",
+                           "lib/x86_64/cayboard_jni.so": b"other ABI"})
             with self.assertRaisesRegex(ValueError, "device ABI arm64-v8a"):
                 replay.extract_libraries(apk, "arm64-v8a", root / "wrong-abi")
-            self.apk(apk, {"lib/arm64-v8a/librime_jni.so": b"no manifest"})
-            with self.assertRaisesRegex(ValueError, "no bundled Rime manifest"):
+            self.apk(apk, {"lib/arm64-v8a/cayboard_jni.so": b"no manifest"})
+            with self.assertRaisesRegex(ValueError, "no bundled input manifest"):
                 replay.extract_libraries(apk, "arm64-v8a", root / "missing-manifest")
-            self.apk(apk, {"assets/rime-bundled-manifest.tsv": "manifest",
-                           "lib/arm64-v8a/librime_jni.so": b"engine",
+            self.apk(apk, {"assets/cayboard-bundled-manifest.tsv": "manifest",
+                           "lib/arm64-v8a/cayboard_jni.so": b"engine",
                            "lib/arm64-v8a/libc++_shared.so": b"dependency",
-                           "lib/x86_64/librime_jni.so": b"wrong",
+                           "lib/x86_64/cayboard_jni.so": b"wrong",
                            "assets/irrelevant.bin": b"not a library"})
             target = root / "valid"
             replay.extract_libraries(apk, "arm64-v8a", target)
-            self.assertEqual({p.name for p in target.iterdir()}, {"librime_jni.so", "libc++_shared.so"})
-            self.assertEqual((target / "librime_jni.so").read_bytes(), b"engine")
+            self.assertEqual({p.name for p in target.iterdir()}, {"cayboard_jni.so", "libc++_shared.so"})
+            self.assertEqual((target / "cayboard_jni.so").read_bytes(), b"engine")
 
     def test_native_library_zip_traversal_and_nested_paths_never_escape_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for index, leaf in enumerate(("../escaped.so", "../../escaped.so", "libsub/../escaped.so", "lib\\escaped.so")):
                 apk = root / f"bad-{index}.apk"
-                self.apk(apk, {"assets/rime-bundled-manifest.tsv": "manifest",
+                self.apk(apk, {"assets/cayboard-bundled-manifest.tsv": "manifest",
                                "lib/arm64-v8a/" + leaf: b"payload"})
                 with self.subTest(leaf=leaf), self.assertRaisesRegex(ValueError, "Invalid native-library ZIP entry"):
                     replay.extract_libraries(apk, "arm64-v8a", root / f"out-{index}")
@@ -95,14 +95,14 @@ class ReplayRunnerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             apk = root / "input.apk"
-            self.apk(apk, {"assets/rime-bundled-manifest.tsv": "manifest",
-                           "lib/arm64-v8a/librime_jni.so": b"original engine"})
+            self.apk(apk, {"assets/cayboard-bundled-manifest.tsv": "manifest",
+                           "lib/arm64-v8a/cayboard_jni.so": b"original engine"})
             original_extract = replay.extract_libraries
 
             def concurrent_change(path, abi, target):
                 original_extract(path, abi, target)
-                self.apk(path, {"assets/rime-bundled-manifest.tsv": "changed",
-                                "lib/arm64-v8a/librime_jni.so": b"replacement engine"})
+                self.apk(path, {"assets/cayboard-bundled-manifest.tsv": "changed",
+                                "lib/arm64-v8a/cayboard_jni.so": b"replacement engine"})
 
             command = SimpleNamespace(shell=Mock(return_value=""), adb_run=Mock())
             with patch("t9_replay.extract_libraries", side_effect=concurrent_change), \
@@ -153,12 +153,12 @@ class ReplayRunnerTest(unittest.TestCase):
                     self.assertEqual(list(output.iterdir()), [sentinel])
 
     def test_cleanup_root_pattern_rejects_parent_paths_suffixes_and_control_characters(self):
-        valid = "/data/local/tmp/cyime-chat-audit-20261003T010203-deadbeef"
+        valid = "/data/local/tmp/cayboard-chat-audit-20261003T010203-deadbeef"
         self.assertIsNotNone(replay.REMOTE_PATTERN.fullmatch(valid))
         for path in ("/data/local/tmp", valid + "/child", valid + "/../outside", valid + "\n",
                      valid + ";echo", valid.replace("deadbeef", "DEADBEEF"),
                      valid.replace("20261003T010203", "20261003"),
-                     "/data/local/tmp/cyime-chat-audit-"):
+                     "/data/local/tmp/cayboard-chat-audit-"):
             with self.subTest(path=path):
                 self.assertIsNone(replay.REMOTE_PATTERN.fullmatch(path))
 

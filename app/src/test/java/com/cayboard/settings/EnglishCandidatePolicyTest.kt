@@ -25,14 +25,14 @@ class EnglishCandidatePolicyTest {
     @Test fun upgradesOldLayoutWithoutReplacingItsMappingsOrOtherFilters() {
         for (source in listOf(old, old.replace("\n", "\r\n"))) {
             val updated = EnglishCandidatePolicy.install(source)
-            assertTrue(updated.contains("cyime_candidate_policy"))
-            assertEquals(source, updated.replace(Regex("(?m)^    - cyime_candidate_policy\\r?\\n"), ""))
+            assertTrue(updated.contains("cayboard_candidate_policy"))
+            assertEquals(source, updated.replace(Regex("(?m)^    - cayboard_candidate_policy\\r?\\n"), ""))
             assertEquals(updated, EnglishCandidatePolicy.install(updated))
         }
     }
     @Test fun createsFilterListOnlyForAnEnglishTranslator() {
         val noFilters = old.replace("  filters:\n    - lua_filter@*long_word_filter\n    - uniquifier\n", "")
-        assertTrue(EnglishCandidatePolicy.install(noFilters).contains("  filters:\n    - cyime_candidate_policy\n"))
+        assertTrue(EnglishCandidatePolicy.install(noFilters).contains("  filters:\n    - cayboard_candidate_policy\n"))
         assertEquals(old.replace("table_translator@melt_eng", "other_translator"),
             EnglishCandidatePolicy.install(old.replace("table_translator@melt_eng", "other_translator")))
     }

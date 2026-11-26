@@ -121,9 +121,6 @@ jobs:
           ./gradlew assembleRelease -PbundleModels=true -PpythonExecutable=python3 --no-daemon
           cp app/build/outputs/apk/release/Cayboard-*-full-*.apk app/build/outputs/apk/distribution/
 
-      - name: Build Plugin XIPKs (Unsigned)
-        run: bash scripts/build-plugins.sh
-
       - name: Verify APK signatures
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
@@ -140,20 +137,14 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Find APKs and plugin XIPKs
+      - name: Find APKs
         id: find_apks
         run: |
           MAIN_APKS=$(find app/build/outputs/apk/distribution -name "Cayboard-*.apk" -type f | sort | tr '\n' ',' | sed 's/,$//')
-          PLUGIN_XIPKS=$(find build/plugin-release -name "*.xipk" -type f | sort | tr '\n' ',' | sed 's/,$//')
-
           echo "main_apks=$MAIN_APKS" >> $GITHUB_OUTPUT
-          echo "plugin_xipks=$PLUGIN_XIPKS" >> $GITHUB_OUTPUT
 
           if [ -z "$MAIN_APKS" ]; then
             echo "::warning::No main app APKs found!"
-          fi
-          if [ -z "$PLUGIN_XIPKS" ]; then
-            echo "::warning::No plugin XIPKs found!"
           fi
 
       - name: Create Release
@@ -161,9 +152,7 @@ jobs:
         with:
           name: Cayboard ${{ steps.get_version.outputs.VERSION }}
           generate_release_notes: false
-          files: |
-            ${{ steps.find_apks.outputs.main_apks }}
-            ${{ steps.find_apks.outputs.plugin_xipks }}
+          files: ${{ steps.find_apks.outputs.main_apks }}
           overwrite: true
           draft: false
           prerelease: false

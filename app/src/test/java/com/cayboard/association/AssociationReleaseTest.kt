@@ -28,7 +28,7 @@ class AssociationReleaseTest {
         whenever(ctx.filesDir).thenReturn(files.root)
         whenever(ctx.assets).thenReturn(assets)
         val prefs = mock<SharedPreferences>()
-        whenever(ctx.getSharedPreferences("kime_settings", Context.MODE_PRIVATE)).thenReturn(prefs)
+        whenever(ctx.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE)).thenReturn(prefs)
         whenever(prefs.getBoolean(SettingsPreferences.KEY_SMART_PREDICTION_ENABLED, true)).thenReturn(true)
         val entered = CountDownLatch(1)
         val resume = CountDownLatch(1)

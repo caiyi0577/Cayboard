@@ -69,8 +69,8 @@ internal fun keyCodeToKey(keyCode: Int, isShifted: Boolean): String? {
 }
 
 /**
- * 实体键盘这个符号是否原样（半角）上屏、不进 Rime：小键盘的数字和运算符号总是原样；Shift 打的符号
- * （" ( ) : ? ! 等）在中文标点下交给 Rime 出全角，和不按 Shift 的 ' ; , 一样（GitHub #290），
+ * 实体键盘这个符号是否原样（半角）上屏、不进输入引擎：小键盘的数字和运算符号总是原样；Shift 打的符号
+ * （" ( ) : ? ! 等）在中文标点下交给输入引擎转换成全角，和不按 Shift 的 ' ; , 一样（GitHub #290），
  * 英文、半角模式照旧原样。
  */
 internal fun hardwareSymbolIsLiteral(key: String, shifted: Boolean, numpad: Boolean, chinesePunctuation: Boolean): Boolean {

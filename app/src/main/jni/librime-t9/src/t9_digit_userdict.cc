@@ -16,8 +16,8 @@ T9DigitUserDict& T9DigitUserDict::Instance() {
 }
 
 // static
-std::string T9DigitUserDict::BuildLookupKey(const std::string& rime_input) {
-  return T9DigitUserDictCore::BuildLookupKey(rime_input);
+std::string T9DigitUserDict::BuildLookupKey(const std::string& engine_input) {
+  return T9DigitUserDictCore::BuildLookupKey(engine_input);
 }
 
 // static
@@ -114,7 +114,7 @@ void T9DigitUserDict::Memorize(const std::string& digits,
   auto ops = core_.Memorize(digits, text, pinyin);
   ApplyOps(ops);
   // 每次写入后 compact（close+reopen），flush memtable 为 .ldb 文件。
-  // 多 .ldb 文件是 leveldb 的正常行为（rime_ice.userdb 同样有多个）。
+  // 多 .ldb 文件是 leveldb 的正常行为（cayboard_pinyin.userdb 同样有多个）。
   Compact();
 }
 

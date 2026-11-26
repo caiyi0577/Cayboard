@@ -25,7 +25,7 @@ internal object MergedKeySymbols {
     fun ownerOf(keys: List<String>, key: String): String =
         if (key in keys) key else keys.firstOrNull { key.length == 1 && key in it } ?: key
 
-    /** 设置页的修改 > xime.custom.yaml 里给这个键写的 swipe_up/swipe_down > 预设。不是这个布局的字母键原样返回。 */
+    /** 设置页的修改 > cayboard.custom.yaml 里给这个键写的 swipe_up/swipe_down > 预设。不是这个布局的字母键原样返回。 */
     fun apply(keys: List<String>, key: String, original: KeyGestureConfig?, overrides: Map<String, String>): KeyGestureConfig? {
         if (key !in keys) return original
         fun gesture(direction: String, preset: String, configured: GestureDef?): GestureDef {

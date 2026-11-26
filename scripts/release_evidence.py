@@ -32,7 +32,7 @@ BEGIN, END = "<!-- 自动生成：开始（scripts/release_evidence.py，重跑�
 CATALOGS = ("app/src/main/java/com/cayboard/model/BuiltinModelCatalog.kt",
             "app/src/main/java/com/cayboard/model/CandidateModelCatalog.kt",
             "app/src/main/java/com/cayboard/speech/SpeechModelCatalog.kt")
-DATA_PREFIXES = ("assets/bundled-models/", "assets/cell_dictionaries/", "assets/gloss/", "assets/rime_chinese/t9_ngram.lm")
+DATA_PREFIXES = ("assets/bundled-models/", "assets/cell_dictionaries/", "assets/gloss/", "assets/cayboard_chinese/t9_ngram.lm")
 LARGE = 1024 * 1024
 JST = timezone(timedelta(hours=9))
 
@@ -42,7 +42,7 @@ class EvidenceError(Exception):
 
 
 def load_packager(root: Path):
-    spec = importlib.util.spec_from_file_location("cyime_packager", root / "scripts/packager/cyime_packager.py")
+    spec = importlib.util.spec_from_file_location("cayboard_packager", root / "scripts/packager/cayboard_packager.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

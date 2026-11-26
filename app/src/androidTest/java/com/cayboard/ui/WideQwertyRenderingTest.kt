@@ -49,14 +49,14 @@ class WideQwertyRenderingTest {
                     MaterialTheme {
                         val vm = remember { KeyboardViewModel(app) }
                         KeyboardLayout({}, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
-                            KeyboardUiState(currentSchemaId = "rime_ice", isAsciiMode = ascii.value, isDarkTheme = true),
+                            KeyboardUiState(currentSchemaId = "cayboard_pinyin", isAsciiMode = ascii.value, isDarkTheme = true),
                             ascii.value, Modifier.requiredSize(dimensions.intValue.dp, 389.dp).testTag("wide-qwerty-render"))
                     }
                 }
             }
             for (english in listOf(false, true)) for (width in listOf(360, (calibratedWidth * .8f).toInt(), calibratedWidth,
                 (calibratedWidth * 1.25f).toInt())) {
-                rule.runOnIdle { KeysConfigHelper.setActiveKeyboardSchema("rime_ice"); ascii.value = english; dimensions.intValue = width }
+                rule.runOnIdle { KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin"); ascii.value = english; dimensions.intValue = width }
                 rule.waitForIdle()
                 val frame = rule.onNodeWithTag("wide-qwerty-render", true)
                 assertEquals("fixture must not silently clamp", width, frame.fetchSemanticsNode().size.width)
@@ -87,7 +87,7 @@ class WideQwertyRenderingTest {
                 }
             }
         } finally {
-            KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+            KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
             rule.runOnUiThread { rule.activity.requestedOrientation = oldOrientation }
         }
     }

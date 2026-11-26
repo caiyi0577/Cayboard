@@ -8,7 +8,7 @@ These are model-only desktop costs, NOT phone latency or production VAD accuracy
 import argparse, gc, hashlib, json, os, platform, subprocess, sys, threading, time
 from pathlib import Path
 
-sys.path.insert(0, 'D:/CyIME-Data/speech-lab/deps')
+sys.path.insert(0, 'D:/Cayboard-Data/speech-lab/deps')
 import numpy as np
 import soundfile as sf
 import psutil

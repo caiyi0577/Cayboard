@@ -55,7 +55,7 @@ object BundledModelInstaller {
     /** 安装包里带着的 [model]（内置模型或九键词组模型）的 [version]：返回不联网装回的动作；不带返回 null。 */
     internal fun packagedSource(context: Context, model: ModelInfo, version: ModelVersion): (suspend () -> Unit)? {
         if (model.category == ModelCategory.CANDIDATE) {
-            val manifest = runCatching { context.assets.open("rime-bundled-manifest.tsv").bufferedReader().use { it.readText() } }
+            val manifest = runCatching { context.assets.open("cayboard-bundled-manifest.tsv").bufferedReader().use { it.readText() } }
                 .getOrNull() ?: return null
             val rows = manifest.lineSequence().map { it.split('\t') }.filter { it.size == 4 }.toList()
             val assets = version.files.map { file ->

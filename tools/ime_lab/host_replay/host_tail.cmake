@@ -8,14 +8,14 @@ set_target_properties(onnxruntime PROPERTIES
 target_link_libraries(rime-static "$<LINK_ONLY:onnxruntime>")
 target_include_directories(rime-t9-objs PRIVATE "${CMAKE_SOURCE_DIR}/onnxruntime/include")
 # host_replay_jni.cc adds host-only JNI entry points (work counters, preset user dictionary).
-add_library(rime_jni SHARED librime_jni/rime_jni.cc librime_jni/candidate_policy.cc librime_jni/candidate_pins.cc
-  librime_jni/basic_particle_choices.cc
+add_library(cayboard_jni SHARED cayboard_jni/cayboard_jni.cc cayboard_jni/candidate_policy.cc cayboard_jni/candidate_pins.cc
+  cayboard_jni/basic_particle_choices.cc
   "${HOST_ADAPTER_DIR}/host_replay_jni.cc")
-target_compile_definitions(rime_jni PRIVATE RIME_JNI_VERBOSE_LOGGING=0)
-target_include_directories(rime_jni PRIVATE
+target_compile_definitions(cayboard_jni PRIVATE CAYBOARD_JNI_VERBOSE_LOGGING=0)
+target_include_directories(cayboard_jni PRIVATE
   "${HOST_JNI_INCLUDE}" "${HOST_JNI_INCLUDE}/linux" "${HOST_ADAPTER_DIR}"
   "${CMAKE_SOURCE_DIR}/librime/include" "${CMAKE_SOURCE_DIR}/librime/src"
   "${CMAKE_BINARY_DIR}/librime/src" "${CMAKE_SOURCE_DIR}/librime-t9/src")
-target_link_libraries(rime_jni PRIVATE -Wl,--whole-archive rime-static -Wl,--no-whole-archive onnxruntime dl pthread)
-set_target_properties(rime_jni PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+target_link_libraries(cayboard_jni PRIVATE -Wl,--whole-archive rime-static -Wl,--no-whole-archive onnxruntime dl pthread)
+set_target_properties(cayboard_jni PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   BUILD_RPATH "${HOST_ORT_DIR}" INSTALL_RPATH "$ORIGIN")

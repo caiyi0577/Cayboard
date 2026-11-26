@@ -1,9 +1,9 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 
 /** Run with an empty, deployed full-pinyin fixture and the public word model. */
 public final class SentenceParticleProbe {
-  private static void check(RimeEngine engine, String keys, String... parts) {
+  private static void check(InputEngine engine, String keys, String... parts) {
     if (!engine.nativeGetInput().isEmpty()) throw new AssertionError("leftover composition");
     for (char key : keys.toCharArray()) {
       if (!engine.nativeProcessKey(key, 0)) throw new AssertionError("unhandled " + key);
@@ -27,18 +27,18 @@ public final class SentenceParticleProbe {
     }
   }
 
-  private static void punctuation(RimeEngine engine, char key, String expected) {
+  private static void punctuation(InputEngine engine, char key, String expected) {
     if (!engine.nativeProcessKey(key, 0) || !expected.equals(engine.nativeCommit())) {
       throw new AssertionError("could not commit " + expected);
     }
   }
 
   public static void main(String[] args) {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     try {
-      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("rime_ice")) {
+      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("cayboard_pinyin")) {
         throw new AssertionError("full-pinyin session unavailable");
       }
       engine.nativeSetOption("ascii_mode", false);

@@ -21,8 +21,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -49,14 +49,14 @@ class HardwareShortcutAndFloatingEnglishImeTest {
             if (value is Set<*>) value.toSet() else value
         }
         val oldIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        assertTrue("The real engine must be prepared", RimeConfigHelper.prepareEngine(context))
-        val engine = RimeEngine.getInstance()
+        assertTrue("The real engine must be prepared", EngineConfig.prepareEngine(context))
+        val engine = InputEngine.getInstance()
         val savedSchema = engine.getCurrentSchema()
         val savedOptions = listOf("ascii_mode", "full_shape", "ascii_punct").associateWith(engine::getOption)
         val savedAscii = engine.getUserConfigBool("var/option/ascii_mode")
         val savedPrevious = engine.getUserConfigString("var/previously_selected_schema")
         val schemaFiles = listOf("default.custom.yaml", "default.yaml").associate { name ->
-            val file = File(context.filesDir, "rime/$name")
+            val file = File(context.filesDir, "cayboard_input/$name")
             file to file.takeIf { it.isFile }?.readBytes()
         }
         lateinit var editor: EditText
@@ -133,7 +133,7 @@ class HardwareShortcutAndFloatingEnglishImeTest {
             val canonicalCompiledIds = CayboardInputDefaults.canonicalIds(
                 compiledIds.toList(), schemas.map { it.schemaId }.toSet()
             ).toSet()
-            assertTrue("Compiled Chinese pinyin is required", compiled.any { it.schemaId == "rime_ice" })
+            assertTrue("Compiled Chinese pinyin is required", compiled.any { it.schemaId == "cayboard_pinyin" })
             // Discovery includes legacy aliases (jaroomaji); use the same visible
             // product profiles as the language selector and switching controller.
             val japanese = InputModes.available(schemas).firstOrNull {
@@ -142,22 +142,22 @@ class HardwareShortcutAndFloatingEnglishImeTest {
             }?.schemaId
             assertNotNull("A compiled Japanese backend is required; do not count a skipped cycle as passing", japanese)
             SchemaManager.setEnabledSchemas(context, (SchemaManager.getEnabledSchemas(context) +
-                listOf("rime_ice", requireNotNull(japanese))).distinct())
+                listOf("cayboard_pinyin", requireNotNull(japanese))).distinct())
             // Deliberately choose a different globe policy to prove shortcuts are independent.
             prefs.edit().putStringSet(LanguagePreferences.KEY, setOf("zh", "en", "ja"))
                 .putString("input_language_order", "zh\nen\nja")
-                .putString("selected_input_profile_zh", "rime_ice")
+                .putString("selected_input_profile_zh", "cayboard_pinyin")
                 .putString("selected_input_profile_ja", japanese)
                 .putString(LanguageSwitchPreferences.MODE_KEY, LanguageSwitchMode.SPECIFIC_ENGLISH.id)
                 .putString(LanguageSwitchPreferences.LANGUAGE_KEY, InputLanguage.JAPANESE.id)
                 .putBoolean(HardwareKeyboardPreferences.PREFIX + "shift_tap", true)
                 .putBoolean(HardwareKeyboardPreferences.PREFIX + "ctrl_space", true)
                 .putBoolean(HardwareKeyboardPreferences.PREFIX + "dock_edge", true).commit()
-            assertTrue(engine.switchSchema("rime_ice"))
+            assertTrue(engine.switchSchema("cayboard_pinyin"))
             engine.clearComposition()
             engine.setOption("ascii_mode", false)
             engine.setUserConfigBool("var/option/ascii_mode", false)
-            SettingsPreferences.setCurrentSchema(context, "rime_ice")
+            SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
             shell("ime set ${context.packageName}/com.cayboard.service.CayboardInputMethodService")
             rule.setContent {
                 AndroidView(factory = { ctx ->

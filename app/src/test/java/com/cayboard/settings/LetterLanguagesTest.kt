@@ -22,7 +22,7 @@ class LetterLanguagesTest {
     @get:Rule val temp = TemporaryFolder()
 
     private fun repoFile(rel: String) = listOf(File(rel), File("app/$rel"), File("../$rel")).first { it.isFile }
-    private val yaml by lazy { repoFile("src/main/assets/xime.yaml").readText() }
+    private val yaml by lazy { repoFile("src/main/assets/cayboard.yaml").readText() }
 
     @After fun reset() {
         KeysConfigHelper.setActiveKeyboardSchema("")
@@ -34,7 +34,7 @@ class LetterLanguagesTest {
             val profile = InputProfiles.describe(letters.schemaId)
             assertEquals(letters.schemaId, letters.language, profile.language)
             assertEquals(letters.schemaId, InputScheme.DIRECT, profile.scheme)
-            assertEquals(EngineProfile.Rime(letters.schemaId), profile.engineProfile)
+            assertEquals(EngineProfile.Decoder(letters.schemaId), profile.engineProfile)
             assertTrue(letters.language.typesLettersDirectly)
             assertEquals(LayoutKind.ALPHABETIC, InputProfiles.resolveLayout(letters.keyboard).kind)
         }
@@ -59,17 +59,17 @@ class LetterLanguagesTest {
 
     @Test fun `schemas are bundled and only mark the language`() {
         for (letters in LetterLanguage.entries) {
-            val schema = repoFile("src/main/assets/rime_letters/${letters.schemaId}.schema.yaml").readText()
+            val schema = repoFile("src/main/assets/cayboard_letters/${letters.schemaId}.schema.yaml").readText()
             assertTrue(schema.contains("schema_id: ${letters.schemaId}"))
-            // 没有词典就不需要编译产物；字母不进 Rime。
+            // 没有词典就不需要编译产物；这些语言的字母直接上屏，不进拼音解码器。
             assertFalse(schema.contains("translator:"))
             assertFalse(schema.contains("speller"))
         }
-        assertTrue(repoFile("build-logic/tasks-rime-manifest.gradle.kts").readText()
-            .contains("\"rime_letters\" to file(\"src/main/assets/rime_letters\")"))
-        assertTrue("rime_letters" in SchemaManifestManager.bundledAssetRoots)
+        assertTrue(repoFile("build-logic/tasks-input-manifest.gradle.kts").readText()
+            .contains("\"cayboard_letters\" to file(\"src/main/assets/cayboard_letters\")"))
+        assertTrue("cayboard_letters" in SchemaManifestManager.bundledAssetRoots)
         // 词表不进安装包：assets 里没有，商店目录里有。
-        assertFalse(File(repoFile("src/main/assets/xime.yaml").parentFile, "spanish").exists())
+        assertFalse(File(repoFile("src/main/assets/cayboard.yaml").parentFile, "spanish").exists())
     }
 
     
@@ -111,12 +111,12 @@ class LetterLanguagesTest {
 
     private fun loadKeyboards() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { yaml.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { yaml.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         val context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         KeysConfigHelper.loadConfig(context)
     }
@@ -138,7 +138,7 @@ class LetterLanguagesTest {
         assertEquals("ñ", KeysConfigHelper.getKeyRows(false)[1].last())
         // ñ 在 26 键第二排之外，不带角标。
         assertNull(KeysConfigHelper.getKeyGesture("ñ", false)?.swipeUp)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         assertEquals("", KeysConfigHelper.longPressLetters(isAsciiMode = false))
     }
 

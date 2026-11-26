@@ -17,7 +17,7 @@ import java.util.zip.ZipOutputStream
 
 /**
  * 在独立目录中以真实 APK 雾凇资源模拟官方 ZIP 下载包，走完整 Android 文件安装链路。
- * 不初始化/切换 RimeEngine，也不读写正在使用的输入法配置或学习数据。
+ * 不初始化/切换 InputEngine，也不读写正在使用的输入法配置或学习数据。
  */
 @RunWith(AndroidJUnit4::class)
 class MarketPackageCompatibilityTest {
@@ -36,21 +36,21 @@ class MarketPackageCompatibilityTest {
         }
     }
     private val packageId = "rime-ice"
-    private val rime get() = SchemaManager.getRimeDir(context)
+    private val inputData get() = SchemaManager.getInputDataDir(context)
     private fun asset(path: String) = base.assets.open(path).use { it.readBytes() }
-    private fun write(relative: String, bytes: ByteArray): File = File(rime, relative).apply {
+    private fun write(relative: String, bytes: ByteArray): File = File(inputData, relative).apply {
         parentFile!!.mkdirs()
         writeBytes(bytes)
     }
-    private fun hash(relative: String) = SchemaManager.fileSha256(File(rime, relative))
+    private fun hash(relative: String) = SchemaManager.fileSha256(File(inputData, relative))
 
     @Before fun prepare() {
-        rime.mkdirs()
+        inputData.mkdirs()
         // 本测试模拟用户已配置的两种日语模式，关闭一次性迁移，避免测试依赖 UI 或部署。
         SettingsPreferences.setBuiltinSchemasMerged(context, true)
         SettingsPreferences.getPrefsPublic(context).edit()
             .putBoolean("japanese_schemas_added_v1", true)
-            .putBoolean("cyime_chinese_defaults_v1", true)
+            .putBoolean("cayboard_chinese_defaults_v1", true)
             .commit()
     }
 
@@ -61,31 +61,31 @@ class MarketPackageCompatibilityTest {
 
     @Test fun realRimeIceZipUpdatesOnlyConflictingFilesAndUninstallRestoresBuiltin() = runBlocking {
         val marketFiles = linkedMapOf(
-            "rime_ice.schema.yaml" to asset("rime_ice/rime_ice.schema.yaml"),
-            "rime_ice.dict.yaml" to asset("rime_ice/rime_ice.dict.yaml"),
-            "lua/t9_preedit.lua" to asset("rime_ice/lua/t9_preedit.lua"),
-            "cn_dicts/others.dict.yaml" to asset("rime_ice/cn_dicts/others.dict.yaml"),
-            "opencc/emoji.json" to asset("rime_ice/opencc/emoji.json"),
-            "opencc/emoji.txt" to asset("rime_ice/opencc/emoji.txt"),
+            "cayboard_pinyin.schema.yaml" to asset("cayboard_pinyin/cayboard_pinyin.schema.yaml"),
+            "cayboard_pinyin.dict.yaml" to asset("cayboard_pinyin/cayboard_pinyin.dict.yaml"),
+            "lua/t9_preedit.lua" to asset("cayboard_pinyin/lua/t9_preedit.lua"),
+            "cn_dicts/others.dict.yaml" to asset("cayboard_pinyin/cn_dicts/others.dict.yaml"),
+            "opencc/emoji.json" to asset("cayboard_pinyin/opencc/emoji.json"),
+            "opencc/emoji.txt" to asset("cayboard_pinyin/opencc/emoji.txt"),
         )
         // 旧版仍是合法的真实雾凇配置，仅附加注释以确定产生两个精确的不同内容冲突。
-        val oldSchema = marketFiles.getValue("rime_ice.schema.yaml") + "\n# previous builtin revision\n".toByteArray()
+        val oldSchema = marketFiles.getValue("cayboard_pinyin.schema.yaml") + "\n# previous builtin revision\n".toByteArray()
         val oldLua = marketFiles.getValue("lua/t9_preedit.lua") + "\n-- previous builtin revision\n".toByteArray()
-        write("rime_ice.schema.yaml", oldSchema)
+        write("cayboard_pinyin.schema.yaml", oldSchema)
         write("lua/t9_preedit.lua", oldLua)
         write("cn_dicts/others.dict.yaml", marketFiles.getValue("cn_dicts/others.dict.yaml"))
         val japaneseIds = listOf("japanese", "japanese_kana")
-        val japaneseBytes = japaneseIds.associateWith { asset("rime_japanese/$it.schema.yaml") }
+        val japaneseBytes = japaneseIds.associateWith { asset("cayboard_japanese/$it.schema.yaml") }
         japaneseBytes.forEach { (id, bytes) -> write("$id.schema.yaml", bytes) }
         assertTrue(SchemaManifestManager.createManifest(context, "builtin", "系统内置方案", fromMarket = false,
-            extractedFiles = listOf("rime_ice.schema.yaml", "lua/t9_preedit.lua", "cn_dicts/others.dict.yaml") +
+            extractedFiles = listOf("cayboard_pinyin.schema.yaml", "lua/t9_preedit.lua", "cn_dicts/others.dict.yaml") +
                 japaneseIds.map { "$it.schema.yaml" }))
 
         val personalPatch = "patch:\n  translator/enable_user_dict: true\n  menu/page_size: 11\n".toByteArray()
         val learningData = byteArrayOf(0, 4, 25, 66, 127, -1, 10)
         val customPhrase = "个人短语\tgeren\t100\n".toByteArray()
-        write("rime_ice.custom.yaml", personalPatch)
-        write("rime_ice.userdb/000003.log", learningData)
+        write("cayboard_pinyin.custom.yaml", personalPatch)
+        write("cayboard_pinyin.userdb/000003.log", learningData)
         write("custom_phrase.txt", customPhrase)
         SchemaManager.setEnabledSchemas(context, japaneseIds)
         SettingsPreferences.setCurrentSchema(context, "japanese_kana")
@@ -96,8 +96,8 @@ class MarketPackageCompatibilityTest {
         ZipOutputStream(archive.outputStream()).use { zip ->
             // 与 GitHub 市场源一致，含顶层包目录和嵌套 lua/cn_dicts/opencc 路径。
             val fixture = marketFiles + mapOf(
-                "rime_ice.custom.yaml" to "patch: {}\n".toByteArray(),
-                "rime_ice.userdb/000003.log" to "not user data".toByteArray(),
+                "cayboard_pinyin.custom.yaml" to "patch: {}\n".toByteArray(),
+                "cayboard_pinyin.userdb/000003.log" to "not user data".toByteArray(),
                 "custom_phrase.txt" to "not personal phrases".toByteArray(),
             )
             fixture.forEach { (relative, bytes) ->
@@ -109,10 +109,10 @@ class MarketPackageCompatibilityTest {
 
         val rejected = SchemaManager.installPackageFromMarketDir(context, packageId, "雾凇拼音", fromMarket = true)
         assertFalse(rejected.success)
-        assertEquals(setOf("rime_ice.schema.yaml", "lua/t9_preedit.lua"), rejected.conflicts.map { it.fileName }.toSet())
-        assertArrayEquals(oldSchema, File(rime, "rime_ice.schema.yaml").readBytes())
+        assertEquals(setOf("cayboard_pinyin.schema.yaml", "lua/t9_preedit.lua"), rejected.conflicts.map { it.fileName }.toSet())
+        assertArrayEquals(oldSchema, File(inputData, "cayboard_pinyin.schema.yaml").readBytes())
         assertEquals(japaneseIds, SchemaManager.getEnabledSchemas(context))
-        assertFalse(File(rime, "opencc/emoji.json").exists())
+        assertFalse(File(inputData, "opencc/emoji.json").exists())
 
         val installed = SchemaManager.installPackageFromMarketDir(context, packageId, "雾凇拼音", fromMarket = true,
             replaceConflictingFiles = true)
@@ -126,30 +126,30 @@ class MarketPackageCompatibilityTest {
             registeredFiles.getJSONObject("cn_dicts/others.dict.yaml").getJSONArray("claimedBy")).toSet())
         assertTrue(SchemaManager.getEnabledSchemas(context).containsAll(japaneseIds))
         assertEquals("japanese_kana", SettingsPreferences.getCurrentSchema(context))
-        japaneseBytes.forEach { (id, bytes) -> assertArrayEquals(bytes, File(rime, "$id.schema.yaml").readBytes()) }
-        assertArrayEquals(personalPatch, File(rime, "rime_ice.custom.yaml").readBytes())
-        assertArrayEquals(learningData, File(rime, "rime_ice.userdb/000003.log").readBytes())
-        assertArrayEquals(customPhrase, File(rime, "custom_phrase.txt").readBytes())
+        japaneseBytes.forEach { (id, bytes) -> assertArrayEquals(bytes, File(inputData, "$id.schema.yaml").readBytes()) }
+        assertArrayEquals(personalPatch, File(inputData, "cayboard_pinyin.custom.yaml").readBytes())
+        assertArrayEquals(learningData, File(inputData, "cayboard_pinyin.userdb/000003.log").readBytes())
+        assertArrayEquals(customPhrase, File(inputData, "custom_phrase.txt").readBytes())
 
         val removed = SchemaManifestManager.uninstallWithManifest(context, packageId)
         assertTrue(removed.message, removed.success)
-        assertArrayEquals(oldSchema, File(rime, "rime_ice.schema.yaml").readBytes())
-        assertArrayEquals(oldLua, File(rime, "lua/t9_preedit.lua").readBytes())
+        assertArrayEquals(oldSchema, File(inputData, "cayboard_pinyin.schema.yaml").readBytes())
+        assertArrayEquals(oldLua, File(inputData, "lua/t9_preedit.lua").readBytes())
         assertEquals(SchemaManager.sha256Hex(marketFiles.getValue("cn_dicts/others.dict.yaml")), hash("cn_dicts/others.dict.yaml"))
-        assertFalse(File(rime, "opencc/emoji.json").exists())
+        assertFalse(File(inputData, "opencc/emoji.json").exists())
         assertNotNull(SchemaManifestManager.loadManifest(context, "builtin"))
         assertNull(SchemaManifestManager.loadManifest(context, packageId))
         assertTrue(SchemaManager.getEnabledSchemas(context).containsAll(japaneseIds))
         assertEquals("japanese_kana", SettingsPreferences.getCurrentSchema(context))
-        japaneseBytes.forEach { (id, bytes) -> assertArrayEquals(bytes, File(rime, "$id.schema.yaml").readBytes()) }
-        assertArrayEquals(personalPatch, File(rime, "rime_ice.custom.yaml").readBytes())
-        assertArrayEquals(learningData, File(rime, "rime_ice.userdb/000003.log").readBytes())
-        assertArrayEquals(customPhrase, File(rime, "custom_phrase.txt").readBytes())
+        japaneseBytes.forEach { (id, bytes) -> assertArrayEquals(bytes, File(inputData, "$id.schema.yaml").readBytes()) }
+        assertArrayEquals(personalPatch, File(inputData, "cayboard_pinyin.custom.yaml").readBytes())
+        assertArrayEquals(learningData, File(inputData, "cayboard_pinyin.userdb/000003.log").readBytes())
+        assertArrayEquals(customPhrase, File(inputData, "custom_phrase.txt").readBytes())
         assertTrue("下载包保留，便于重装", archive.exists())
     }
     @Test fun explicitEmptyModesRepairOneNativeFallbackAndPreservePersonalPatches() {
-        write("japanese.schema.yaml", asset("rime_japanese/japanese.schema.yaml"))
-        write("japanese_kana.schema.yaml", asset("rime_japanese/japanese_kana.schema.yaml"))
+        write("japanese.schema.yaml", asset("cayboard_japanese/japanese.schema.yaml"))
+        write("japanese_kana.schema.yaml", asset("cayboard_japanese/japanese_kana.schema.yaml"))
         val custom = write("default.custom.yaml", "patch:\n  schema_list: []\n  menu/page_size: 11\n".toByteArray())
         val expected = listOf("japanese")
         assertEquals(expected, SchemaManager.getEnabledSchemas(context))
@@ -160,7 +160,7 @@ class MarketPackageCompatibilityTest {
     }
 
     @Test fun successfulUninstallRemovesOnlyTrulyDeletedModesAndKeepsDownload() = runBlocking {
-        write("japanese.schema.yaml", asset("rime_japanese/japanese.schema.yaml"))
+        write("japanese.schema.yaml", asset("cayboard_japanese/japanese.schema.yaml"))
         write("market_only.schema.yaml", "schema:\n  schema_id: market_only\n  name: Market only\n".toByteArray())
         assertTrue(SchemaManifestManager.createManifest(context, "market-only", "Market only",
             extractedFiles = listOf("market_only.schema.yaml")))
@@ -176,7 +176,7 @@ class MarketPackageCompatibilityTest {
         assertEquals("japanese", SettingsPreferences.getCurrentSchema(context))
         assertFalse(SettingsPreferences.getInstalledMarketIds(context).contains("market-only"))
         assertTrue(archive.exists())
-        assertTrue(File(rime, "japanese.schema.yaml").exists())
+        assertTrue(File(inputData, "japanese.schema.yaml").exists())
     }
 
 }

@@ -6,9 +6,9 @@ import org.junit.Test
 
 class InputResourcePolicyTest {
     @Test fun chineseAndEnglishSchemesRemainAvailable() {
-        val schemas = listOf("rime_ice", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy",
-            "double_pinyin_mspy", "wubi86", "wubi98", "stroke", "cyime_cangjie", "cyime_quick",
-            "cyime_zhuyin", "cyime_english", "cyime_t9_english", "melt_eng")
+        val schemas = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy",
+            "double_pinyin_mspy", "wubi86", "wubi98", "stroke", "cayboard_cangjie", "cayboard_quick",
+            "cayboard_zhuyin", "cayboard_english", "cayboard_t9_english", "melt_eng")
         schemas.forEach { assertTrue(it, InputResourcePolicy.supportsSchema(it)) }
     }
 
@@ -21,8 +21,10 @@ class InputResourcePolicyTest {
 
     @Test fun retirementIsLimitedToKnownBundledFiles() {
         assertTrue(InputResourcePolicy.isRetiredAsset("japanese.schema.yaml"))
-        assertTrue(InputResourcePolicy.isRetiredAsset("lua/cyime_japanese_romaji.lua"))
-        listOf("rime_ice.schema.yaml", "japanese.custom.yaml", "japanese.userdb", "personal.dict.yaml")
+        assertTrue(InputResourcePolicy.isRetiredAsset("lua/cayboard_japanese_romaji.lua"))
+        assertTrue(InputResourcePolicy.isRetiredAsset("fixed_cy.dict.yaml"))
+        listOf("cayboard_pinyin.schema.yaml", "japanese.custom.yaml", "japanese.userdb", "personal.dict.yaml",
+            "cayboard_corpus.dict.yaml")
             .forEach { assertFalse(it, InputResourcePolicy.isRetiredAsset(it)) }
     }
 }

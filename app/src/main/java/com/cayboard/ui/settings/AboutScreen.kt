@@ -81,7 +81,7 @@ object AppInfo {
     
     val dependencies = listOf(
         LicenseItem(
-            name = "CyIME（Cayboard 的上游项目）",
+            name = "CyIME（Cayboard 的来源项目）",
             license = "GPL-3.0",
             url = "https://github.com/Cyletix/CyIME/blob/main/LICENSE"
         ),
@@ -214,7 +214,7 @@ fun AboutContent(
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            text = "Cayboard 是基于 CyIME 和 Rime 开发的开源 Android 输入法，主打中文九键，支持全拼、双拼和英文输入。内置词库、手写、语音转文字和多语种翻译，均在设备上运行。应用代码采用 GNU GPLv3。",
+                            text = "Cayboard 是一款开源 Android 输入法，主打中文九键，支持全拼、双拼和英文输入。内置词库、手写、语音转文字和多语种翻译，均在设备上运行。应用代码采用 GNU GPLv3；引擎与上游来源见下方依赖和许可信息。",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -450,7 +450,7 @@ fun PrivacyPolicyContent(
 
                         PrivacySection(
                             title = "输入和剪贴板",
-                            content = "Rime 在本机处理键盘输入及候选词。确认输入、粘贴或插入译文后，内容会交给当前输入框所在的应用。开启剪贴板历史时，符合记录条件的文本会保存在本机。可在剪贴板删除单条记录，或在「关于 → 存储空间」清理历史。"
+                            content = "输入引擎在本机处理键盘输入及候选词。确认输入、粘贴或插入译文后，内容会交给当前输入框所在的应用。开启剪贴板历史时，符合记录条件的文本会保存在本机。可在剪贴板删除单条记录，或在「关于 → 存储空间」清理历史。"
                         )
 
                         PrivacySection(

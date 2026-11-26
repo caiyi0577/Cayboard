@@ -22,7 +22,7 @@ TEST(T9PatchUtilsTest, Sanitize_Keeps_Alnum_Underscore) {
 }
 
 TEST(T9PatchUtilsTest, Sanitize_Strips_Illegal_Chars) {
-  EXPECT_EQ(SanitizePackName("rime_ice.t9"), "rime_icet9");
+  EXPECT_EQ(SanitizePackName("cayboard_pinyin.t9"), "cayboard_pinyint9");
   EXPECT_EQ(SanitizePackName("a-b/c"), "abc");
 }
 

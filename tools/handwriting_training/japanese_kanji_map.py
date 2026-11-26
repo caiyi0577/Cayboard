@@ -1,6 +1,6 @@
 """日语手写的漢字表：内置汉字手写模型（简体字表）的类 → 日语字形，加日语常用度；以及模型认不出的日本字。
 
-    python japanese_kanji_map.py --data D:/CyIME-Data/datasets/japanese-kanji \\
+    python japanese_kanji_map.py --data D:/Cayboard-Data/datasets/japanese-kanji \\
         --model D:/GitHub/Cayboard/.gradle/bundled-model-cache/ochwpro --out app/src/main/assets/handwriting/japanese_kanji.json
 
 数据：OpenCC 的简→繁（STCharacters）与日本新字体（JPShinjitaiCharacters，新字体→旧字），

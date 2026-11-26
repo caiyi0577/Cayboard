@@ -38,7 +38,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -47,7 +47,7 @@ import org.mockito.kotlin.whenever
 /**
  * 11-10 用户截图：开着翻译栏打开菜单，工具栏的图标画在菜单格子上（菜单只从顶上量了一个候选栏高）。
  * 菜单、表情等面板只盖按键：从工具栏下沿开始，上面是翻译栏、AI 工具面板时也一样；面板底边贴着键盘底边。
- * 设了 CYIME_RENDER_OUT=<目录> 时出图 panel-below-tool-panel-*.png。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时出图 panel-below-tool-panel-*.png。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "w392dp-h800dp-mdpi")
@@ -113,7 +113,7 @@ class PanelBelowToolPanelTest {
     private fun bounds(tag: String): Rect = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInWindow
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT")?.takeIf { it.isNotEmpty() } ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT")?.takeIf { it.isNotEmpty() } ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

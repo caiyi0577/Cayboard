@@ -30,7 +30,7 @@ import java.io.File
 
 /**
  * 「标题＋说明＋开关」整行开关（SettingsToggleItem）：说明写满一行时，文字右边和开关之间至少留 12dp。
- * 用较长的两行说明，手机宽度 360dp。总是检查间距；设置了 CYIME_RENDER_OUT 时另出浅色、深色图。
+ * 用较长的两行说明，手机宽度 360dp。总是检查间距；设置了 CAYBOARD_RENDER_OUT 时另出浅色、深色图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w360dp-h640dp-mdpi")
@@ -69,7 +69,7 @@ class SettingsToggleGapRenderTest {
             val gap = switch.left - text.right
             assertTrue("「$subtitle」离开关只有 $gap", gap >= 12.dp)
         }
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         if (out.isNullOrEmpty()) return
         File(out).mkdirs()
         for (theme in listOf("light", "dark")) {

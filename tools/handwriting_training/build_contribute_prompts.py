@@ -31,8 +31,8 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 ASSETS = pathlib.Path(__file__).resolve().parents[2] / "app/src/main/assets/handwriting"
-SAMPLES = pathlib.Path("D:/CyIME-Data/handwriting_training/contrib/samples.jsonl")
-GRAPHICS = pathlib.Path("D:/CyIME-Data/datasets/makemeahanzi/graphics.txt")
+SAMPLES = pathlib.Path("D:/Cayboard-Data/handwriting_training/contrib/samples.jsonl")
+GRAPHICS = pathlib.Path("D:/Cayboard-Data/datasets/makemeahanzi/graphics.txt")
 RARE = "犇垚燚叕圐圙瀺槻龘鱻骉䴓婍翀嫑孖丼彧玥淼"
 WORDS = ("我们 中国 时候 已经 知道 现在 什么 没有 可以 因为 所以 但是 觉得 还是 银行 "
          "手机 电脑 输入 快递 谢谢 明天 晚上 工作 学习 朋友 问题 喜欢 东西 地方 应该").split()

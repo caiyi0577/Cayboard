@@ -118,7 +118,7 @@ class CharacterPickerTouchTest {
         val view = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { view.draw(android.graphics.Canvas(bitmap)) }
-        val out = File(System.getenv("CYIME_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
+        val out = File(System.getenv("CAYBOARD_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
         File(out, "character-picker.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

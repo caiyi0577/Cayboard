@@ -1,5 +1,5 @@
 {
-  "schema": "cyime.glide.fixture.v1",
+  "schema": "cayboard.glide.fixture.v1",
   "kind": "synthetic",
   "id": "pinyin-path-smoke-v1",
   "language": "zh",

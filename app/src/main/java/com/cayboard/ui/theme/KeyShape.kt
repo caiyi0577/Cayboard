@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Key cap corners, for every layout and panel. ROUNDED keeps the configured radius (xime.yaml key.corner_radius,
+ * Key cap corners, for every layout and panel. ROUNDED keeps the configured radius (cayboard.yaml key.corner_radius,
  * 8 dp by default); SQUARE and SHARP cap it, so a theme that is already squarer stays as it is; ROUNDER raises it
  * to at least [ROUNDER_RADIUS] (10-31: someone's small-screen keyboard with rounder keys), larger radii stay.
  * Honeycomb letter keys keep their hexagons. IDs are stored; keep them upgrade compatible.

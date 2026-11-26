@@ -2,9 +2,9 @@ package com.cayboard.service
 
 import com.cayboard.keyboard.HANDWRITING_SCHEMA_ID
 import com.cayboard.keyboard.underlyingPage
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.T9InputController
-import com.cayboard.rime.buildT9DisplayState
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.T9InputController
+import com.cayboard.engine.buildT9DisplayState
 import com.cayboard.settings.InputLanguage
 import com.cayboard.settings.InputScheme
 import com.cayboard.settings.SchemaManager
@@ -19,22 +19,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Cayboard 引擎补丁里的选项：全角默认只换全角标点表；开着时上屏的字母、数字、空格也改成全角（日文全角英数）。 */
-internal const val FULL_SHAPE_ASCII_OPTION = "cyime_full_shape_ascii"
+internal const val FULL_SHAPE_ASCII_OPTION = "cayboard_full_shape_ascii"
 
-/** 方案里也有、但由设置页开关决定的 Rime 开关：不从 user.yaml 恢复，见 [ImeSessionController.applyCandidateOptions]。 */
+/** 方案里也有、但由设置页开关决定的引擎选项：不从 user.yaml 恢复，见 [ImeSessionController.applyCandidateOptions]。 */
 private val SETTING_SWITCHES = setOf("traditionalization", "emoji")
 
 /**
  * 输入会话组合/UI 更新与方案开关。
  *
- * 承载 Rime composition 到候选栏状态的映射（applyComposition/updateUIWithResult）、
+ * 承载引擎组合态到候选栏状态的映射（applyComposition/updateUIWithResult）、
  * 方案名称/开关刷新与切换、T9 切离提交等逻辑。共享状态通过 service 引用访问。
  */
 internal class ImeSessionController(private val service: CayboardInputMethodService) {
     private var omissionJob: kotlinx.coroutines.Job? = null
     private var omissionRevision = 0L
     private val omissionPause = OmissionPause()
-    /** 上一帧九键编码属于哪个输入框和方案；只有同一个才能借上一帧的字母编码，见 [com.cayboard.rime.t9RawPreedit]。 */
+    /** 上一帧九键编码属于哪个输入框和方案；只有同一个才能借上一帧的字母编码，见 [com.cayboard.engine.t9RawPreedit]。 */
     private var t9PreeditOwner: Pair<Long, String>? = null
     private val t9DigitPreeditLog = T9DigitPreeditLog()
 
@@ -66,7 +66,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             var elapsedMs = -1L
             val changed = withContext(service.keyProcessingDispatcher) {
                 val started = android.os.SystemClock.uptimeMillis()
-                service.rimeEngine.refineOmission(state.engineRevision).also {
+                service.inputEngine.refineOmission(state.engineRevision).also {
                     elapsedMs = android.os.SystemClock.uptimeMillis() - started
                 }
             }
@@ -83,7 +83,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
     }
 
     internal fun applyComposition(
-        composition: com.cayboard.rime.RimeComposition,
+        composition: com.cayboard.engine.EngineComposition,
         extraActions: List<CandidateAction> = emptyList(),
         t9ExtraInjections: List<T9CandidateInjection> = emptyList(),
     ) {
@@ -120,7 +120,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         // the user must see the selected script in the candidate strip as well.
         // Keep the raw list for engine selection and convert only the rendered list.
         val t9DisplayTexts = if (isT9Schema && service.traditionalChineseOutput())
-            t9FilteredTexts.map(service.rimeEngine::toTraditional) else t9FilteredTexts
+            t9FilteredTexts.map(service.inputEngine::toTraditional) else t9FilteredTexts
         var displayText: String
         val displayCandidates: List<String>
         val displayComments: List<String>
@@ -133,7 +133,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             val ui = service.uiState.value
             val owner = ui.inputSessionId to ui.currentSchemaId
             val previous = service.candidateState.value
-            val rawPreedit = com.cayboard.rime.t9RawPreedit(preeditText, inputText,
+            val rawPreedit = com.cayboard.engine.t9RawPreedit(preeditText, inputText,
                 previous.preeditText, previous.isComposing, t9PreeditOwner == owner)
             t9PreeditOwner = if (inputText.isEmpty()) null else owner
             if (inputText.isNotEmpty() && preeditText.any { it.isDigit() }) t9DigitPreeditLog.note(
@@ -145,7 +145,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             }
             // preedit 转换由 C++ t9_filter 完成，Kotlin 侧直接使用引擎输出的 preedit
             val display = buildT9DisplayState(
-                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.rimeEngine.toTraditional(it.text) else it.text },
+                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.inputEngine.toTraditional(it.text) else it.text },
                 rawPreedit, inputText, t9DisplayTexts, t9FilteredComments
             )
             displayText = display.displayText
@@ -189,14 +189,14 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             // 非 T9 方案：preeditText 用引擎回显（带音节分隔符，如全拼 ni'hao）供候选栏展示；
             // inputText 保留原始键入串（无分隔）——空格/切模式等提交路径会把它直接上屏，
             // 不能混入回显字符。历史上曾整体用 input 规避自装双拼插件的展开编码显示，
-            // 代价是全拼丢失分隔符；现仅显示层恢复 librime 标准回显。
+            // 代价是全拼丢失分隔符；现仅显示层恢复引擎标准回显。
             displayText = if (preeditText.isNotEmpty()) preeditText else inputText
             displayCandidates = filteredTexts
             displayComments = filteredComments
             isComposing = inputText.isNotEmpty()
         }
 
-        displayText = com.cayboard.rime.editablePreeditText(displayText, service.uiState.value.currentSchemaId, isAsciiMode)
+        displayText = com.cayboard.engine.editablePreeditText(displayText, service.uiState.value.currentSchemaId, isAsciiMode)
         // 用户开始实际输入时，清除候选栏中残留的 inline suggestions
         if (displayText.isNotEmpty() || displayCandidates.isNotEmpty()) {
             service.dismissInlineSuggestions()
@@ -304,7 +304,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
     }
 
     internal fun updateUIWithResult(
-        result: com.cayboard.rime.RimeProcessResult,
+        result: com.cayboard.engine.EngineProcessResult,
         extraActions: List<CandidateAction> = emptyList(),
         updateInputBoxComposition: Boolean = true,
     ) {
@@ -327,7 +327,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         }
 
         // 非 T9 方案（如双拼）使用原始输入文本显示，
-        // 避免显示 rime speller 展开后的编码（如双拼 i → ch）
+        // 避免显示拼写器展开后的编码（如双拼 i → ch）
         val isT9Schema = isT9Schema(service.uiState.value.currentSchemaId)
         // T9 候选词过滤：根据左侧选择历史（全拼/简拼）过滤不匹配的候选词
         val (t9FilteredTexts, t9FilteredComments) = if (isT9Schema) {
@@ -337,7 +337,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             filteredTexts to filteredComments
         }
         val t9DisplayTexts = if (isT9Schema && service.traditionalChineseOutput())
-            t9FilteredTexts.map(service.rimeEngine::toTraditional) else t9FilteredTexts
+            t9FilteredTexts.map(service.inputEngine::toTraditional) else t9FilteredTexts
         var displayText: String
         val displayCandidates: List<String>
         val displayComments: List<String>
@@ -351,7 +351,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
                 else -> service.candidateState.value.preeditText
             }
             val display = buildT9DisplayState(
-                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.rimeEngine.toTraditional(it.text) else it.text },
+                service.t9PartialSegments.map { if (service.traditionalChineseOutput()) service.inputEngine.toTraditional(it.text) else it.text },
                 rawPreedit, result.inputText, t9DisplayTexts, t9FilteredComments
             )
             displayText = display.displayText
@@ -367,7 +367,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             isComposing = result.inputText.isNotEmpty()
         }
 
-        displayText = com.cayboard.rime.editablePreeditText(displayText, service.uiState.value.currentSchemaId, isAsciiMode)
+        displayText = com.cayboard.engine.editablePreeditText(displayText, service.uiState.value.currentSchemaId, isAsciiMode)
         // 用户开始实际输入时，清除候选栏中残留的 inline suggestions
         if (displayText.isNotEmpty() || displayCandidates.isNotEmpty()) {
             service.dismissInlineSuggestions()
@@ -434,7 +434,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         service.serviceScope.launch(Dispatchers.IO) {
             val page = service.keyboardViewModel.page.value
             val isHandwritingMode = (page.underlyingPage() as? com.cayboard.keyboard.KeyboardPage.Main)?.type == com.cayboard.keyboard.MainType.HANDWRITING
-            val engineSchemaId = service.rimeEngine.getCurrentSchema()
+            val engineSchemaId = service.inputEngine.getCurrentSchema()
             // session 未就绪时 getCurrentSchema() 返回空串：用持久化方案兜底，
             // 避免空值覆盖已正确的 currentSchemaId/schemaName 导致键盘退化为全键盘
             val currentSchemaId = when {
@@ -476,9 +476,9 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
         val switches = defs.filterNot { isPunctuationWidthSwitch(it) }.map { def ->
             val index = when {
                 def.name.isNotEmpty() && def.states.isNotEmpty() ->
-                    if (service.rimeEngine.getOption(def.name)) minOf(1, def.states.size - 1) else 0
+                    if (service.inputEngine.getOption(def.name)) minOf(1, def.states.size - 1) else 0
                 def.options.isNotEmpty() -> {
-                    val active = def.options.indexOfFirst { service.rimeEngine.getOption(it) }
+                    val active = def.options.indexOfFirst { service.inputEngine.getOption(it) }
                     if (active < 0) 0 else active
                 }
                 else -> 0
@@ -499,7 +499,7 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
     /** 在引擎线程上刷新菜单栏方案开关状态。 */
     internal fun refreshSchemaSwitches() {
         service.serviceScope.launch(service.keyProcessingDispatcher) {
-            val schemaId = service.rimeEngine.getCurrentSchema()
+            val schemaId = service.inputEngine.getCurrentSchema()
             val switches = loadSchemaSwitches(schemaId)
             withContext(Dispatchers.Main) {
                 service.uiState.value = service.uiState.value.copy(schemaSwitches = switches)
@@ -509,12 +509,12 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
 
     /** Share the punctuation preference and serialize the shortcut with typed keys. */
     internal fun togglePunctuationWidth(notifyAscii: Boolean = false) {
-        service.keyRouter.postRimeJob {
+        service.keyRouter.postEngineJob {
             if (service.uiState.value.isAsciiMode) {
                 if (notifyAscii) withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(service, "英文模式使用半角标点", android.widget.Toast.LENGTH_SHORT).show()
                 }
-                return@postRimeJob
+                return@postEngineJob
             }
             val full = !service.textCommit.isFullWidthPunctuation()
             SettingsPreferences.setPunctuationFullWidth(service, full)
@@ -531,14 +531,14 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
             if (sw.name == "ascii_mode") {
                 service.schemaController.switchInputMethod()
             } else if (sw.name.isNotEmpty()) {
-                val newValue = !service.rimeEngine.getOption(sw.name)
-                service.rimeEngine.setOption(sw.name, newValue)
+                val newValue = !service.inputEngine.getOption(sw.name)
+                service.inputEngine.setOption(sw.name, newValue)
                 persistSchemaOption(sw.name, newValue)
                 service.updateUI()
             } else if (sw.options.isNotEmpty()) {
                 val nextIndex = (sw.currentIndex + 1) % sw.options.size
                 sw.options.forEachIndexed { i, opt ->
-                    service.rimeEngine.setOption(opt, i == nextIndex)
+                    service.inputEngine.setOption(opt, i == nextIndex)
                     persistSchemaOption(opt, i == nextIndex)
                 }
                 service.updateUI()
@@ -560,82 +560,82 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
     internal fun applyPunctuationWidth(asciiMode: Boolean) {
         // 中文的全角只管标点：候选里的英文、数字和空格照候选栏显示的半角上屏（GitHub 不会变成 ＧｉｔＨｕｂ）。
         // 日文的全角英数是常用写法，仍由引擎整段转成全角。
-        val language = InputLanguage.forSchema(service.rimeEngine.getCurrentSchema())
+        val language = InputLanguage.forSchema(service.inputEngine.getCurrentSchema())
         val japanese = language == InputLanguage.JAPANESE
-        service.rimeEngine.setOption(FULL_SHAPE_ASCII_OPTION, japanese)
+        service.inputEngine.setOption(FULL_SHAPE_ASCII_OPTION, japanese)
         // 英文单词方案不开 ascii 也是英文：和英文模式一样固定半角，不随中文的全角选择。
         if (asciiMode || language == InputLanguage.ENGLISH) {
-            service.rimeEngine.setOption("full_shape", false)
+            service.inputEngine.setOption("full_shape", false)
             return
         }
         if (!SettingsPreferences.hasPunctuationFullWidth(service)) return
         val full = SettingsPreferences.punctuationFullWidth(service, true)
-        service.rimeEngine.setOption("ascii_punct", !full)
-        service.rimeEngine.setOption("full_shape", full)
+        service.inputEngine.setOption("ascii_punct", !full)
+        service.inputEngine.setOption("full_shape", full)
     }
 
     /**
-     * 设置页里直接改 Rime 候选的开关写进引擎，按键路径、打开输入框和设置监听共用一处，设置是唯一来源：
+     * 设置页里直接改候选开关并写进引擎，按键路径、打开输入框和设置监听共用一处，设置是唯一来源：
      * 中英混输、繁体输出（雾凇系方案是 traditionalization；仓颉码表是繁体，反过来用 simplification）、
      * 时间日期候选（选项是反的）、候选里显示表情、打符号名出符号、希腊字母、生僻字。只在值不同时写，返回是否有改动。
-     * [persist] 时把方案开关 traditionalization、emoji 同步进 user.yaml：librime 自己重建会话时按
+     * [persist] 时把方案开关 traditionalization、emoji 同步进 user.yaml：引擎重建会话时按
      * switcher/save_options 从那里恢复，旧值不能再盖过设置。按键路径不写文件。
      */
     internal fun applyCandidateOptions(
         scheme: InputScheme = service.uiState.value.inputProfile.scheme,
         persist: Boolean = false,
     ): Boolean {
-        if (!RimeEngine.isInitialized()) return false
+        if (!InputEngine.isInitialized()) return false
         val prefs = SettingsPreferences.getPrefsPublic(service)
         val traditional = prefs.getBoolean(KeyboardInputPreferences.TRADITIONAL_OUTPUT_KEY, false)
         // 日语长音键：默认 L 键就是 ー；选了单独的 ー 键时 L 是字母 l。翻译器读选项，显示与退格读同一个值。
         val lLetter = !com.cayboard.ui.keyboard.JapaneseLongVowelKey.fromName(
             prefs.getString(KeyboardInputPreferences.JAPANESE_LONG_VOWEL_KEY, null)).lIsLongVowel
-        com.cayboard.rime.japaneseLIsLongVowel = !lLetter
+        com.cayboard.engine.japaneseLIsLongVowel = !lLetter
         val options = buildList {
-            add("cyime_mixed_input" to prefs.getBoolean(KeyboardInputPreferences.MIXED_INPUT_KEY, false))
+            add("cayboard_mixed_input" to prefs.getBoolean(KeyboardInputPreferences.MIXED_INPUT_KEY, false))
             add("traditionalization" to traditional)
             if (scheme == InputScheme.CANGJIE) add("simplification" to !traditional)
             if (scheme == InputScheme.ZHUYIN) {
                 add("zh_tw" to true) // 声调表使用台湾字形，简体输出在声调筛选后转换。
                 add("zhuyin_simplified" to !traditional) // 注音也跟「繁体输出」：关时转简体。
             }
-            add("_cyime_datetime_off" to !prefs.getBoolean(KeyboardInputPreferences.DATETIME_CANDIDATES_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
+            add("_cayboard_datetime_off" to !prefs.getBoolean(KeyboardInputPreferences.DATETIME_CANDIDATES_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
             add("emoji" to prefs.getBoolean(KeyboardInputPreferences.CANDIDATE_EMOJI_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
-            add("cyime_symbol_names" to prefs.getBoolean(KeyboardInputPreferences.SYMBOL_NAMES_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
-            add("cyime_greek_letters" to prefs.getBoolean(KeyboardInputPreferences.GREEK_LETTERS_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
+            add("cayboard_symbol_names" to prefs.getBoolean(KeyboardInputPreferences.SYMBOL_NAMES_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
+            add("cayboard_greek_letters" to prefs.getBoolean(KeyboardInputPreferences.GREEK_LETTERS_KEY, KeyboardInputPreferences.DEFAULT_CHINESE_CANDIDATE_EXTRAS))
             val cylmAlternative = prefs.getBoolean(KeyboardInputPreferences.CYLM_LONG_ALTERNATIVE_KEY, false)
-            if (persist || cylmAlternative) add("cyime_cylm_alternative" to cylmAlternative)
-            add("cyime_rare_chars" to prefs.getBoolean(KeyboardInputPreferences.RARE_CHARACTERS_KEY, false))
-            add("_cyime_l_letter" to lLetter)
+            if (persist || cylmAlternative) add("cayboard_cylm_alternative" to cylmAlternative)
+            add("cayboard_rare_chars" to prefs.getBoolean(KeyboardInputPreferences.RARE_CHARACTERS_KEY, false))
+            add("_cayboard_l_letter" to lLetter)
         }
         var changed = false
         for ((name, value) in options) {
-            if (service.rimeEngine.getOption(name) != value) {
-                service.rimeEngine.setOption(name, value)
+            if (service.inputEngine.getOption(name) != value) {
+                service.inputEngine.setOption(name, value)
                 changed = true
             }
-            if (persist && name in SETTING_SWITCHES && service.rimeEngine.getUserConfigBool("var/option/$name") != value) {
-                service.rimeEngine.setUserConfigBool("var/option/$name", value)
+            if (persist && name in SETTING_SWITCHES && service.inputEngine.getUserConfigBool("var/option/$name") != value) {
+                service.inputEngine.setUserConfigBool("var/option/$name", value)
             }
         }
         return changed
     }
 
-    /** 将方案选项状态写入 librime user.yaml（var/option/<name>）。 */
+    /** 将方案选项状态写入 user.yaml（var/option/<name>）。 */
     internal fun persistSchemaOption(name: String, value: Boolean) {
         if (service.editorInputPolicy.scoped && name == "ascii_mode") return
-        if (RimeEngine.isInitialized()) {
-            service.rimeEngine.setUserConfigBool("var/option/$name", value)
+        if (InputEngine.isInitialized()) {
+            service.inputEngine.setUserConfigBool("var/option/$name", value)
         }
     }
 
-    /** 从 librime user.yaml 恢复方案选项（中/西、简/繁等），在切换方案后调用。 */
+    /** 从 user.yaml 恢复方案选项（中/西、简/繁等），在切换方案后调用。 */
     internal fun restorePersistedSchemaOptions() {
-        if (!RimeEngine.isInitialized()) return
-        val schemaId = service.rimeEngine.getCurrentSchema()
+        if (!InputEngine.isInitialized()) return
+        val schemaId = service.inputEngine.getCurrentSchema()
         if (schemaId.isEmpty()) return
-        val rimeAsciiBefore = service.rimeEngine.isAsciiMode()
+        val engineAsciiBefore = service.inputEngine.isAsciiMode()
         val defs = SchemaManager.getSchemaSwitches(service, schemaId)
         val scheme = com.cayboard.settings.InputProfiles.describe(schemaId).scheme
         // 方案写的默认值（reset）只给导入的方案用；APK 自带的方案保持原来的行为（没切过就是关），不改内置默认。
@@ -651,34 +651,34 @@ internal class ImeSessionController(private val service: CayboardInputMethodServ
                 // 导入的方案用户没切过（user.yaml 里没有这一项）就按方案写的默认值（reset），不能一律当成关：
                 // 导入的声笔 sbxm 写 pro_char reset: 1（单字），原来被改成 0（词组）（GitHub #105）。
                 val key = "var/option/${def.name}"
-                val value = if (service.rimeEngine.getUserConfigString(key) != null) service.rimeEngine.getUserConfigBool(key)
+                val value = if (service.inputEngine.getUserConfigString(key) != null) service.inputEngine.getUserConfigBool(key)
                     else useDeclaredDefault && def.reset == 1
-                service.rimeEngine.setOption(def.name, value)
+                service.inputEngine.setOption(def.name, value)
             } else if (def.options.isNotEmpty()) {
-                val activeIndex = def.options.indexOfFirst { service.rimeEngine.getUserConfigBool("var/option/$it") }
+                val activeIndex = def.options.indexOfFirst { service.inputEngine.getUserConfigBool("var/option/$it") }
                 if (activeIndex >= 0) {
-                    def.options.forEachIndexed { i, opt -> service.rimeEngine.setOption(opt, i == activeIndex) }
+                    def.options.forEachIndexed { i, opt -> service.inputEngine.setOption(opt, i == activeIndex) }
                 }
             }
         }
-        // A disabled language may still be the real Rime fallback for the virtual English mode.
+        // A disabled language may still be the real decoder fallback for the virtual English mode.
         if (com.cayboard.settings.InputLanguage.forSchema(schemaId) !in
             com.cayboard.settings.LanguagePreferences.enabled(service)) {
-            service.rimeEngine.setOption("ascii_mode", true)
+            service.inputEngine.setOption("ascii_mode", true)
             persistSchemaOption("ascii_mode", true)
         }
-        service.editorInputPolicy.engineAsciiOverride()?.let { service.rimeEngine.setOption("ascii_mode", it) }
-        applyPunctuationWidth(service.rimeEngine.isAsciiMode())
+        service.editorInputPolicy.engineAsciiOverride()?.let { service.inputEngine.setOption("ascii_mode", it) }
+        applyPunctuationWidth(service.inputEngine.isAsciiMode())
         // 切方案后 uiState 可能还没跟上，使用引擎刚刚切到的方案。
         applyCandidateOptions(scheme = scheme, persist = true)
-        val rimeAsciiAfter = service.rimeEngine.isAsciiMode()
-        if (rimeAsciiBefore != rimeAsciiAfter) {
-            FileLogger.i(CayboardInputMethodService.TAG, "restorePersistedSchemaOptions: ascii $rimeAsciiBefore -> $rimeAsciiAfter (ui=${service.uiState.value.isAsciiMode})")
+        val engineAsciiAfter = service.inputEngine.isAsciiMode()
+        if (engineAsciiBefore != engineAsciiAfter) {
+            FileLogger.i(CayboardInputMethodService.TAG, "restorePersistedSchemaOptions: ascii $engineAsciiBefore -> $engineAsciiAfter (ui=${service.uiState.value.isAsciiMode})")
         }
     }
 
     /**
-     * T9 键盘切换离开时：提交右侧候选词列表首位候选词并清理 T9 和 Rime 状态。
+     * T9 键盘切换离开时：提交右侧候选词列表首位候选词并清理 T9 与引擎状态。
      * 运行在 keyProcessingDispatcher 线程。
      */
     internal suspend fun commitFirstCandidateAndClearT9() {

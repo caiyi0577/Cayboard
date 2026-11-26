@@ -19,7 +19,7 @@ class ChineseSchemasTest {
         override fun getFilesDir() = directory
         override fun getSharedPreferences(name: String, mode: Int) = super.getSharedPreferences("chinese_test_$name", mode)
     }
-    @Before fun before() { File(directory, "rime").mkdirs(); SettingsPreferences.getPrefsPublic(context).edit().clear().commit() }
+    @Before fun before() { File(directory, "cayboard_input").mkdirs(); SettingsPreferences.getPrefsPublic(context).edit().clear().commit() }
     @After fun after() { directory.deleteRecursively(); SettingsPreferences.getPrefsPublic(context).edit().clear().commit(); CustomKeyboardLayouts.load(base) }
 
     @Test fun freshPhoneAndTabletDefaultsLeaveSampleOptional() {
@@ -28,10 +28,10 @@ class ChineseSchemasTest {
             deviceWidth = width
             assertEquals(width, context.resources.configuration.smallestScreenWidthDp)
             SettingsPreferences.getPrefsPublic(context).edit().clear().commit()
-            val rime = File(directory, "rime")
-            ChineseSchemas.installAssets(context, rime)
-            assertTrue(File(rime, "${QwjrtkLayout.ID}.schema.yaml").isFile)
-            File(rime, "default.custom.yaml").delete()
+            val inputData = File(directory, "cayboard_input")
+            ChineseSchemas.installAssets(context, inputData)
+            assertTrue(File(inputData, "${QwjrtkLayout.ID}.schema.yaml").isFile)
+            File(inputData, "default.custom.yaml").delete()
             assertEquals(CayboardInputDefaults.recommended, SchemaManager.getEnabledSchemas(context))
             assertEquals(CayboardInputDefaults.recommended, SchemaManager.getEnabledSchemas(context))
             SchemaManager.setEnabledSchemas(context, listOf("t9_pinyin", QwjrtkLayout.ID))
@@ -43,8 +43,8 @@ class ChineseSchemasTest {
 
     @Test fun migrationAddsOnlyMissingChineseModesOnceAndPreservesOrdering() {
         File(directory, "custom-keyboard-layouts.json").writeText("""[{"id":"pinyin_qwjrtk","name":"个人双指","rows":"q,w,j,r,t,k,u,i,o,p/a,s,d,f,g,h,e,n,l/z,x,c,y,b,v,m","redVowels":false}]""")
-        ChineseSchemas.installAssets(context, File(directory, "rime"))
-        assertTrue(File(directory, "rime/${QwjrtkLayout.ID}.schema.yaml").isFile)
+        ChineseSchemas.installAssets(context, File(directory, "cayboard_input"))
+        assertTrue(File(directory, "cayboard_input/${QwjrtkLayout.ID}.schema.yaml").isFile)
         assertEquals("个人双指", CustomKeyboardLayouts.find(QwjrtkLayout.ID)?.name)
         val old = listOf("my_custom", "japanese_kana")
         val updated = ChineseSchemas.addOnFirstUpgrade(context, old)
@@ -68,32 +68,36 @@ class ChineseSchemasTest {
         LanguagePreferences.save(context, InputLanguage.ENGLISH, false)
     }
     @Test fun optionalSchemaInstallKeepsAnExistingPersonalLayout() {
-        val rime = File(directory, "rime")
-        val personal = File(rime, "${QwjrtkLayout.ID}.schema.yaml")
+        val inputData = File(directory, "cayboard_input")
+        val personal = File(inputData, "${QwjrtkLayout.ID}.schema.yaml")
         personal.writeText("# personal schema\n")
-        ChineseSchemas.installOptionalLayoutSchemas(context, rime)
+        ChineseSchemas.installOptionalLayoutSchemas(context, inputData)
         assertEquals("# personal schema\n", personal.readText())
-        val cyletix = File(rime, "${Cyletix10Layout.ID}.schema.yaml")
+        val cyletix = File(inputData, "${Cyletix10Layout.ID}.schema.yaml")
         assertTrue(cyletix.isFile)
         val original = cyletix.readText()
         cyletix.writeText("# personal Cyletix10 schema\n")
-        ChineseSchemas.installOptionalLayoutSchemas(context, rime)
+        ChineseSchemas.installOptionalLayoutSchemas(context, inputData)
         assertEquals("# personal Cyletix10 schema\n", cyletix.readText())
         assertTrue(original.contains("schema_id: ${Cyletix10Layout.ID}"))
     }
     @Test fun earlyReadsCannotPersistPartialAssetListsOrConsumeMigrations() {
-        val rime = File(directory, "rime")
-        File(rime, SchemaManager.ASSET_INSTALL_MARKER).writeText("installing")
-        File(rime, "pinyin_simp.schema.yaml").writeText("schema: {schema_id: pinyin_simp, name: old}")
-        val config = File(rime, "default.custom.yaml")
-        config.writeText("patch:\n  schema_list:\n    - schema: pinyin_simp\n")
-        val original = config.readText()
-        assertEquals(CayboardInputDefaults.recommended, SchemaManager.getEnabledSchemas(context))
-        assertEquals(original, config.readText())
-        assertFalse(SettingsPreferences.isBuiltinSchemasMerged(context))
-        assertFalse(SettingsPreferences.getPrefsPublic(context).getBoolean("cyime_chinese_defaults_v1", false))
-        ChineseSchemas.installAssets(context, rime)
-        File(rime, SchemaManager.ASSET_INSTALL_MARKER).delete()
+        for (marker in listOf(SchemaManager.ASSET_INSTALL_MARKER, SchemaManager.LEGACY_ASSET_INSTALL_MARKER)) {
+            val inputData = File(directory, "cayboard_input")
+            inputData.deleteRecursively()
+            inputData.mkdirs()
+            File(inputData, marker).writeText("installing")
+            File(inputData, "pinyin_simp.schema.yaml").writeText("schema: {schema_id: pinyin_simp, name: old}")
+            val config = File(inputData, "default.custom.yaml")
+            config.writeText("patch:\n  schema_list:\n    - schema: pinyin_simp\n")
+            val original = config.readText()
+            assertEquals(CayboardInputDefaults.recommended, SchemaManager.getEnabledSchemas(context))
+            assertEquals(original, config.readText())
+            assertFalse(SettingsPreferences.isBuiltinSchemasMerged(context))
+            assertFalse(SettingsPreferences.getPrefsPublic(context).getBoolean("cayboard_chinese_defaults_v1", false))
+            ChineseSchemas.installAssets(context, inputData)
+            File(inputData, marker).delete()
+        }
         val available = SchemaManager.discoverSchemas(context).map { it.schemaId }
         assertTrue(available.containsAll(BuiltinLetterLayouts.ids))
         assertEquals(CayboardInputDefaults.recommended, SchemaManager.getEnabledSchemas(context))
@@ -105,7 +109,7 @@ class ChineseSchemasTest {
     }
 
     @Test fun packagedSchemaHasClearNameAndDoesNotOverwriteMarketReplacement() {
-        val target = File(directory, "rime")
+        val target = File(directory, "cayboard_input")
         ChineseSchemas.installAssets(context, target)
         val file = File(target, "pinyin_14jian.schema.yaml")
         assertEquals("中文14键", SchemaManager.parseSchemaYaml(file)!!.name)
@@ -113,7 +117,7 @@ class ChineseSchemasTest {
         file.writeText(market)
         ChineseSchemas.installAssets(context, target)
         assertEquals(market, file.readText())
-        assertEquals("中文26键", ChineseSchemas.displayName("rime_ice", "雾凇拼音"))
+        assertEquals("中文26键", ChineseSchemas.displayName("cayboard_pinyin", "雾凇拼音"))
         assertEquals("个人方案", ChineseSchemas.displayName("custom", "个人方案"))
     }
 }

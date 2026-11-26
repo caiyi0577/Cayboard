@@ -123,7 +123,7 @@ internal fun KeyboardKeySpacingScope(
  * 把布局声明的键帽内缩解析成最终视觉。
  *
  * - 声明值 == [KeyVisualPolicy.DeclaredDefaultGap]（2dp，历史默认）→ 用布局策略的每侧 inset；
- * - 声明其他数值 → 视为相邻键帽之间的**总缝**（单侧 = 一半），供 xime.yaml 逐键盘覆盖；
+ * - 声明其他数值 → 视为相邻键帽之间的**总缝**（单侧 = 一半），供 cayboard.yaml 逐键盘覆盖；
  * - 无策略上下文 → 原样返回声明值。
  */
 @Composable

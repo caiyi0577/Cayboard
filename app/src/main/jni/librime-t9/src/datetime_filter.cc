@@ -35,7 +35,7 @@ class DatetimeTranslation : public Translation {
       CandidateList merged(head_.begin(), head_.begin() + i + 1);
       for (const auto& text : texts) {
         hints_.insert(text);
-        merged.push_back(New<SimpleCandidate>("cyime_datetime", word->start(), word->end(),
+        merged.push_back(New<SimpleCandidate>("cayboard_datetime", word->start(), word->end(),
                                               text, "", word->preedit()));
       }
       for (size_t j = i + 1; j < head_.size(); ++j) {
@@ -96,7 +96,7 @@ an<Translation> DatetimeFilter::Apply(an<Translation> translation,
                                       CandidateList* candidates) {
   if (!translation || !engine_) return translation;
   Context* context = engine_->context();
-  if (!context || context->get_option("_cyime_datetime_off")) return translation;
+  if (!context || context->get_option("_cayboard_datetime_off")) return translation;
   const time_t now = std::time(nullptr);
   std::tm local = {};
   localtime_r(&now, &local);

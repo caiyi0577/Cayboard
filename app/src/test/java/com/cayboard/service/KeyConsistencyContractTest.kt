@@ -41,13 +41,13 @@ class KeyConsistencyContractTest {
     }
 
     private fun profile(scheme: InputScheme, layout: InputLayout, id: String) =
-        InputProfile(InputLanguage.CHINESE, scheme, layout, EngineProfile.Rime(id))
+        InputProfile(InputLanguage.CHINESE, scheme, layout, EngineProfile.Decoder(id))
 
     // 自定义布局里有双字母键（bn、ui…）时，布局种类是 MERGED，引擎收到的是键的代表字母。
     private val customMerged = InputLayout("custom_pinyin_0123456789abcdef0123456789abcdef", "我的布局", LayoutKind.MERGED)
 
     private val layouts = listOf(
-        Layout("26 键拼音", profile(InputScheme.PINYIN, InputLayout.QWERTY, "rime_ice"),
+        Layout("26 键拼音", profile(InputScheme.PINYIN, InputLayout.QWERTY, "cayboard_pinyin"),
             "nihao", "ni hao", "nihao", listOf("你好", "拟好"), listOf("", "")),
         Layout("26 键小鹤", profile(InputScheme.DOUBLE_PINYIN, InputLayout.QWERTY, "double_pinyin_flypy"),
             "nihc", "ni hc", "nihc", listOf("你好", "拟好"), listOf("", "")),

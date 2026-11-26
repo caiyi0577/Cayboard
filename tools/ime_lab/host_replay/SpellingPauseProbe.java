@@ -1,12 +1,12 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
 /** Run on a freshly deployed, isolated user directory with the spelling trials enabled. */
 public final class SpellingPauseProbe {
     public static void main(String[] args) {
-        System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-        RimeEngine engine = new RimeEngine();
+        System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+        InputEngine engine = new InputEngine();
         engine.nativeInitialize(args[1], args[1]);
         try {
             require(engine.nativeCreateSession(), "no session");
@@ -22,13 +22,13 @@ public final class SpellingPauseProbe {
             }
             check(engine, "t9_pinyin", "946476642872464524", "形容不上来", "", true);
             check(engine, "t9_pinyin", "946476642875264524", "形容不上来", "", true);
-            check(engine, "rime_ice", "xingrongbusahnglai", "形容不上来", args[2], false);
+            check(engine, "cayboard_pinyin", "xingrongbusahnglai", "形容不上来", args[2], false);
         } finally {
             engine.nativeDestroy();
         }
     }
 
-    private static void enter(RimeEngine e, String schema, String input, String neighbors, boolean digits) {
+    private static void enter(InputEngine e, String schema, String input, String neighbors, boolean digits) {
         require(e.nativeSwitchSchema(schema), schema);
         e.nativeSetInput("");
         e.nativeSetOption("ascii_mode", false);
@@ -36,11 +36,11 @@ public final class SpellingPauseProbe {
         if (digits) e.nativeT9ClearComposition(1);
         for (char c : input.toCharArray()) {
             require(e.nativeProcessKey(c, 0), input);
-            if (digits) e.nativeT9FlushRimeInput();
+            if (digits) e.nativeT9FlushInput();
         }
     }
 
-    private static void check(RimeEngine e, String schema, String input, String target,
+    private static void check(InputEngine e, String schema, String input, String target,
                               String neighbors, boolean digits) {
         enter(e, schema, input, neighbors, digits);
         e.nativeSetCaret(input.length() - 1);

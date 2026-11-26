@@ -12,6 +12,11 @@ def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
+
+def matches_model_file(path, info):
+    return path.is_file() and path.stat().st_size == info['size'] and digest(path) == info['sha256']
+
+
 def prepare(output, cache, selected=None):
     models = json.loads((ROOT / 'scripts/offline-models.json').read_text(encoding='utf-8'))
     if selected:
@@ -29,8 +34,12 @@ def prepare(output, cache, selected=None):
         files = []
         for info in model['files']:
             source = cache / model['id'] / info['name']
-            if not source.is_file() or source.stat().st_size != info['size'] or digest(source) != info['sha256']:
-                raise ValueError(f'Missing or invalid offline build resource: {source}')
+            legacy_name = info.get('legacyCacheName')
+            if not matches_model_file(source, info):
+                legacy_source = source.with_name(legacy_name) if legacy_name else None
+                if legacy_source is None or not matches_model_file(legacy_source, info):
+                    raise ValueError(f'Missing or invalid offline build resource: {source}')
+                source = legacy_source
             target = payload / model['id'] / info['name']
             target.parent.mkdir(parents=True, exist_ok=True)
             if not target.is_file() or digest(target) != info['sha256']:
@@ -39,6 +48,8 @@ def prepare(output, cache, selected=None):
                     os.link(source, target)
                 except OSError:
                     shutil.copyfile(source, target)
+            if legacy_name and legacy_name != target.name:
+                target.with_name(legacy_name).unlink(missing_ok=True)
             files.append({key: info[key] for key in ('name', 'size', 'sha256')})
         manifest.append(dict(id=model['id'], version=model['version'], files=files))
     (payload / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')

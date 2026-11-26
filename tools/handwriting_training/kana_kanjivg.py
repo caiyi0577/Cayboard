@@ -1,6 +1,6 @@
 """把 KanjiVG 的平假名、片假名笔画转成内置默认假名模板，并用自己写的假名样本测准确率。
 
-    python kana_kanjivg.py --kanjivg D:/CyIME-Data/datasets/kanjivg-kana --out app/src/main/assets/handwriting/kana_default_strokes.json
+    python kana_kanjivg.py --kanjivg D:/Cayboard-Data/datasets/kanjivg-kana --out app/src/main/assets/handwriting/kana_default_strokes.json
     python kana_kanjivg.py --kanjivg ... --eval <训练模式导出.jsonl>      # 只测，不写文件
 
 模板文件只含 KanjiVG 的笔画（按笔顺，每笔若干点，坐标在 0..109 的方格里）；
@@ -93,7 +93,7 @@ def load_kanjivg(directory: pathlib.Path, wanted=None) -> dict[str, list[list[tu
 
 def evaluate(templates, samples_path: str, aug: int):
     import fewshot_eval as fe
-    feats = fe.Feats("D:/CyIME-Data/handwriting_training/latex-c-t/20261014/onnx", str(fe.och.APP_MODEL))
+    feats = fe.Feats("D:/Cayboard-Data/handwriting_training/latex-c-t/20261014/onnx", str(fe.och.APP_MODEL))
     queries = [(l, st) for l, st, _ in fe.load(samples_path, {"kana"}) if l in templates]
     rnd = random.Random(0)
     support = [(l, st) for l, st in templates.items()]
@@ -157,7 +157,7 @@ def write_och_vectors(strokes_json: pathlib.Path, och_dir: str, top_n: int = 320
     import hashlib
     import fewshot_eval as fe
     data = json.loads(strokes_json.read_text(encoding="utf-8"))
-    feats = fe.Feats("D:/CyIME-Data/handwriting_training/latex-c-t/20261014/onnx", och_dir)
+    feats = fe.Feats("D:/Cayboard-Data/handwriting_training/latex-c-t/20261014/onnx", och_dir)
     labels, out = [], bytearray()
     for ch, variants in data["chars"].items():
         for st in variants:

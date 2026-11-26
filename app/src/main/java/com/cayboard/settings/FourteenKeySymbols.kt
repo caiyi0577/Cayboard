@@ -45,7 +45,7 @@ internal object FourteenKeySymbols {
         KeysConfigHelper.loadConfig(context)
     }
 
-    /** 符号设置页的修改 > xime.custom.yaml 里给这个键写的 swipe_up/swipe_down > 预设。 */
+    /** 符号设置页的修改 > cayboard.custom.yaml 里给这个键写的 swipe_up/swipe_down > 预设。 */
     fun apply(key: String, original: KeyGestureConfig?, overrides: Map<String, String>): KeyGestureConfig? =
         MergedKeySymbols.apply(keys, key, original, overrides)
 }

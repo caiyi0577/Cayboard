@@ -28,5 +28,5 @@ class VerificationCodeSmsReceiver : BroadcastReceiver() {
         clipboard.setPrimaryClip(clip)
     }
 
-    companion object { const val CLIP_LABEL = "cyime_verification_code" }
+    companion object { const val CLIP_LABEL = "cayboard_verification_code" }
 }

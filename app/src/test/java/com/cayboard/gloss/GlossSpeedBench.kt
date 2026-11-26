@@ -6,11 +6,11 @@ import java.io.File
 
 /**
  * 释义每键耗时：同一份按键回放的候选（每键前 20 个），比较“只查整词”（v3 的做法）和现在“查整词 + 逐词拼”的耗时。
- * 只在设置了 CYIME_GLOSS_BENCH=<词典文件>;<候选文件> 时运行（平时跳过，不进普通单测）。不走缓存，按最坏情况量。
+ * 只在设置了 CAYBOARD_GLOSS_BENCH=<词典文件>;<候选文件> 时运行（平时跳过，不进普通单测）。不走缓存，按最坏情况量。
  */
 class GlossSpeedBench {
     @Test fun perKeyCost() {
-        val spec = System.getenv("CYIME_GLOSS_BENCH")
+        val spec = System.getenv("CAYBOARD_GLOSS_BENCH")
         assumeTrue(!spec.isNullOrEmpty())
         val (dict, keys) = spec!!.split(';')
         val table = GlossTable.open(File(dict))

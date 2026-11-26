@@ -2,7 +2,7 @@
 
 用法：
     python tools/handwriting_training/extract_math_formulas.py D:/GitHub/Math \
-        D:/CyIME-Data/handwriting_training/banks/math_formulas.tsv
+        D:/Cayboard-Data/handwriting_training/banks/math_formulas.tsv
 
 - 公式题：Markdown 里的 $…$ 和单行 $$…$$，规整空白后去重；
 - 推导题：多行 $$…$$（含 \\\\ 换行或 aligned 等环境），或同一段里连续的等式，合成一道整段写的长题，太长按行拆段；

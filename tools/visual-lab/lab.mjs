@@ -1,5 +1,7 @@
 import {validate,sceneSvg,styles} from './renderer.mjs';
 const $=id=>document.getElementById(id), code=$('code');
+const stateKey=id=>'cayboard-lab-'+id;
+const legacyStateKey=id=>'cyime-lab-'+id;
 let config, initial, jsonDraft, svgDraft, resources, currentSvg='', rev=0, timer, gallerySource='';
 const status=(s,error=false)=>{$('status').textContent=s;$('status').classList.toggle('error',error)};
 const svgUrl=s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
@@ -25,7 +27,7 @@ function draw() {
       currentSvg=sceneSvg(config,$('style').value,$('scene').value,$('theme').value,resources,$('palette').value);
       const source=code.value+'|'+$('palette').value;
       if(gallerySource!==source){gallery();gallerySource=source;}
-      for(const id of ['style','scene','theme','palette']) localStorage.setItem('cyime-lab-'+id,$(id).value);
+      for(const id of ['style','scene','theme','palette']) localStorage.setItem(stateKey(id),$(id).value);
     }
     else {svgDraft=code.value;currentSvg=safeSvg(code.value);}
     $('render').src=svgUrl(currentSvg);$('timing').textContent=`#${rev} · ${(performance.now()-start).toFixed(1)} ms`;
@@ -51,9 +53,9 @@ $('backdrop').onchange=()=>{$('canvas').className=$('backdrop').value};
 $('mode').onchange=()=>{if($('mode').value==='svg'){jsonDraft=code.value;code.value=svgDraft||currentSvg.replace(/></g,'>\n<');}else{svgDraft=code.value;code.value=jsonDraft;}draw();};
 $('reset').onclick=()=>{$('mode').value='json';code.value=initial;draw()};
 $('import').onclick=()=>$('file').click();$('file').onchange=async()=>{const f=$('file').files[0];if(!f)return;$('mode').value=f.name.endsWith('.svg')?'svg':'json';code.value=await f.text();draw();};
-$('save').onclick=()=>download(code.value,'text/plain',`cyime-design.${$('mode').value}`);
-$('svg').onclick=()=>download(currentSvg,'image/svg+xml',`cyime-${$('style').value}-${$('scene').value}.svg`);
-$('png').onclick=async()=>{try{const img=new Image();img.src=svgUrl(currentSvg);await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth||1024;canvas.height=img.naturalHeight||1024;canvas.getContext('2d').drawImage(img,0,0);canvas.toBlob(blob=>{if(blob)download(blob,'image/png','cyime-preview.png');},'image/png');}catch(e){status(e.message,true);}};
+$('save').onclick=()=>download(code.value,'text/plain',`cayboard-design.${$('mode').value}`);
+$('svg').onclick=()=>download(currentSvg,'image/svg+xml',`cayboard-${$('style').value}-${$('scene').value}.svg`);
+$('png').onclick=async()=>{try{const img=new Image();img.src=svgUrl(currentSvg);await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth||1024;canvas.height=img.naturalHeight||1024;canvas.getContext('2d').drawImage(img,0,0);canvas.toBlob(blob=>{if(blob)download(blob,'image/png','cayboard-preview.png');},'image/png');}catch(e){status(e.message,true);}};
 $('compile').onclick=async()=>{try{validate(JSON.parse(code.value));const r=await fetch('/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:code.value});const result=await r.json();if(!r.ok)throw Error(result.error);initial=code.value;status('已保存并生成 Android 参数与矢量图标；重新打包后生效');}catch(e){status(e.message,true);}};
 try {
   const [source,assets]=await Promise.all([fetch('design.json'),fetch('android-resources.json')]);
@@ -61,7 +63,13 @@ try {
   initial=await source.text();resources=await assets.json();
   for(const t of resources.themes){const option=new Option(t.name,t.id);$('palette').add(option);}
   $('palette').value=resources.themes.some(t=>t.id===resources.selectedTheme)?resources.selectedTheme:resources.themes[0].id;
-  for(const id of ['style','scene','theme','palette']){const saved=localStorage.getItem('cyime-lab-'+id);if([...$(id).options].some(o=>o.value===saved))$(id).value=saved;}
+  for(const id of ['style','scene','theme','palette']){
+    const current=localStorage.getItem(stateKey(id));
+    const legacy=localStorage.getItem(legacyStateKey(id));
+    const saved=current??legacy;
+    if([...$(id).options].some(o=>o.value===saved))$(id).value=saved;
+    if(current===null&&legacy!==null)localStorage.setItem(stateKey(id),legacy);
+  }
   $('resource-source').textContent=resources.source+' · 配色和功能图标来自输入法；设备动态配色为本次导出快照';
   code.value=jsonDraft=initial;draw();
   for(const name of ['visual-frost-dark','visual-frost-light']){const img=new Image();img.src=`/captures/${name}.png`;img.alt=`Android ${name}`;img.onerror=()=>img.remove();$('captures').append(img);}

@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -7,12 +7,12 @@ import java.util.List;
 
 /**
  * Nine keys and 14 keys keeping up with 26 keys (2026-10-30). Arguments: the built library directory, a
- * fresh test user directory listing rime_ice, t9_pinyin and pinyin_14jian (never an installed app's data),
+ * fresh test user directory listing cayboard_pinyin, t9_pinyin and pinyin_14jian (never an installed app's data),
  * and a mode:
  *   all  — the nine-key flick letter joins the code and fixes that position instead of clearing it; custom
  *          phrases reach nine keys (digits) and 14 keys (pair capitals) through the copies the app writes;
  *          then the 14-key ranking list below.
- *   rank — only the 14-key ranking list and whether a removed candidate (cyime-hidden-candidates.txt) still
+ *   rank — only the 14-key ranking list and whether a removed candidate (cayboard-hidden-candidates.txt) still
  *          shows, to compare a schema before and after a filter change.
  * The phrase files are written the way PersonalDictManager.ensureSchemaPackInner writes them.
  */
@@ -30,13 +30,13 @@ public final class LayoutSyncProbe {
   static int failures = 0;
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
     String mode = args.length > 2 ? args[2] : "all";
     if (mode.equals("all")) writePhrases(user);
     // A candidate removed by long-press on 26 keys; 14 keys must not offer it either.
-    write(new File(user, "cyime-hidden-candidates.txt"), HIDDEN + "\n");
-    RimeEngine e = new RimeEngine();
+    write(new File(user, "cayboard-hidden-candidates.txt"), HIDDEN + "\n");
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user.getPath(), user.getPath());
     try {
       e.nativeEnsureT9SchemaPatches(T9);
@@ -55,17 +55,17 @@ public final class LayoutSyncProbe {
 
   // ── Nine-key flick letter (ledger 498) ──
 
-  static void flick(RimeEngine e) throws Exception {
+  static void flick(InputEngine e) throws Exception {
     select(e, T9);
     e.nativeT9ClearComposition(1);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
     check("with no code a flick is an ordinary letter (FixLetter declines)", !e.nativeT9FixLetter("g"));
     for (String[] c : new String[][] {{"9426", "g"}, {"9426", "h"}, {"744", "i"}, {"74", "h"}}) {
       e.nativeT9ClearComposition(1);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       type(e, c[0]);
       boolean fixed = e.nativeT9FixLetter(c[1]);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       String input = e.nativeGetInput();
       char digit = T9_DIGITS.charAt(c[1].charAt(0) - 'a');
       String[][] rows = e.nativeInspectCandidates(30);
@@ -89,7 +89,7 @@ public final class LayoutSyncProbe {
         check(c[0] + "+" + c[1] + " then 6: still " + c[1], letters(after[0][1]).charAt(position) == c[1].charAt(0));
     }
     e.nativeT9ClearComposition(1);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
   }
 
   // ── Custom phrases on nine and 14 keys ──
@@ -110,7 +110,7 @@ public final class LayoutSyncProbe {
     write(new File(user, "custom_phrase.txt"), shared.toString());
     write(new File(user, "custom_phrase_t9.txt"), t9.toString());
     write(new File(user, "custom_phrase_k14.txt"), k14.toString());
-    write(new File(user, "rime_ice.custom.yaml"), patch("custom_phrase"));
+    write(new File(user, "cayboard_pinyin.custom.yaml"), patch("custom_phrase"));
     write(new File(user, T9 + ".custom.yaml"), patch("custom_phrase_t9"));
     write(new File(user, K14 + ".custom.yaml"), patch("custom_phrase_k14"));
   }
@@ -121,9 +121,9 @@ public final class LayoutSyncProbe {
         + "    enable_sentence: false\n    initial_quality: 99\n";
   }
 
-  static void phrases(RimeEngine e) throws Exception {
+  static void phrases(InputEngine e) throws Exception {
     for (String[] p : PHRASES) {
-      phrase(e, "rime_ice", p[1], p[0], false);
+      phrase(e, "cayboard_pinyin", p[1], p[0], false);
       phrase(e, T9, t9Code(p[1]), p[0], true);
       phrase(e, K14, k14Code(p[1]), p[0], false);
       // Swiping each letter on 14 keys types the letters themselves.
@@ -131,9 +131,9 @@ public final class LayoutSyncProbe {
     }
   }
 
-  static void phrase(RimeEngine e, String schema, String code, String text, boolean t9) throws Exception {
+  static void phrase(InputEngine e, String schema, String code, String text, boolean t9) throws Exception {
     select(e, schema);
-    if (t9) { e.nativeT9ClearComposition(1); e.nativeT9FlushRimeInput(); type(e, code); }
+    if (t9) { e.nativeT9ClearComposition(1); e.nativeT9FlushInput(); type(e, code); }
     else { for (char c : code.toCharArray()) if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c); }
     String[][] rows = e.nativeInspectCandidates(20);
     int rank = -1;
@@ -145,7 +145,7 @@ public final class LayoutSyncProbe {
 
   // ── 14-key ranking ──
 
-  static void ranking(RimeEngine e) throws Exception {
+  static void ranking(InputEngine e) throws Exception {
     select(e, K14);
     for (String[] w : RANKING) {
       String code = k14Code(w[1]);
@@ -160,7 +160,7 @@ public final class LayoutSyncProbe {
 
   static final String HIDDEN = "童话";
 
-  static void hidden(RimeEngine e, boolean required) throws Exception {
+  static void hidden(InputEngine e, boolean required) throws Exception {
     select(e, K14);
     String code = k14Code("tonghua");
     for (char c : code.toCharArray()) if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
@@ -198,21 +198,21 @@ public final class LayoutSyncProbe {
     return out.toString();
   }
 
-  static void select(RimeEngine e, String schema) throws Exception {
+  static void select(InputEngine e, String schema) throws Exception {
     if (!e.nativeSwitchSchema(schema)) throw new Exception("schema unavailable: " + schema);
     e.nativeSetOption("ascii_mode", false);
   }
 
-  static void clear(RimeEngine e, boolean t9) {
+  static void clear(InputEngine e, boolean t9) {
     if (t9) e.nativeT9ClearComposition(1);
     e.nativeSetInput("");
-    if (t9) e.nativeT9FlushRimeInput();
+    if (t9) e.nativeT9FlushInput();
   }
 
-  static void type(RimeEngine e, String digits) throws Exception {
+  static void type(InputEngine e, String digits) throws Exception {
     for (char c : digits.toCharArray()) {
       if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     }
   }
 
@@ -225,7 +225,7 @@ public final class LayoutSyncProbe {
     Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
   }
 
-  static void maintain(RimeEngine e, boolean full) throws Exception {
+  static void maintain(InputEngine e, boolean full) throws Exception {
     e.nativeStartMaintenance(full);
     long until = System.currentTimeMillis() + 1200000;
     while (e.nativeIsMaintaining()) {

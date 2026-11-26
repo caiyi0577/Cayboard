@@ -35,7 +35,7 @@ def api(root):
 def wubi(root):
     import yaml
     result = []
-    for path in sorted((root / "app/src/main/assets/rime").glob("wubi*.schema.yaml")):
+    for path in sorted((root / "app/src/main/assets/cayboard_base").glob("wubi*.schema.yaml")):
         schema = yaml.safe_load(read(path))
         active = "reverse_lookup_translator" in schema["engine"]["translators"]
         reverse = schema.get("reverse_lookup", {})
@@ -48,7 +48,7 @@ def wubi(root):
 
 def accents(root):
     import yaml
-    config = yaml.safe_load(read(root / "app/src/main/assets/xime.yaml"))
+    config = yaml.safe_load(read(root / "app/src/main/assets/cayboard.yaml"))
     keys = config["keyboard"]["qwerty"]["keys"]
     missing = []
     for letter, tones in {"a": "āáǎà", "e": "ēéěè", "i": "īíǐì", "o": "ōóǒò", "u": "ūúǔù"}.items():

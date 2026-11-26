@@ -25,7 +25,7 @@ import kotlin.math.abs
 
 class SchemaGridLayoutTest {
     @get:Rule val rule = createComposeRule()
-    private val schemas = listOf("rime_ice", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "japanese")
+    private val schemas = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "japanese")
         .map { SchemaInfo(it, it, "", "", "") }
 
     @Test fun shortPanelSwitchesWithoutAnApplyStep() = checkChoices(360, 176, 1f)
@@ -34,7 +34,7 @@ class SchemaGridLayoutTest {
 
     private fun checkChoices(width: Int, height: Int, fontScale: Float) {
         val selected = mutableListOf<String>()
-        val current = mutableStateOf("rime_ice")
+        val current = mutableStateOf("cayboard_pinyin")
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
                 MaterialTheme {
@@ -60,7 +60,7 @@ class SchemaGridLayoutTest {
         rule.runOnIdle { assertEquals(listOf("double_pinyin_flypy", "t9_pinyin"), selected) }
         rule.onNodeWithTag("panel-scheme:t9_pinyin").assertIsSelected()
         rule.onNodeWithTag("panel-layout:qwerty").performScrollTo().performClick()
-        rule.runOnIdle { assertEquals(listOf("double_pinyin_flypy", "t9_pinyin", "rime_ice"), selected) }
+        rule.runOnIdle { assertEquals(listOf("double_pinyin_flypy", "t9_pinyin", "cayboard_pinyin"), selected) }
         rule.onAllNodesWithTag("schema-tile:t9_pinyin").assertCountEquals(0)
     }
 
@@ -149,7 +149,7 @@ class SchemaGridLayoutTest {
     }
 
     @Test fun backendVariantsDoNotDuplicateTheLayoutChoice() {
-        val variants = listOf("double_pinyin_flypy", "double_pinyin_abc", "rime_ice")
+        val variants = listOf("double_pinyin_flypy", "double_pinyin_abc", "cayboard_pinyin")
             .map { SchemaInfo(it, it, "", "", "") }
         var selected by mutableStateOf(variants.first())
         rule.setContent { MaterialTheme {

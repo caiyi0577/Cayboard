@@ -15,7 +15,7 @@ class StorageHousekeepingTest {
     @Test fun `只认出中断留下的临时文件`() {
         val cache = tmp.newFolder("cache")
         val models = tmp.newFolder("models")
-        val rime = tmp.newFolder("rime")
+        val inputData = tmp.newFolder("cayboard_input")
         val stale = listOf(
             File(cache, "model-download-$id").apply { mkdirs(); File(this, "encoder.onnx").writeText("partial") },
             File(cache, "model-import-$id").apply { mkdirs() },
@@ -28,7 +28,7 @@ class StorageHousekeepingTest {
             // 不再使用的智能联想模型
             File(models, "predictive-text-base").apply { mkdirs(); File(this, "model_int8_dynamic.onnx").writeText("old") },
             File(models, "predictive-text-small").apply { mkdirs() },
-            File(rime, ".t9_ngram.lm.$id.installing").apply { writeText("link") },
+            File(inputData, ".t9_ngram.lm.$id.installing").apply { writeText("link") },
         )
         val kept = listOf(
             File(cache, "coil_cache").apply { mkdirs() },
@@ -36,10 +36,10 @@ class StorageHousekeepingTest {
             File(cache, "model-download-notauuid").apply { mkdirs() },
             File(models, "t9-ngram").apply { mkdirs() },
             File(models, "download-t9-ngram-$id").apply { mkdirs() },
-            File(rime, "t9_ngram.lm").apply { writeText("model") },
-            File(rime, "t9_pinyin.schema.yaml.installing").apply { writeText("schema") },
+            File(inputData, "t9_ngram.lm").apply { writeText("model") },
+            File(inputData, "t9_pinyin.schema.yaml.installing").apply { writeText("schema") },
         )
-        val found = StorageHousekeeping.findLeftovers(cache, models, rime).toSet()
+        val found = StorageHousekeeping.findLeftovers(cache, models, inputData).toSet()
         assertEquals(stale.toSet(), found)
         assertTrue(kept.none { it in found })
     }

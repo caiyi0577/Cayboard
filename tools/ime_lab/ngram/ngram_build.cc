@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   // model by at least this much, i.e. P(n-gram) * ln(P / backed-off P) >= threshold.
   double prune2 = 0, prune3 = 0;
   size_t max_words = 0;
-  uint32_t format = cyime_t9_ngram::kVersion3;  // --format 2 writes the original layout
+  uint32_t format = cayboard_t9_ngram::kVersion3;  // --format 2 writes the original layout
   std::string tmp = "/tmp";
   std::vector<std::pair<std::string, std::string>> segment_jobs;
   for (int i = 4; i < argc; ++i) {
@@ -441,7 +441,7 @@ int main(int argc, char** argv) {
   const uint32_t M = model_vocab.size();
 
   // Pass B: interpolated probabilities for kept bigrams; renormalized backoff per history.
-  std::vector<cyime_t9_ngram::WordEntry> entries(M);
+  std::vector<cayboard_t9_ngram::WordEntry> entries(M);
   for (uint32_t m = 0; m < M; ++m) {
     const uint32_t w = model_vocab[m];
     entries[m].ln_lower = static_cast<float>(std::log(lower(w)));
@@ -570,7 +570,7 @@ int main(int argc, char** argv) {
   const uint64_t kept3 = tri_next.size();
 
   // Write the file through the shared writer (compact version 3 unless --format 2).
-  cyime_t9_ngram::ModelTables tables;
+  cayboard_t9_ngram::ModelTables tables;
   tables.eos = model_eos;
   tables.bos = model_bos;
   tables.unseen_lower = static_cast<float>(std::log((1 - prior_weight) * delta / lower_denominator));
@@ -578,7 +578,7 @@ int main(int argc, char** argv) {
   tables.keys.assign(M, 0);
   for (uint32_t m = 0; m < M; ++m) {
     const uint32_t w = model_vocab[m];
-    if (w < V) tables.keys[m] = cyime_t9_ngram::Hash(vocab.words[w].data(), vocab.words[w].size());
+    if (w < V) tables.keys[m] = cayboard_t9_ngram::Hash(vocab.words[w].data(), vocab.words[w].size());
   }
   tables.entries = std::move(entries);
   tables.begin.resize(M + 1);
@@ -592,8 +592,8 @@ int main(int argc, char** argv) {
   tables.tri_begin = std::move(tri_begin);
   tables.tri_next = std::move(tri_next);
   tables.tri_logp = std::move(tri_logp);
-  cyime_t9_ngram::WriteStats stats;
-  if (!cyime_t9_ngram::WriteModel(argv[3], tables, format, &stats)) {
+  cayboard_t9_ngram::WriteStats stats;
+  if (!cayboard_t9_ngram::WriteModel(argv[3], tables, format, &stats)) {
     std::cerr << "cannot write " << argv[3] << " (format " << format << ")\n";
     return 2;
   }

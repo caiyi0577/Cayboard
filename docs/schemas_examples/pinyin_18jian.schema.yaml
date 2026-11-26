@@ -62,7 +62,7 @@ speller:
     - derive/ao$/oa/
     - derive/([iu])a(o|ng?)$/a$1$2/
     # 合并键"按键序列码"派生：先把每条码复制为大写（不污染原始小写码），
-    # 再由 xlit 逐位映射为该键的代表字母（与 xime.yaml qwerty_18 分组一一对应）
+    # 再由 xlit 逐位映射为该键的代表字母（与 cayboard.yaml qwerty_18 分组一一对应）
     - derive/(.*)/\U$1/
     - xlit/QWERTYUIOPASDFGHJKLZXCVBNM/qwwrryuiipassffhjjlzxxvbbm/
 

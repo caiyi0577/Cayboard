@@ -42,7 +42,7 @@ class ToolbarSlotSizingTest {
 
     private fun show(width: Int) {
         KeysConfigHelper.loadConfig(app)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         rule.setContent {
             val configuration = Configuration(LocalConfiguration.current).apply {
                 screenWidthDp = width; screenHeightDp = 1400; orientation = Configuration.ORIENTATION_PORTRAIT
@@ -51,7 +51,7 @@ class ToolbarSlotSizingTest {
                 MaterialTheme {
                     Box(Modifier.requiredSize((width + 20).dp, 420.dp).testTag("toolbar-host"), contentAlignment = Alignment.Center) {
                         val vm = remember { KeyboardViewModel(app) }
-                        KeyboardView(vm, KeyboardUiState(currentSchemaId = "rime_ice", keyboardHeightDp = 380,
+                        KeyboardView(vm, KeyboardUiState(currentSchemaId = "cayboard_pinyin", keyboardHeightDp = 380,
                             keyboardWidthDp = width, fixedWidthDp = width, isDarkTheme = true),
                             KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {},
                                 onHideKeyboard = {}, onUpdateToolbarButtons = {}),

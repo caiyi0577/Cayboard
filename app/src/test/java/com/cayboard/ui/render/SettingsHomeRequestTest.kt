@@ -32,9 +32,9 @@ class SettingsHomeRequestTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
 
     @Before fun setup() {
-        File(app.filesDir, "rime/xime.custom.yaml").apply {
+        File(app.filesDir, "cayboard_input/cayboard.custom.yaml").apply {
             parentFile!!.mkdirs()
-            writeText("xime_index:\n  base_urls: []\n")
+            writeText("cayboard_index:\n  base_urls: []\n")
         }
         KeyboardThemes.initFromConfig(app)
     }

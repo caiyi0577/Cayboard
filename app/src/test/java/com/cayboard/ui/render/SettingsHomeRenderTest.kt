@@ -29,7 +29,7 @@ import java.io.File
 
 /**
  * 「关于」和隐私政策在浅色和深色下的样子，用真实设置页代码在电脑上渲染（每种一张图：左隐私政策、右关于）。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "zh-rCN-w880dp-h2600dp-mdpi")
@@ -42,7 +42,7 @@ class SettingsHomeRenderTest {
     @Test fun renderDarkAboutAndPrivacy() = render(dark = true)
 
     private fun render(dark: Boolean) {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val search = com.cayboard.ui.settings.SettingsSearchIndex
         assertTrue(search.none { it.title in setOf("更新内容", "鸣谢") })

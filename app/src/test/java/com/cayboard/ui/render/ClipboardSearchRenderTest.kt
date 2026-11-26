@@ -52,7 +52,7 @@ import java.io.File
 /**
  * 剪贴板搜索：键盘尺寸、位置不变；搜索框是工具面板（同一组件、同一位置）；上面是剪贴板（上拉展开的高度，只看结果）。
  * 浅色/深色/纯白/纯黑 × 玻璃，手机/平板宽度，固定/悬浮；全部是假数据。
- * 键盘区用一块同色占位表示（真实键盘不变）。只在设置了 CYIME_RENDER_OUT=<目录> 时出图。
+ * 键盘区用一块同色占位表示（真实键盘不变）。只在设置了 CAYBOARD_RENDER_OUT=<目录> 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1800dp-h3000dp-hdpi")
@@ -118,7 +118,7 @@ class ClipboardSearchRenderTest {
     }
 
     @Test fun renderSearch() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         KeyboardThemes.initFromConfig(ApplicationProvider.getApplicationContext<Context>())
         val themes = listOf(Triple("soft_blue", false, "浅色"), Triple("soft_blue", true, "深色"),
@@ -155,7 +155,7 @@ class ClipboardSearchRenderTest {
      * 浅色 / 深色 / 纯白 / 纯黑 × 实色 / 玻璃，26 键与九键各一行（键盘区为占位）。
      */
     @Test fun renderLandscape() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         KeyboardThemes.initFromConfig(ApplicationProvider.getApplicationContext<Context>())
         val screen = 390

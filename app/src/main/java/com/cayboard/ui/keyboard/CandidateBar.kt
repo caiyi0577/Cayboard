@@ -1066,15 +1066,15 @@ internal fun correctionAnnotatedString(marks: String, plain: Color,
     androidx.compose.ui.text.buildAnnotatedString {
         val keep = androidx.compose.ui.text.SpanStyle(color = plain)
         val changed = androidx.compose.ui.text.SpanStyle(color = CorrectionRed)
-        val parsed = if (fullScheme == null) com.cayboard.rime.CorrectionMarks.parse(marks)
-            else com.cayboard.rime.CorrectionMarks.doublePinyinFull(marks, fullScheme)
+        val parsed = if (fullScheme == null) com.cayboard.engine.CorrectionMarks.parse(marks)
+            else com.cayboard.engine.CorrectionMarks.doublePinyinFull(marks, fullScheme)
         for (mark in parsed) when (mark) {
-            is com.cayboard.rime.CorrectionMark.Keep -> withStyle(keep) { append(mark.letter) }
-            is com.cayboard.rime.CorrectionMark.Extra -> Unit
-            is com.cayboard.rime.CorrectionMark.Missing -> withStyle(changed) { append(mark.letter) }
-            is com.cayboard.rime.CorrectionMark.Replace -> withStyle(changed) { append(mark.correct) }
-            is com.cayboard.rime.CorrectionMark.Swap -> withStyle(changed) { append(mark.correct) }
-            com.cayboard.rime.CorrectionMark.Gap -> withStyle(keep) { append(' ') }
+            is com.cayboard.engine.CorrectionMark.Keep -> withStyle(keep) { append(mark.letter) }
+            is com.cayboard.engine.CorrectionMark.Extra -> Unit
+            is com.cayboard.engine.CorrectionMark.Missing -> withStyle(changed) { append(mark.letter) }
+            is com.cayboard.engine.CorrectionMark.Replace -> withStyle(changed) { append(mark.correct) }
+            is com.cayboard.engine.CorrectionMark.Swap -> withStyle(changed) { append(mark.correct) }
+            com.cayboard.engine.CorrectionMark.Gap -> withStyle(keep) { append(' ') }
         }
     }
 
@@ -1418,7 +1418,7 @@ internal fun PreeditLabel(text: String, visuals: CandidateBarVisuals, onEdit: ((
         .then(if (onEdit != null) Modifier.clickable(role = Role.Button,
             onClickLabel = "编辑拼音", onClick = onEdit) else Modifier),
         contentAlignment = Alignment.CenterStart) {
-        val shownText = if (onEdit != null) com.cayboard.rime.pinyinPreviewText(text) else text
+        val shownText = if (onEdit != null) com.cayboard.engine.pinyinPreviewText(text) else text
         // 光标像系统文字光标一样闪（530ms 一亮一灭，用户 10-21 同意）。节拍挂在拼音条上而不是光标位置上：
         // 移动光标、光标暂时到末尾不显示时都接着原来的节拍走，不会每移一下又从头亮起。
         // 用计时切换，不用无限动画：无限动画每一帧（120Hz 屏每秒 120 次）都要唤醒界面线程，打拼音的全程一直耗电。

@@ -11,17 +11,17 @@ namespace rime {
 int DigitSegmentStrategy::ComputeConsumedCount(
     const T9Buffer& buf,
     const std::optional<std::string>& candidate_pinyin,
-    int rime_consumed_digits) {
+    int engine_consumed_digits) {
 
     const std::string& segment = buf.unassigned();
 
-    // 方案 A：RIME 候选 end 优先（精确反映 schema 派生编码的匹配范围）。
+    // 方案 A：引擎候选 end 优先（精确反映 schema 派生编码的匹配范围）。
     // 如"涌动 yong dong"派生编码 966+36 匹配整个 96636，RIME end 换算=5，
     // 而 AlignWithBuffer 用完整拼音编码（yong=9664, dong=3664）只算出 4。
-    if (rime_consumed_digits > 0) {
-        int consumed = std::min(rime_consumed_digits,
+    if (engine_consumed_digits > 0) {
+        int consumed = std::min(engine_consumed_digits,
                                 static_cast<int>(segment.size()));
-        RCLOG(">> DigitSegment: rimeConsumed=%d (segment='%s')", consumed, segment.c_str());
+        RCLOG(">> DigitSegment: engineConsumed=%d (segment='%s')", consumed, segment.c_str());
         return consumed;
     }
 
@@ -117,7 +117,7 @@ bool DigitSegmentStrategy::Handle(
         }
         ctx.left_column_locked = false;
         // undo fallback 特殊场景：RestoreFrom 后仅 sync_state + Pop undo，
-        // 不调用 update_candidates / set_rime_input（保留原 RIME 候选与 input 状态）
+        // 不调用 update_candidates / set_engine_input（保留原 引擎候选与 input 状态）
         // 因此不复用 Context::TransitionTo* 系列
         ctx.state_machine.RestoreFrom(
             prev_selected_option.has_value()

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import com.cayboard.service.CandidateFocus
 import com.cayboard.service.CandidateState
 import com.cayboard.service.hasSameSelectionSource
@@ -230,7 +230,7 @@ class CandidateBarTest {
         KeysConfigHelper.loadConfig(app)
         val viewModel = KeyboardViewModel(app)
         val connected = mutableStateOf(false)
-        val ui = mutableStateOf(KeyboardUiState(currentSchemaId = "rime_ice"))
+        val ui = mutableStateOf(KeyboardUiState(currentSchemaId = "cayboard_pinyin"))
         val candidates = mutableStateOf(CandidateState(
             candidates = listOf("你好", "世界"), inputText = "nihao", preeditText = "ni hao", isComposing = true,
         ))
@@ -245,7 +245,7 @@ class CandidateBarTest {
                 }
             }
         }
-        for (schema in listOf("rime_ice", "pinyin_14jian", "t9_pinyin")) {
+        for (schema in listOf("cayboard_pinyin", "pinyin_14jian", "t9_pinyin")) {
             composeTestRule.runOnIdle {
                 viewModel.setKeyboardState(if (schema == "t9_pinyin") KeyboardLayoutState.T9Pinyin else KeyboardLayoutState.Chinese)
                 ui.value = ui.value.copy(currentSchemaId = schema)
@@ -298,7 +298,7 @@ class CandidateBarTest {
 
         composeTestRule.runOnIdle {
             viewModel.setKeyboardState(KeyboardLayoutState.Chinese)
-            ui.value = KeyboardUiState(currentSchemaId = "rime_ice")
+            ui.value = KeyboardUiState(currentSchemaId = "cayboard_pinyin")
         }
         composeTestRule.onNodeWithTag("bar-candidate:0").assertIsDisplayed().assertIsSelected()
         composeTestRule.runOnIdle { hardwareFocus.value = 9 }
@@ -321,7 +321,7 @@ class CandidateBarTest {
             CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 MaterialTheme {
                     KeyboardView(
-                        viewModel, KeyboardUiState(currentSchemaId = "rime_ice", isAsciiMode = true),
+                        viewModel, KeyboardUiState(currentSchemaId = "cayboard_pinyin", isAsciiMode = true),
                         KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {},
                             onAssociationSelect = { selected = it }),
                         modifier = Modifier.size(360.dp, 240.dp), candidateState = candidates,
@@ -349,7 +349,7 @@ class CandidateBarTest {
         val words = List(60) { if (it % 2 == 0) "词条$it" else (0x4e00 + it).toChar().toString() }
         val candidates = mutableStateOf(CandidateState(
             candidates = words.take(15), inputText = "746", preeditText = "pin", isComposing = true,
-            expandedCandidatesLoaded = true, expandedCandidates = words.map { RimeCandidate(it, "") },
+            expandedCandidatesLoaded = true, expandedCandidates = words.map { EngineCandidate(it, "") },
         ))
         val hardwareFocus = mutableStateOf<Int?>(null)
         var selected = -1

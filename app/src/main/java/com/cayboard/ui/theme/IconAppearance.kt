@@ -13,10 +13,10 @@ import com.cayboard.settings.SettingsPreferences
 import com.cayboard.platform.AndroidPlatform
 
 object IconAppearance {
-    const val KEY_STYLE = "cyime_icon_style"
-    const val KEY_LINKED = "cyime_icon_linked"
-    const val KEY_FRAMED = "cyime_icon_framed"
-    const val KEY_FOLLOW_THEME = "cyime_icon_follow_theme"
+    const val KEY_STYLE = "cayboard_icon_style"
+    const val KEY_LINKED = "cayboard_icon_linked"
+    const val KEY_FRAMED = "cayboard_icon_framed"
+    const val KEY_FOLLOW_THEME = "cayboard_icon_follow_theme"
     var framed by mutableStateOf(true)
         private set
     /** 桌面图标改用键盘主题色的折面图标（带底板）；关闭时回到所选样式。 */
@@ -119,7 +119,7 @@ enum class DesktopIconChoice(val label: String) {
     }
 }
 
-/** 键盘主题 → 桌面图标配色（与 IconLab designs/cyime-caption.json 的配色同名）。 */
+/** 键盘主题 → 桌面图标配色（与 IconLab designs/cayboard-caption.json 的配色同名）。 */
 object ThemeIconColors {
     val ids = listOf("lavender", "softblue", "sakura", "sunset", "aurora", "mint", "cream", "desert", "mono")
 

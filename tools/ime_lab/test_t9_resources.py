@@ -14,14 +14,14 @@ import t9_resources as resources
 
 REQUIRED = (
     "app/src/main/assets/default.custom.yaml",
-    "app/src/main/assets/rime/default.yaml",
-    "app/build/generated/chinese-assets/rime_ice/rime_ice.dict.yaml",
-    "app/build/generated/chinese-assets/rime_ice/cn_dicts/base.dict.yaml",
-    "app/build/generated/chinese-assets/rime_ice/cyime_t9_english.dict.yaml",
-    "app/src/main/assets/rime_chinese/t9_pinyin.schema.yaml",
-    "app/src/main/assets/rime_chinese/t9_sentence.onnx",
-    "app/src/main/assets/rime_chinese/t9_sentence.vocab",
-    "app/build/generated/t9-grammar/rime_chinese/wanxiang-lts-zh-hans.gram",
+    "app/src/main/assets/cayboard_base/default.yaml",
+    "app/build/generated/chinese-assets/cayboard_pinyin/cayboard_pinyin.dict.yaml",
+    "app/build/generated/chinese-assets/cayboard_pinyin/cn_dicts/base.dict.yaml",
+    "app/build/generated/chinese-assets/cayboard_pinyin/cayboard_t9_english.dict.yaml",
+    "app/src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml",
+    "app/src/main/assets/cayboard_chinese/t9_sentence.onnx",
+    "app/src/main/assets/cayboard_chinese/t9_sentence.vocab",
+    "app/build/generated/t9-grammar/cayboard_chinese/wanxiang-lts-zh-hans.gram",
 )
 
 
@@ -42,34 +42,34 @@ class ResourceSnapshotTest(unittest.TestCase):
     def test_resource_precedence_matches_manifest_destination_not_source_filename(self):
         with tempfile.TemporaryDirectory() as directory:
             root = small_repo(Path(directory) / "repo")
-            write(root, "app/src/main/assets/rime/shared.dict.yaml", b"base")
-            write(root, "app/build/generated/chinese-assets/rime_ice/shared.dict.yaml", b"ice")
-            write(root, "app/src/main/assets/rime_chinese/shared.dict.yaml", b"chinese")
-            final = write(root, "app/build/generated/t9-grammar/rime_chinese/shared.dict.yaml", b"grammar")
+            write(root, "app/src/main/assets/cayboard_base/shared.dict.yaml", b"base")
+            write(root, "app/build/generated/chinese-assets/cayboard_pinyin/shared.dict.yaml", b"ice")
+            write(root, "app/src/main/assets/cayboard_chinese/shared.dict.yaml", b"chinese")
+            final = write(root, "app/build/generated/t9-grammar/cayboard_chinese/shared.dict.yaml", b"grammar")
             files = resources.resource_files(root)
-            self.assertNotIn("assets/rime_ice/shared.dict.yaml", files)
-            self.assertEqual(files["assets/rime_chinese/shared.dict.yaml"], (final, "shared.dict.yaml"))
+            self.assertNotIn("assets/cayboard_pinyin/shared.dict.yaml", files)
+            self.assertEqual(files["assets/cayboard_chinese/shared.dict.yaml"], (final, "shared.dict.yaml"))
             output = root.parent / "resources.zip"
             resources.snapshot_resources(root, output)
             with zipfile.ZipFile(output) as archive:
-                self.assertEqual(archive.read("assets/rime/shared.dict.yaml"), b"base")
-                self.assertEqual(archive.read("assets/rime_chinese/shared.dict.yaml"), b"grammar")
-                rows = [line.split("\t") for line in archive.read("assets/rime-bundled-manifest.tsv").decode().splitlines()]
+                self.assertEqual(archive.read("assets/cayboard_base/shared.dict.yaml"), b"base")
+                self.assertEqual(archive.read("assets/cayboard_chinese/shared.dict.yaml"), b"grammar")
+                rows = [line.split("\t") for line in archive.read("assets/cayboard-bundled-manifest.tsv").decode().splitlines()]
                 selected = [row for row in rows if row[3] == "shared.dict.yaml"]
                 self.assertEqual(len(selected), 1)
-                self.assertEqual(selected[0][2], "rime_chinese/shared.dict.yaml")
+                self.assertEqual(selected[0][2], "cayboard_chinese/shared.dict.yaml")
 
     def test_exclusions_keep_optional_layouts_customizations_and_docs_out(self):
         with tempfile.TemporaryDirectory() as directory:
             root = small_repo(Path(directory) / "repo")
-            for relative in ("app/src/main/assets/rime/.hidden", "app/src/main/assets/rime/.private/settings.yaml",
-                             "app/src/main/assets/rime_chinese/docs/README.md",
-                             "app/src/main/assets/rime_chinese/LICENSE.txt",
-                             "app/src/main/assets/rime_chinese/default.custom.yaml",
-                             "app/build/generated/chinese-assets/rime_ice/pinyin_qwjrtk.schema.yaml",
-                             "app/build/generated/chinese-assets/rime_ice/pinyin_cyletix10.schema.yaml",
-                             "app/build/generated/chinese-assets/rime_ice/pinyin_colemak.schema.yaml",
-                             "app/build/generated/chinese-assets/rime_ice/pinyin_typewise.schema.yaml"):
+            for relative in ("app/src/main/assets/cayboard_base/.hidden", "app/src/main/assets/cayboard_base/.private/settings.yaml",
+                             "app/src/main/assets/cayboard_chinese/docs/README.md",
+                             "app/src/main/assets/cayboard_chinese/LICENSE.txt",
+                             "app/src/main/assets/cayboard_chinese/default.custom.yaml",
+                             "app/build/generated/chinese-assets/cayboard_pinyin/pinyin_qwjrtk.schema.yaml",
+                             "app/build/generated/chinese-assets/cayboard_pinyin/pinyin_cyletix10.schema.yaml",
+                             "app/build/generated/chinese-assets/cayboard_pinyin/pinyin_colemak.schema.yaml",
+                             "app/build/generated/chinese-assets/cayboard_pinyin/pinyin_typewise.schema.yaml"):
                 write(root, relative, b"excluded")
             files = resources.resource_files(root)
             self.assertEqual(len(files), len(REQUIRED))
@@ -88,7 +88,7 @@ class ResourceSnapshotTest(unittest.TestCase):
                     self.assertEqual(item["bytes"], len(content))
                     self.assertEqual(item["sha256"], hashlib.sha256(content).hexdigest())
                     self.assertEqual((root / item["source"]).read_bytes(), content)
-                lines = archive.read("assets/rime-bundled-manifest.tsv").decode().splitlines()
+                lines = archive.read("assets/cayboard-bundled-manifest.tsv").decode().splitlines()
                 destinations = []
                 for line in lines:
                     digest, length, source, destination = line.split("\t")
@@ -151,7 +151,7 @@ class ResourceSnapshotTest(unittest.TestCase):
                 output = root.parent / ("changed-later.zip" if later_change else "changed-now.zip")
                 changed = root / REQUIRED[0]
                 first_entry = "assets/default.custom.yaml"
-                trigger = "assets/rime_chinese/t9_sentence.vocab" if later_change else first_entry
+                trigger = "assets/cayboard_chinese/t9_sentence.vocab" if later_change else first_entry
                 original_bytes = changed.read_bytes()
 
                 class TamperedStream:

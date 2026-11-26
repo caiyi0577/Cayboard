@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.InputCommandQueue
+import com.cayboard.engine.InputCommandQueue
 import kotlinx.coroutines.*
 import org.junit.Assert.*
 import org.junit.Test

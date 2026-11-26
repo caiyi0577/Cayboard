@@ -155,7 +155,7 @@ internal fun ClearClipboardConfirmOverlay(
 internal typealias LongPressMenuEntry = com.cayboard.ui.common.CompactActionMenuEntry
 
 /**
- * Long-press actions anchored beside the pressed record, as in XIME and the earliest Cayboard: the
+ * Long-press actions remain anchored beside the pressed record: the
  * rest of the board is dimmed, the record stays bright, and the card opens on whichever side of
  * the record has room. Delete confirmations reuse the same card in the same place.
  */

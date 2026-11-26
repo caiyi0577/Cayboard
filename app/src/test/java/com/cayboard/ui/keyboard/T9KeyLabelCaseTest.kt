@@ -15,7 +15,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.viewmodel.KeyboardUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

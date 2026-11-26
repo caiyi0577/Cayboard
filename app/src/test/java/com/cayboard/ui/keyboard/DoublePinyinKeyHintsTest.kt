@@ -63,7 +63,7 @@ class DoublePinyinKeyHintsTest {
         assertNull(fitDoublePinyinFinals(emptyList(), 28f, 20f, 10f, 1f))
     }
 
-    /** 键面上的上角标：26 键默认（xime.yaml qwerty 段）和「Z X C V 改成撤销/剪切/复制/粘贴」。 */
+    /** 键面上的上角标：26 键默认（cayboard.yaml qwerty 段）和「Z X C V 改成撤销/剪切/复制/粘贴」。 */
     private val defaultUp = ("qwertyuiop".toList().zip("1234567890".map(Char::toString)) +
         "asdfghjklzxcvbnm".toList().zip(listOf("～", "／", "：", "；", "“", "”", "－", "（", "）", "＊", "＠", "、", "？", "！", "％", "＃"))).toMap()
     private val editUp = mapOf('z' to "撤销", 'x' to "剪切", 'c' to "复制", 'v' to "粘贴")

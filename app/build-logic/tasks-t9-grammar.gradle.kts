@@ -7,7 +7,7 @@ import java.security.MessageDigest
 val grammarSha = "873cbbb359fcf4df8b200183683ddc8be7b321eac4c864f8d2c7fc3136d4279f"
 val grammarAsset = "602588267"
 val grammarName = "wanxiang-lts-zh-hans.gram"
-val grammarOutput = layout.buildDirectory.dir("generated/t9-grammar/rime_chinese")
+val grammarOutput = layout.buildDirectory.dir("generated/t9-grammar/cayboard_chinese")
 val prepareT9Grammar by tasks.registering {
     inputs.property("sha256", grammarSha)
     inputs.property("asset", grammarAsset)

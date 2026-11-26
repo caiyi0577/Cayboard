@@ -605,7 +605,7 @@ string T9DateTranslator::FormatCompactDate(time_t t) {
 
 an<Translation> T9DateTranslator::GenerateDateCandidates(
     const Segment& segment, const string& type, const string& preedit) {
-  if (type == "timestamp" && engine_->context()->get_option("_cyime_datetime_off"))
+  if (type == "timestamp" && engine_->context()->get_option("_cayboard_datetime_off"))
     return nullptr;
   auto result = New<T9DateTranslation>(idx_);
   time_t now = time(nullptr);

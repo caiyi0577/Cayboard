@@ -49,7 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.cayboard.rime.BundledT9Reranker
+import com.cayboard.engine.BundledT9Reranker
 import com.cayboard.translate.BundledTranslationModel
 import com.cayboard.viewmodel.ModelItemState
 import com.cayboard.viewmodel.ModelManagementViewModel

@@ -133,9 +133,6 @@ jobs:
             -PversionName="nightly-$DATE-$COMMIT" \
             --no-daemon
 
-      - name: Build Plugin XIPKs (Unsigned)
-        run: bash scripts/build-plugins.sh
-
       - name: Sign Main App APKs
         uses: r0adkll/sign-android-release@v1
         id: sign_main_app
@@ -165,7 +162,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APKS=$(find app/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ' ')
-          PLUGIN_XIPKS=$(find build/plugin-release -name "*.xipk" -type f | sort | tr '\n' ' ')
 
           if [ -z "$APKS" ]; then
             echo "::error::No main APKs found!"
@@ -182,4 +178,4 @@ jobs:
 
           :warning: 自动每日构建，非稳定版本。" \
             --prerelease \
-            $APKS $PLUGIN_XIPKS
+            $APKS

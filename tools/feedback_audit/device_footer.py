@@ -177,9 +177,9 @@ def run(serial, output, runtime_apk, compare, input_cases=(), bottom_calibration
     check_storage(ROOT)
     with (output / "compile.log").open("w") as log:
         env = os.environ.copy()
-        if os.name == "nt" and Path("D:/CyIME-Data/uds").is_dir():
+        if os.name == "nt" and Path("D:/Cayboard-Data/uds").is_dir():
             env["JAVA_TOOL_OPTIONS"] = (env.get("JAVA_TOOL_OPTIONS", "") +
-                                        " -Djdk.net.unixdomain.tmpdir=D:/CyIME-Data/uds").strip()
+                                        " -Djdk.net.unixdomain.tmpdir=D:/Cayboard-Data/uds").strip()
         call([ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew"), "--offline", "--console=plain",
               "-I", HERE / "probes.gradle", ":app:compileDebugUnitTestKotlin"], cwd=ROOT, env=env,
              stdout=log, stderr=subprocess.STDOUT)
@@ -225,9 +225,9 @@ def run(serial, output, runtime_apk, compare, input_cases=(), bottom_calibration
                 call([sdk / "build-tools/36.0.0" / ("d8.bat" if os.name == "nt" else "d8"), "--min-api", "33",
                       "--lib", platform, "--output", dex, jar], stdout=log, stderr=subprocess.STDOUT)
             # mktemp owns this run's local/tmp tree; the daily IME and its data are never written.
-            remote = call(adb + ["shell", "mktemp", "-d", "/data/local/tmp/cyime-footer.XXXXXX"],
+            remote = call(adb + ["shell", "mktemp", "-d", "/data/local/tmp/cayboard-footer.XXXXXX"],
                           capture_output=True, text=True).stdout.strip()
-            if not re.fullmatch(r"/data/local/tmp/cyime-footer\.[A-Za-z0-9]+", remote):
+            if not re.fullmatch(r"/data/local/tmp/cayboard-footer\.[A-Za-z0-9]+", remote):
                 raise ValueError("Unexpected adb scratch path")
             try:
                 dependencies = [baseline, runtime] if variant == "before" else [runtime]
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     group.add_argument("--compare", action="store_true", help="also run the local unoptimized Release class snapshot")
     group.add_argument("--input-checks", nargs="+", choices=("all", *INPUT_CASES),
                        help="check all input cases, or select the affected scenarios")
-    parser.add_argument("--output", type=Path, default=Path("D:/CyIME-Data/eval") /
+    parser.add_argument("--output", type=Path, default=Path("D:/Cayboard-Data/eval") /
                         ("floating-footer-" + datetime.now().strftime("%Y%m%d-%H%M%S")))
     options = parser.parse_args()
     cases = options.input_checks or ()

@@ -1,13 +1,12 @@
-# CyIME
+# Cayboard
 
-Android 输入法，基于 Rime，Kotlin + Jetpack Compose。
+Android 输入法 Cayboard，使用 librime 引擎，Kotlin + Jetpack Compose。
 
 ## 命令
 
 - 构建：`./gradlew assembleDebug --quiet`
 - 测试：`./gradlew test`
 - 九键算法回归：`python tools/ime_lab/t9_replay.py run --output <新结果目录>`，默认在电脑本地运行，见 [固定测试流程](docs/development/t9-algorithm-regression.md)。
-- 清插件：`./gradlew clearPlugins`
 - 卸载：`./gradlew uninstallApp`
 
 ## 约束
@@ -26,7 +25,7 @@ Android 输入法，基于 Rime，Kotlin + Jetpack Compose。
 - 11 月 7 日更新反馈排查期间，用户已允许用平板跑测试脚本。仅说「测试包」或「让我测试」时，交付目标是供用户试用的文件；覆盖日常版、并装另一输入法及推进日常版本均需用户明确指定。
 - 常规交付流程（用户于 2026-10-04 明确调整，替代 10-01 的默认不打包规则）：每轮应用功能修改完成相关检查后，Agent 默认打轻量正式测试包并通过 ADB 覆盖安装到唯一已授权设备，核对实际版本与 APK；用户无需再次提醒打包、安装。连续补充要求合成一轮交付，不逐文件打包。无设备先完成打包、清楚报告待安装；多设备不猜目标。只有文档、流程或交付脚本修改且 APK 内容未变时不空跑重打包。公开 Release 和内置模型包仍等明确要求，不能把默认安装推导为默认发布。
 - 不覆盖或还原用户未提交改动。
-- 用户指定的唯一日常开发、集成、打包入口是 `D:/GitHub/CyIME`。不得自行把长期开发或交付迁到 `.codex/worktrees`；只有用户明确要求隔离/并行目录时才创建，完成后必须同步回主目录并核对，不能只推远端 main 而让本地主目录停在旧版。保留用户未提交内容，不重写已发布历史。入口 `auto.cmd` 使用仓库本地 `cyime.integrationRoot` 指向这个主目录；不得凭“版本更大”猜测别的工作目录。
+- 用户指定的唯一日常开发、集成、打包入口是 `D:/GitHub/CyIME`。不得自行把长期开发或交付迁到 `.codex/worktrees`；只有用户明确要求隔离/并行目录时才创建，完成后必须同步回主目录并核对，不能只推远端 main 而让本地主目录停在旧版。保留用户未提交内容，不重写已发布历史。入口 `auto.cmd` 使用仓库本地 `cayboard.integrationRoot` 指向这个主目录；不得凭“版本更大”猜测别的工作目录。
 - 设备点亮（用户于 2026-10-30 明确允许）：手机、平板熄屏或停在锁屏时，Agent 可以用 adb 自己点亮并划开（`input keyevent KEYCODE_WAKEUP`，再 `wm dismiss-keyguard` 或上划），用完按 `KEYCODE_SLEEP` 熄屏；仍要先看状态页登记，用户自己正在用（键盘显示中、在录屏）时不抢。
 - 测试通过不等于真机验收；未真机验证必须标明“未验收”。
 - 设备共用（用户于 2026-10-23 明确要求）：手机、平板也被其他项目（如 CySync）通过 adb 使用。任何 adb 安装、点击、截屏前先读 `<notes>/Project/Agent状态同步.md`；设备被别的项目占用时等它释放或换一台，不抢用。开始占用时在该页「资源占用」登记（项目、做什么、大概多久），用完改回空闲；只记当前状态，不写历史。
@@ -46,7 +45,7 @@ Android 输入法，基于 Rime，Kotlin + Jetpack Compose。
 - 用户指定的默认习惯（2026-11-01）：按键音色使用 Rain75 紫薇轴，上下角标默认显示，下拉输入上角标。推荐配置默认保留其他已启用的方案和现有角标。调整推荐、主题或首次设置时保留用户手动选择。
 - 编码位置是互斥选项。普通输入框选「显示在输入框」时只在正文显示未上屏编码，选「显示在候选栏」时只在候选区显示。终端保留候选区回退。
 - 语言（Language）、输入方案（Scheme）、键盘布局（Layout）是三个独立概念：语言决定自然语言及资源，方案决定编码/解码，布局决定按键排列和交互。按组合建模，不用一个 `schema` 冒充三者。
-- 产品层使用 `InputProfile`；Rime schema ID 只作为 `EngineProfile.Rime` 的实现标识，以及部署、文件、旧存储和会话身份边界。新增业务分支按语言、方案、布局或明确能力判断，不新增散落的 schema ID/前缀猜测。
+- 产品层使用 `InputProfile`；内置解码方案 ID 只作为 `EngineProfile.Decoder` 的实现标识，以及部署、文件、旧存储和会话身份边界。新增业务分支按语言、方案、布局或明确能力判断，不新增散落的 schema ID/前缀猜测。
 - 手写、语音是 `InputMode`，不作为语言。识别器必须支持当前语言；没有对应识别器时明确提示，不静默调用中文模型。
 - 组合只能映射到实际可用的引擎配置，不凭组合拼接 schema ID。保留用户布局绑定、排序、自定义布局、词库和历史配置；布局重绑定不改变语言或方案。
 - 定义、兼容边界与尚待迁移项见 [输入领域架构](docs/development/input-profile-architecture.md)。
@@ -66,7 +65,6 @@ Android 输入法，基于 Rime，Kotlin + Jetpack Compose。
 
 - 贡献规则：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 设备自动适配：[实施方案（规划中）](docs/development/device-adaptation-plan.md)
-- 插件开发：https://ime.ximei.me/plugins/PLUGIN_DEVELOPMENT_GUIDE
 - Compose / Android UI：`.skills/compose-expert/SKILL.md`
 
 ## 空间硬约束（2026-10-11）

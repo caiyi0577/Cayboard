@@ -29,7 +29,7 @@ class EnglishLearningTranslation : public CacheTranslation {
     auto phrase = As<Phrase>(candidate);
     // 2026-11-11「都按权重算」: a mixed word (B站, 哆啦A梦; Han characters with letters) typed in full is a whole word
     // like an exact Chinese phrase, 1 + its weight, which comes from public-corpus counts on the Chinese scale
-    // (data/cyime_mixed_word_counts.tsv). Before, every one got exact_quality and was placed 6th, off the bar.
+    // (data/cayboard_mixed_word_counts.tsv). Before, every one got exact_quality and was placed 6th, off the bar.
     if (phrase && phrase->entry().commit_count <= 0 && phrase->type() == "table" && HasHan(phrase->text())) {
       phrase->set_quality(1.0 + std::exp(phrase->weight()));
       return candidate;
@@ -37,7 +37,7 @@ class EnglishLearningTranslation : public CacheTranslation {
     if (phrase && exact_quality_ > -1e9 && phrase->entry().commit_count <= 0 &&
         (phrase->type() == "table" || phrase->type() == "user_table") && T9EnglishSlotted(*phrase)) {
       // exact_quality: a whole word not learned yet comes right after the fully spelled Chinese words, among
-      // the candidates cyime_candidate_policy places (candidate_policy.cc); completions keep theirs.
+      // the candidates cayboard_candidate_policy places (candidate_policy.cc); completions keep theirs.
       phrase->set_quality(exact_quality_);
     }
     if (phrase && phrase->type() == "user_table" && phrase->entry().commit_count > 0) {

@@ -21,7 +21,7 @@ import java.io.File
  */
 class CustomLayoutSymbolsTest {
     @get:Rule val temp = TemporaryFolder()
-    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("xime.yaml")).readText()
+    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("cayboard.yaml")).readText()
     private val merged = "custom_pinyin_" + "d".repeat(32)
     private val other = "custom_pinyin_" + "e".repeat(32)
     private val plain = "custom_pinyin_" + "f".repeat(32)
@@ -30,8 +30,8 @@ class CustomLayoutSymbolsTest {
 
     @Before fun load() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { defaults.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { defaults.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         // 其他设置（putBoolean 等）只要能链式调用，不记。
         val editor = mock<android.content.SharedPreferences.Editor>(defaultAnswer = Mockito.RETURNS_SELF)
         val pending = mutableMapOf<String, String?>()
@@ -48,7 +48,7 @@ class CustomLayoutSymbolsTest {
         context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE)).thenReturn(prefs)
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE)).thenReturn(prefs)
         // 两个自建的合并布局（qw、as 合并 / zx 合并），一个全是单字母的。
         File(temp.root, "custom-keyboard-layouts.json").writeText("""[""" +
             """{"formatVersion":2,"id":"$merged","name":"我的合并","rows":"qw,e,r,t,y,u,i,o,p/as,d,f,g,h,j,k,l/z,x,c,v,b,n,m"},""" +

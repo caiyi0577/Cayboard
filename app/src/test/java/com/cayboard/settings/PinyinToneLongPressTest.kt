@@ -20,7 +20,7 @@ class PinyinToneLongPressTest {
 
     /** 中文 26 键（keyboard.qwerty）里某个字母的长按列表。 */
     private fun qwertyLongPress(key: String): List<String> {
-        val text = repoFile("src/main/assets/xime.yaml").readText()
+        val text = repoFile("src/main/assets/cayboard.yaml").readText()
         val section = text.substringAfter("\n  qwerty:\n").substringBefore("\n  qwerty_en:\n")
         val line = section.lines().first { it.trimStart().startsWith("$key: { tap: \"$key\"") }
         val values = line.substringAfter("long_press:").substringAfter("values: [").substringBefore("]")

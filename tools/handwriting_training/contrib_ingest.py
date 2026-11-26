@@ -1,9 +1,9 @@
 """收集用户贡献的手写样本并回放，生成报告。可以反复运行：只处理新文件，旧的不动。
 
 做的事：
-1. 在 --watch 目录（默认 <inbox>、下载目录、contrib/inbox）里找 cyime_handwriting_contribute_*.jsonl；
+1. 在 --watch 目录（默认 <inbox>、下载目录、contrib/inbox）里找 cayboard_handwriting_contribute_*.jsonl；
    按内容哈希判断是否收过，新的复制到 contrib/raw/（不移动、不删除原文件）。
-2. 只收「贡献手写样本」页的样本（format=cyime-handwriting-training、source=contribute），按样本 id 去重，
+2. 只收「贡献手写样本」页的样本（format=cayboard-handwriting-training、source=contribute），按样本 id 去重，
    合并到 contrib/samples.jsonl。坏行、别的格式跳过并记数。
 3. 按 App 的中文手写逻辑回放全部样本（内置 ochwpro、每笔 8 点 / 连笔多取点、常用度重排、生僻字模板），
    写 contrib/REPORT.md（总体、按书写人、认错的字）和 contrib/history.csv（每次运行一行）。
@@ -33,16 +33,16 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "app/src/main/assets/handwriting"
-DATA = pathlib.Path("D:/CyIME-Data/handwriting_training/contrib")
+DATA = pathlib.Path("D:/Cayboard-Data/handwriting_training/contrib")
 MODEL = ROOT / ".gradle/bundled-model-cache/ochwpro"
 MODEL_SHA = "8a6095f9ccd222fa391d4e98e2795f478d3d88daaa62d4844677fac18c7acb02"  # ochwpro v1.2
-PATTERN = "cyime_handwriting_contribute_*.jsonl"
-FORMAT = "cyime-handwriting-training"
+PATTERN = "cayboard_handwriting_contribute_*.jsonl"
+FORMAT = "cayboard-handwriting-training"
 FIXED_LEN = 200
 
 
 def default_watch() -> list[pathlib.Path]:
-    dirs = [*([pathlib.Path(os.environ["CYIME_CONTRIB_INBOX"])] if os.environ.get("CYIME_CONTRIB_INBOX") else []), pathlib.Path.home() / "Downloads", DATA / "inbox"]
+    dirs = [*([pathlib.Path(os.environ["CAYBOARD_CONTRIB_INBOX"])] if os.environ.get("CAYBOARD_CONTRIB_INBOX") else []), pathlib.Path.home() / "Downloads", DATA / "inbox"]
     return [d for d in dirs if d.is_dir()]
 
 

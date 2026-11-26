@@ -34,7 +34,7 @@ data class UninstallResult(
 
 /**
  * 方案文件清单管理系统：
- * - 全局注册表 (.registry.json)：记录 rime/ 下每个文件被哪些方案声明拥有
+ * - 全局注册表 (.registry.json)：记录输入数据目录下每个文件被哪些方案声明拥有
  * - 方案清单 (.manifests/{schemeId}.json)：记录单个方案安装的全部文件
  *
  * 用于文件冲突检测、精准卸载、依赖共享追踪。
@@ -138,7 +138,7 @@ object SchemaManifestManager {
      * 仅报告真正冲突（同名不同内容）；同内容视为共享依赖自动放行。
      *
      * @param newFileSha256 待安装方案中各目标文件的 sha256 映射。
-     *   从市场包的归档内容计算得到，而非从 rime/ 目录下已有文件计算。
+     *   从市场包的归档内容计算得到，而非从输入数据目录下已有文件计算。
      */
     suspend fun detectConflicts(
         context: Context,
@@ -150,7 +150,7 @@ object SchemaManifestManager {
         val files = registry.optJSONObject("files") ?: JSONObject()
         val conflicts = mutableListOf<FileConflictInfo>()
         for (fileName in targetFiles) {
-            val target = safeTarget(SchemaManager.getRimeDir(context), fileName)
+            val target = safeTarget(SchemaManager.getInputDataDir(context), fileName)
             if (!target.isFile || isUserDataFile(fileName)) continue
             val existingHash = fileSha256(target) ?: error("无法校验 $fileName")
             val newHash = newFileSha256[fileName] ?: continue
@@ -201,7 +201,7 @@ object SchemaManifestManager {
         fromMarket: Boolean, staged: File, targets: List<String>,
         overwriteUserConfig: Boolean = false,
     ): List<String> {
-        val rimeDir = SchemaManager.getRimeDir(context)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
         val registryBefore = loadRegistry(context).toString()
         val manifestBefore = loadManifest(context, schemeId)?.toString()
         val priorFiles = linkedMapOf<String, String?>()
@@ -212,7 +212,7 @@ object SchemaManifestManager {
             for (name in targets.distinct()) {
                 if (isProtectedSystemFile(name)) continue
                 val source = safeTarget(staged, name)
-                val dest = safeTarget(rimeDir, name)
+                val dest = safeTarget(inputDataDir, name)
                 if (!source.isFile) continue
                 if (isUserDataFile(name) && dest.exists() && !(overwriteUserConfig && isImportableUserConfig(name))) continue
                 val previousHash = if (dest.isFile) keepVersion(context, dest) else null
@@ -246,7 +246,7 @@ object SchemaManifestManager {
             return installed
         } catch (failure: Exception) {
             for ((name, hash) in priorFiles) {
-                val dest = safeTarget(rimeDir, name)
+                val dest = safeTarget(inputDataDir, name)
                 if (hash == null) dest.delete()
                 else versionFile(context, hash).copyTo(dest, overwrite = true)
             }
@@ -261,7 +261,7 @@ object SchemaManifestManager {
 
     /**
      * 安装成功后，为方案创建文件清单并更新全局注册表。
-     * @param extractedFiles 安装到 rime/ 的文件相对路径列表
+     * @param extractedFiles 安装到输入数据目录的文件相对路径列表
      */
     suspend fun createManifest(
         context: Context,
@@ -273,11 +273,11 @@ object SchemaManifestManager {
         dependencyIds: List<String> = emptyList(),
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val rimeDir = SchemaManager.getRimeDir(context)
+            val inputDataDir = SchemaManager.getInputDataDir(context)
             val fileEntries = loadManifest(context, schemeId)?.optJSONObject("files") ?: JSONObject()
 
             for (fileName in extractedFiles) {
-                val file = File(rimeDir, fileName)
+                val file = File(inputDataDir, fileName)
                 if (!file.exists()) continue
                 val sha256 = fileSha256(file) ?: continue
                 fileEntries.put(fileName, JSONObject().apply {
@@ -389,7 +389,7 @@ object SchemaManifestManager {
                     val backups = linkedMapOf<String, String?>()
                     for (name in files.keys()) {
                         val entry = entries.optJSONObject(name) ?: continue
-                        val target = safeTarget(SchemaManager.getRimeDir(context), name)
+                        val target = safeTarget(SchemaManager.getInputDataDir(context), name)
                         val owners = jsonArrayToList(entry.optJSONArray("claimedBy") ?: JSONArray()) - schemeId
                         val history = entry.optJSONArray("previous") ?: JSONArray()
                         val kept = mutableListOf<JSONObject>()
@@ -422,7 +422,7 @@ object SchemaManifestManager {
                     // 所有恢复来源先校验，再写入；失败不留下半卸载状态。
                     try {
                         for ((name, hash) in changes) {
-                            val target = safeTarget(SchemaManager.getRimeDir(context), name)
+                            val target = safeTarget(SchemaManager.getInputDataDir(context), name)
                             backups[name] = if (target.isFile) keepVersion(context, target) else null
                             if (hash == null) { if (target.exists() && target.delete()) deleted++ }
                             else { target.parentFile!!.mkdirs(); versionFile(context, hash).copyTo(target, overwrite = true) }
@@ -432,7 +432,7 @@ object SchemaManifestManager {
                         deleteManifest(context, schemeId)
                     } catch (failure: Exception) {
                         for ((name, hash) in backups) {
-                            val target = safeTarget(SchemaManager.getRimeDir(context), name)
+                            val target = safeTarget(SchemaManager.getInputDataDir(context), name)
                             if (hash == null) target.delete() else versionFile(context, hash).copyTo(target, overwrite = true)
                         }
                         saveRegistry(context, JSONObject(registryBefore))
@@ -451,7 +451,7 @@ object SchemaManifestManager {
     fun isProtectedSystemFile(name: String): Boolean {
         val base = name.substringAfterLast('/')
         return base == "default.yaml" ||
-               base == "xime.yaml" ||
+               base == "cayboard.yaml" ||
                name.startsWith("build/")
     }
 
@@ -474,7 +474,7 @@ object SchemaManifestManager {
             val builtinDir = SchemaManager.getMarketDir(context, BUILTIN_PACKAGE_ID)
             if (builtinDir.exists() && builtinDir.listFiles()?.isNotEmpty() == true) return@withContext
             try {
-                val rimeDir = SchemaManager.getRimeDir(context)
+                val inputDataDir = SchemaManager.getInputDataDir(context)
                 builtinDir.mkdirs()
                 val manifestFile = getManifestFile(context, BUILTIN_PACKAGE_ID)
                 if (!manifestFile.exists()) return@withContext
@@ -483,7 +483,7 @@ object SchemaManifestManager {
                 val keys = files.keys()
                 while (keys.hasNext()) {
                     val fn = keys.next() as String
-                    val src = File(rimeDir, fn)
+                    val src = File(inputDataDir, fn)
                     copyToBuiltinBackup(src, builtinDir, fn)
                 }
             } catch (e: Exception) {
@@ -492,29 +492,29 @@ object SchemaManifestManager {
         }
     }
 
-    /** 迁移 .manifests/ 和 .registry.json 从 rime/ 到 filesDir/。 */
+    /** 迁移 .manifests/ 和 .registry.json 到 filesDir/。 */
     private suspend fun migrateManifestsLocation(context: Context) = withContext(Dispatchers.IO) {
-        val rimeDir = SchemaManager.getRimeDir(context)
-        val oldManifests = File(rimeDir, MANIFESTS_DIR)
-        val oldRegistry = File(rimeDir, REGISTRY_FILE)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
+        val oldManifests = File(inputDataDir, MANIFESTS_DIR)
+        val oldRegistry = File(inputDataDir, REGISTRY_FILE)
         val newManifests = getManifestsDir(context)
         val newRegistry = getRegistryFile(context)
 
         try {
             if (oldManifests.exists() && !newManifests.exists()) {
                 oldManifests.renameTo(newManifests)
-                Log.i(TAG, "Migrated .manifests/ from rime/ to filesDir/")
+                Log.i(TAG, "Migrated .manifests/ to filesDir/")
             } else if (oldManifests.exists()) {
                 oldManifests.deleteRecursively()
-                Log.i(TAG, "Removed old rime/.manifests/ (already at new location)")
+                Log.i(TAG, "Removed old .manifests/ (already at new location)")
             }
 
             if (oldRegistry.exists() && !newRegistry.exists()) {
                 oldRegistry.renameTo(newRegistry)
-                Log.i(TAG, "Migrated .registry.json from rime/ to filesDir/")
+                Log.i(TAG, "Migrated .registry.json to filesDir/")
             } else if (oldRegistry.exists()) {
                 oldRegistry.delete()
-                Log.i(TAG, "Removed old rime/.registry.json (already at new location)")
+                Log.i(TAG, "Removed old .registry.json (already at new location)")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to migrate manifests location", e)
@@ -527,7 +527,7 @@ object SchemaManifestManager {
 
         withContext(Dispatchers.IO) {
             try {
-                // v3: 把 .manifests/ 和 .registry.json 从 rime/ 移到 filesDir/
+                // v3: 把 .manifests/ 和 .registry.json 移到 filesDir/
                 migrateManifestsLocation(context)
 
                 // 确保 market/builtin/ 存在（迁移前没有此目录的旧版本会在此补齐）
@@ -538,7 +538,7 @@ object SchemaManifestManager {
 
                 if (prevVersion >= MIGRATION_VERSION_CURRENT) return@withContext
 
-                val rimeDir = SchemaManager.getRimeDir(context)
+                val inputDataDir = SchemaManager.getInputDataDir(context)
                 getManifestsDir(context).mkdirs()
                 var changed = false
 
@@ -558,23 +558,23 @@ object SchemaManifestManager {
                     }
                 }
 
-                // 扫描 rime/ 下所有文件，归入 builtin 包（排除系统文件与用户数据）
-                val allFilesInRime = mutableSetOf<String>()
-                rimeDir.walkTopDown().forEach { f ->
+                // 扫描输入数据目录下所有文件，归入 builtin 包（排除系统文件与用户数据）
+                val allFilesInInputData = mutableSetOf<String>()
+                inputDataDir.walkTopDown().forEach { f ->
                     if (!f.isFile) return@forEach
-                    val relPath = f.toRelativeString(rimeDir).replace('\\', '/')
+                    val relPath = f.toRelativeString(inputDataDir).replace('\\', '/')
                     if (isProtectedSystemFile(relPath)) return@forEach
                     if (isUserDataFile(relPath)) return@forEach
                     if (!matchesBundledAsset(context, relPath, f)) return@forEach
-                    allFilesInRime.add(relPath)
+                    allFilesInInputData.add(relPath)
                 }
-                if (allFilesInRime.isNotEmpty()) {
+                if (allFilesInInputData.isNotEmpty()) {
                     val fileEntries = JSONObject()
 
                     val builtinDir = SchemaManager.getMarketDir(context, BUILTIN_PACKAGE_ID)
                     builtinDir.mkdirs()
-                    for (fn in allFilesInRime) {
-                        val file = File(rimeDir, fn)
+                    for (fn in allFilesInInputData) {
+                        val file = File(inputDataDir, fn)
                         if (!file.exists()) continue
                         val sha256 = fileSha256(file) ?: continue
                         fileEntries.put(fn, JSONObject().apply {
@@ -634,7 +634,7 @@ object SchemaManifestManager {
         if (relPath.endsWith(".custom.yaml")) return true
         if (relPath == "installation.yaml") return true
         if (relPath == "custom_phrase.txt") return true
-        if (relPath == "xime.custom.yaml") return true
+        if (relPath == "cayboard.custom.yaml") return true
         // themes/ 存放用户导入或自定义的背景图片，不应被清单追踪
         if (relPath.startsWith("themes/")) return true
         // 日语 azooKey 词典（随 APK 解压，几千个文件）和它的学习记录，不归方案包管理
@@ -643,13 +643,13 @@ object SchemaManifestManager {
     }
 
     /**
-     * 用户主动导入时可以覆盖的个人配置：方案补丁 *.custom.yaml（含 xime.custom.yaml 键盘/皮肤配置）和 themes/ 背景图。
+     * 用户主动导入时可以覆盖的个人配置：方案补丁 *.custom.yaml（含 cayboard.custom.yaml 键盘/皮肤配置）和 themes/ 背景图。
      * default.custom.yaml 记着启用的方案列表，不随压缩包覆盖；学习记录、installation.yaml、编译产物一律不覆盖。
      */
     internal fun isImportableUserConfig(relPath: String): Boolean =
         (relPath.endsWith(".custom.yaml") && relPath != "default.custom.yaml") || relPath.startsWith("themes/")
 
-    internal val bundledAssetRoots = listOf("rime", "rime_chinese", "rime_ice")
+    internal val bundledAssetRoots = listOf("cayboard_base", "cayboard_chinese", "cayboard_pinyin")
 
     internal fun matchesBundledAsset(context: Context, path: String, file: File): Boolean {
         val currentHash = fileSha256(file) ?: return false
@@ -692,7 +692,7 @@ object SchemaManifestManager {
     }
 
     /**
-     * 扫描 rime/ 下未被任何包（registry）追踪的文件，追加到 builtin 清单和注册表中。
+     * 扫描输入数据目录下未被任何包（registry）追踪的文件，追加到 builtin 清单和注册表中。
      *
      * APP 更新后新版 assets 可能新增了文件，但 builtin 清单仅在首次迁移时创建一次，
      * 新增文件不会被追踪，导致卸载 builtin 包时删不干净。每次安装前调用此函数，
@@ -713,17 +713,17 @@ object SchemaManifestManager {
     }
 
     private suspend fun refreshBuiltinManifestInternal(context: Context) {
-        val rimeDir = SchemaManager.getRimeDir(context)
-        if (!rimeDir.exists()) return
+        val inputDataDir = SchemaManager.getInputDataDir(context)
+        if (!inputDataDir.exists()) return
 
         val registry = loadRegistry(context)
         val allFiles = registry.optJSONObject("files") ?: JSONObject()
 
-        // 找出 rime/ 中未被任何包追踪且非用户数据的文件
+        // 找出输入数据目录中未被任何包追踪且非用户数据的文件
         val untracked = mutableMapOf<String, File>()
-        rimeDir.walkTopDown().forEach { f ->
+        inputDataDir.walkTopDown().forEach { f ->
             if (!f.isFile) return@forEach
-            val relPath = f.toRelativeString(rimeDir).replace('\\', '/')
+            val relPath = f.toRelativeString(inputDataDir).replace('\\', '/')
             if (isProtectedSystemFile(relPath)) return@forEach
             if (isUserDataFile(relPath)) return@forEach
             if (allFiles.has(relPath)) return@forEach

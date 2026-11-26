@@ -12,12 +12,12 @@ namespace rime {
 class DigitSegmentStrategy {
 public:
     // 统一消费计算（CRCC 与 Handle 共享，消除双算与逻辑不一致）：
-    //   - 方案 A：rime_consumed_digits > 0 时优先（RIME 候选 end 精确反映派生编码匹配范围）
+    //   - 方案 A：engine_consumed_digits > 0 时优先（引擎候选 end 精确反映派生编码匹配范围）
     //   - fallback：AlignWithBuffer 统一算法（最长公共前缀 + 音节退化）+ 分隔符分段匹配
     // 返回 [0, unassigned.size()] 的消费位数。
     static int ComputeConsumedCount(const T9Buffer& buf,
                                     const std::optional<std::string>& candidate_pinyin,
-                                    int rime_consumed_digits);
+                                    int engine_consumed_digits);
 
     // @param remaining_digits CRCC 计算的消费后剩余数字（= consumption.second），
     //                         Handle 不再重复计算，仅做锁定/状态转换。

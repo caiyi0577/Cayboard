@@ -4,7 +4,7 @@
 # MODEL=none replays the previous scoring (no n-gram model in the resources).
 set -u
 REPO=/mnt/d/GitHub/Cayboard
-TARGET=$REPO/app/build/generated/t9-ngram/rime_chinese/t9_ngram.lm
+TARGET=$REPO/app/build/generated/t9-ngram/cayboard_chinese/t9_ngram.lm
 JAR=/mnt/c/Users/<user>/.gradle/caches/modules-2/files-2.1/org.json/json/20240303/ebb88e8fb5122b7506d5cf1d69f1ccdb790d22a/json-20240303.jar
 OUT=$1; LABEL=$2; MODEL=$3; shift 3
 mkdir -p "$OUT" "$(dirname "$TARGET")"

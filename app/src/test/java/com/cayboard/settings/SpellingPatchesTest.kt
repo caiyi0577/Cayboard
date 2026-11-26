@@ -9,7 +9,7 @@ import org.junit.Test
 class SpellingPatchesTest {
     private val schema = """
         |schema:
-        |  schema_id: rime_ice
+        |  schema_id: cayboard_pinyin
         |speller:
         |  alphabet: zyxwvutsrqponmlkjihgfedcba
         |  algebra:
@@ -17,7 +17,7 @@ class SpellingPatchesTest {
         |    - abbrev/^([a-z]).+$/${'$'}1/
         |    - derive/^([nl])ve$/${'$'}1ue/
         |translator:
-        |  dictionary: rime_ice
+        |  dictionary: cayboard_pinyin
         |""".trimMargin()
 
     private fun algebraIn(custom: String): List<String> {
@@ -56,7 +56,7 @@ class SpellingPatchesTest {
         val patched = SpellingPatches.patch("# 用户注释\n", SpellingPatches.fuzzyLines(listOf("erase/^hm$/"), setOf(SpellingPatches.Fuzzy.IN)))!!
         assertTrue(patched.startsWith("# 用户注释\npatch:\n"))
         assertEquals(listOf("fuzz/ing$/in/", "fuzz/in$/ing/", "erase/^hm$/"), algebraIn(patched))
-        assertNull(SpellingPatches.patch("patch:\n  # BEGIN CYIME SPELLING\n", listOf("\"translator/enable_correction\": true")))
+        assertNull(SpellingPatches.patch("patch:\n  # BEGIN CAYBOARD SPELLING\n", listOf("\"translator/enable_correction\": true")))
     }
 
     @Test fun doublePinyinCorrectionIsOneTranslatorKey() {
@@ -83,8 +83,8 @@ class SpellingPatchesTest {
 
     /** 编码显示双拼键：编码显示规则清空，原来的规则原样抄给希腊字母；关掉时整段去掉，文件回到原样。 */
     @Test fun doublePinyinRawPreeditEmptiesTheFormatAndKeepsACopy() {
-        val flypy = schema.replace("translator:\n  dictionary: rime_ice\n",
-            "translator:\n  dictionary: rime_ice\n  preedit_format:\n    - xform/([bpmfdtnljqx])n/${'$'}1iao/\n    - \"xform/(?<=[A-Z])\\\\s(?=[A-Z])//\"\n")
+        val flypy = schema.replace("translator:\n  dictionary: cayboard_pinyin\n",
+            "translator:\n  dictionary: cayboard_pinyin\n  preedit_format:\n    - xform/([bpmfdtnljqx])n/${'$'}1iao/\n    - \"xform/(?<=[A-Z])\\\\s(?=[A-Z])//\"\n")
         val format = SpellingPatches.preeditFormatOf(flypy)!!
         assertEquals(listOf("xform/([bpmfdtnljqx])n/\$1iao/", "xform/(?<=[A-Z])\\s(?=[A-Z])//"), format)
         assertNull(SpellingPatches.preeditFormatOf(schema))
@@ -100,13 +100,13 @@ class SpellingPatchesTest {
     }
 
     /** 双拼在自建合并键布局上的版本也写模糊音：只认这些版本的方案文件，不认全拼布局、14 键和补丁文件。 */
-    @Test fun doublePinyinLayoutVariantsAreListedFromTheRimeDirectory() {
+    @Test fun doublePinyinLayoutVariantsAreListedFromTheInputDataDirectory() {
         val dir = kotlin.io.path.createTempDirectory("spelling").toFile()
         try {
             val layout = "custom_pinyin_" + "2".repeat(32)
             val flypy = DoublePinyinScheme.layoutVariantId(DoublePinyinScheme.FLYPY.id, layout)
             val ziranma = DoublePinyinScheme.layoutVariantId(DoublePinyinScheme.ZIRANMA_ID, layout)
-            for (id in listOf("rime_ice", DoublePinyinScheme.FLYPY.id, layout, ziranma, flypy, DoublePinyinScheme.k14Id(DoublePinyinScheme.ZIRANMA_ID)))
+            for (id in listOf("cayboard_pinyin", DoublePinyinScheme.FLYPY.id, layout, ziranma, flypy, DoublePinyinScheme.k14Id(DoublePinyinScheme.ZIRANMA_ID)))
                 java.io.File(dir, "$id.schema.yaml").writeText("schema:\n  schema_id: $id\n")
             java.io.File(dir, "$flypy.custom.yaml").writeText("patch:\n")
             assertEquals(listOf(flypy, ziranma), SpellingPatches.doublePinyinLayoutVariants(dir))
@@ -136,14 +136,14 @@ class SpellingPatchesTest {
     /** 14 键全拼也写模糊音（11-01 反馈：设置在「九键与 14 键」页，14 键开了却不模糊）：规则排在合并键派生前面。 */
     @Test fun builtinFourteenKeyPinyinGetsFuzzyRulesBeforeItsMergedKeyRules() {
         assertTrue("pinyin_14jian" in SpellingPatches.builtinFullPinyinSchemas)
-        val algebra = SpellingPatches.algebraOf(java.io.File("src/main/assets/rime_chinese/pinyin_14jian.schema.yaml").readText())!!
+        val algebra = SpellingPatches.algebraOf(java.io.File("src/main/assets/cayboard_chinese/pinyin_14jian.schema.yaml").readText())!!
         assertTrue(algebra.any { it.contains("[as]") })
         val items = linkedSetOf(SpellingPatches.Fuzzy.S, SpellingPatches.Fuzzy.AN, SpellingPatches.Fuzzy.EN)
         val custom = SpellingPatches.patch("", SpellingPatches.fuzzyLines(algebra, items))!!
         assertEquals(items.flatMap { it.penalized } + algebra, algebraIn(custom))
     }
 
-    /** 按 Rime 的意思跑一遍拼写规则（xform 改、derive/abbrev 加、erase 删、xlit 换字），只用于检查规则之间的先后。 */
+    /** 按方案拼写规则语义跑一遍（xform 改、derive/abbrev 加、erase 删、xlit 换字），只用于检查规则之间的先后。 */
     private fun spellingsOf(rules: List<String>, syllable: String): Set<String> = rules.fold(setOf(syllable)) { spellings, rule ->
         val parts = rule.split('/')
         val (op, from, to) = Triple(parts[0], parts[1], parts[2])
@@ -193,27 +193,27 @@ class SpellingPatchesTest {
 
     /** 11-03 统一纠错：顺序、多键、漏键默认开（不写补丁，同以前）；关了只写方案里本来有的键。 */
     @Test fun typoSwitchesWriteOnlyWhatIsTurnedOffAndPresent() {
-        val iceSchema = schema + "  enable_correction: true\n  cyime_neighbor_correction: true\n" +
-            "  cyime_doubled_letter_correction: true\n  cyime_transposition_correction: true\n" +
-            "  cyime_extra_letter_correction: true\n  cyime_stray_initial_correction: true\n" +
-            "cyime_omission_schema: cyime_omission\ncyime_edit_schema: cyime_letter_swap\n"
+        val iceSchema = schema + "  enable_correction: true\n  cayboard_neighbor_correction: true\n" +
+            "  cayboard_doubled_letter_correction: true\n  cayboard_transposition_correction: true\n" +
+            "  cayboard_extra_letter_correction: true\n  cayboard_stray_initial_correction: true\n" +
+            "cayboard_omission_schema: cayboard_omission\ncayboard_edit_schema: cayboard_letter_swap\n"
         val all = SpellingPatches.Typo.entries.toSet()
         assertTrue(SpellingPatches.typoParts(iceSchema, all).all { it.lines.isEmpty() })
         val lines = SpellingPatches.typoParts(iceSchema, emptySet()).flatMap { it.lines }
-        assertEquals(listOf("\"translator/cyime_transposition_correction\": false", "\"cyime_edit_schema\": \"\"",
-            "\"translator/cyime_extra_letter_correction\": false", "\"translator/cyime_doubled_letter_correction\": false",
-            "\"cyime_omission_schema\": \"\""), lines)
+        assertEquals(listOf("\"translator/cayboard_transposition_correction\": false", "\"cayboard_edit_schema\": \"\"",
+            "\"translator/cayboard_extra_letter_correction\": false", "\"translator/cayboard_doubled_letter_correction\": false",
+            "\"cayboard_omission_schema\": \"\""), lines)
         // 只关顺序：停顿后的打反补查也关，漏键、多键不动。
-        assertEquals(listOf("\"translator/cyime_transposition_correction\": false", "\"cyime_edit_schema\": \"\""),
+        assertEquals(listOf("\"translator/cayboard_transposition_correction\": false", "\"cayboard_edit_schema\": \"\""),
             SpellingPatches.typoParts(iceSchema, all - SpellingPatches.Typo.TRANSPOSITION).flatMap { it.lines })
         // 14 键等没有这些键的方案什么都不写。
         assertTrue(SpellingPatches.typoParts(schema, emptySet()).all { it.lines.isEmpty() })
-        // 写出来是合法补丁，Rime 读到的是 false 和空名。
+        // 写出来是合法补丁，引擎读到的是 false 和空名。
         val custom = SpellingPatches.patch("", lines)!!
         val patch = (SchemaManager.yaml.parseToYamlNode(custom) as YamlMap).entries.entries.single { it.key.content == "patch" }.value as YamlMap
         fun value(key: String) = (patch.entries.entries.single { it.key.content == key }.value as YamlScalar).content
-        assertEquals("false", value("translator/cyime_transposition_correction"))
-        assertEquals("", value("cyime_omission_schema"))
-        assertEquals("", value("cyime_edit_schema"))
+        assertEquals("false", value("translator/cayboard_transposition_correction"))
+        assertEquals("", value("cayboard_omission_schema"))
+        assertEquals("", value("cayboard_edit_schema"))
     }
 }

@@ -22,7 +22,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("lccc")
     parser.add_argument("model")
-    parser.add_argument("rime_ice")
+    parser.add_argument("cayboard_pinyin")
     parser.add_argument("output")
     parser.add_argument("--gamma", type=float, default=0.25)
     args = parser.parse_args()
@@ -33,7 +33,7 @@ def main():
     total = sum(lccc.values())
     model = Model(args.model)
     words = set()
-    for path in Path(args.rime_ice, "cn_dicts").glob("*.dict.yaml"):
+    for path in Path(args.cayboard_pinyin, "cn_dicts").glob("*.dict.yaml"):
         body = False
         for line in path.open(encoding="utf-8"):
             if line.strip() == "...":

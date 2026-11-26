@@ -9,22 +9,22 @@ set_target_properties(onnxruntime PROPERTIES
 target_link_libraries(rime-static "$<LINK_ONLY:onnxruntime>")
 target_include_directories(rime-t9-objs PRIVATE "${CMAKE_SOURCE_DIR}/onnxruntime/include")
 # host_replay_jni.cc adds host-only JNI entry points (work counters, preset user dictionary).
-add_library(rime_jni SHARED librime_jni/rime_jni.cc librime_jni/candidate_policy.cc librime_jni/candidate_pins.cc
-  librime_jni/basic_particle_choices.cc
+add_library(cayboard_jni SHARED cayboard_jni/cayboard_jni.cc cayboard_jni/candidate_policy.cc cayboard_jni/candidate_pins.cc
+  cayboard_jni/basic_particle_choices.cc
   "${HOST_ADAPTER_DIR}/host_replay_jni.cc" "${HOST_ADAPTER_DIR}/win/unwind_stub.c"
   "${HOST_ADAPTER_DIR}/win/host_exports.cc")
-target_compile_definitions(rime_jni PRIVATE RIME_JNI_VERBOSE_LOGGING=0)
-target_include_directories(rime_jni PRIVATE
+target_compile_definitions(cayboard_jni PRIVATE CAYBOARD_JNI_VERBOSE_LOGGING=0)
+target_include_directories(cayboard_jni PRIVATE
   "${HOST_JNI_INCLUDE}" "${HOST_JNI_INCLUDE}/win32" "${HOST_ADAPTER_DIR}"
   "${CMAKE_SOURCE_DIR}/librime/include" "${CMAKE_SOURCE_DIR}/librime/src"
-  "${CMAKE_BINARY_DIR}/librime/src" "${CMAKE_SOURCE_DIR}/librime-t9/src" "${CMAKE_SOURCE_DIR}/librime_jni")
+  "${CMAKE_BINARY_DIR}/librime/src" "${CMAKE_SOURCE_DIR}/librime-t9/src" "${CMAKE_SOURCE_DIR}/cayboard_jni")
 # MSVC linker: keep every object of the static Rime archive (module registration lives in static initializers).
-target_link_libraries(rime_jni PRIVATE rime-static onnxruntime)
-target_link_options(rime_jni PRIVATE "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:rime-static>")
-set_target_properties(rime_jni PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+target_link_libraries(cayboard_jni PRIVATE rime-static onnxruntime)
+target_link_options(cayboard_jni PRIVATE "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:rime-static>")
+set_target_properties(cayboard_jni PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib" PREFIX "lib")
-# POSIX calls in the CyIME sources (localtime_r, S_ISDIR, two-argument mkdir, sigaction...): force-include the
+# POSIX calls in the Cayboard sources (localtime_r, S_ISDIR, two-argument mkdir, sigaction...): force-include the
 # Windows compat header only into those targets; glog's own Windows port already defines localtime_r.
-foreach(target rime-t9-objs rime_jni)
+foreach(target rime-t9-objs cayboard_jni)
   target_compile_options(${target} PRIVATE "SHELL:-include \"${HOST_ADAPTER_DIR}/win/posix_compat.h\"")
 endforeach()

@@ -20,7 +20,7 @@ apply(from = "build-logic/tasks-chinese.gradle.kts")
 apply(from = "build-logic/tasks-stroke.gradle.kts")
 apply(from = "build-logic/tasks-cangjie.gradle.kts")
 apply(from = "build-logic/tasks-t9-grammar.gradle.kts")
-apply(from = "build-logic/tasks-rime-manifest.gradle.kts")
+apply(from = "build-logic/tasks-input-manifest.gradle.kts")
 
 // 加载签名配置
 val keystorePropertiesFile = rootProject.file("app/keystore.properties")
@@ -40,7 +40,7 @@ android {
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/chinese-assets").get().asFile)
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/stroke-assets").get().asFile)
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/cangjie-assets").get().asFile)
-    sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/rime-manifest").get().asFile)
+    sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/input-manifest").get().asFile)
     sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/speech-assets").get().asFile)
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
@@ -59,8 +59,8 @@ android {
         // 按发布批次定号：兼容修复升 PATCH，兼容功能升 MINOR 并归零 PATCH。
         // 不兼容变更升 MAJOR；日常编辑不逐次升号。完整规则见 docs/packaging.md。
         // versionCode 是独立递增的交付序号；同批普通版与内置版共用。
-        versionCode = 20261515
-        versionName = "2.1.15"
+        versionCode = 20261517
+        versionName = "2.1.17"
 
 
         // Isolated Compose rendering on a local x86 emulator; ordinary device tests keep the full app.
@@ -179,7 +179,11 @@ android {
     // 为省 7–27 MB 改这些地方不值得。
     androidResources.noCompress.add("cseg")
     // This edition carries Chinese and English scheme resources only, including bundled-model builds.
-    listOf("<dir>rime_japanese", "<dir>azookey", "<dir>rime_letters").forEach { androidResources.ignoreAssetsPatterns.add(it) }
+    listOf("<dir>cayboard_japanese", "<dir>azookey", "<dir>cayboard_letters").forEach { androidResources.ignoreAssetsPatterns.add(it) }
+    // Incremental builds can still have these pre-migration directories beside the generated schemes.
+    androidResources.ignoreAssetsPatterns.addAll(
+        listOf("<dir>rime_chinese", "<dir>rime_ice", "<dir>rime_japanese", "<dir>rime_letters")
+    )
     packaging.jniLibs.excludes.add("**/libCyAzooKey.so")
     ndkVersion = "29.0.14206865"
 
@@ -340,7 +344,10 @@ dependencies {
 }
 
 // Fixed offline speech assets supplied by the local packaging entry.
-val fixedSpeechAssetsDir = file(providers.gradleProperty("cyime.xasrAssetsDir").orNull ?: "src/main/fixed-speech-assets")
+val fixedSpeechAssetsDir = file(
+    providers.gradleProperty("cayboard.xasrAssetsDir").orNull
+        ?: "src/main/fixed-speech-assets"
+)
 android.sourceSets.getByName("main").assets.srcDir(fixedSpeechAssetsDir)
 val verifyFixedSpeechAssets = tasks.register("verifyFixedSpeechAssets") {
     inputs.dir(fixedSpeechAssetsDir)

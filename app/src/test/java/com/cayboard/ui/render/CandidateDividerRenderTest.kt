@@ -47,7 +47,7 @@ import org.robolectric.annotation.GraphicsMode
  * 候选之间的浅色竖线（用户 11-09，像 Gboard）：候选之间空得开（「候选词间距加宽」）时，
  * 两个候选之间正中画一条浅色竖线，颜色是候选文字色压淡；默认间距挤，不画。
  * 九键/26 键打字候选（能滑的那条）、不滑的那条（分体、实体键盘）、联想／英文那条都一样。
- * 设了 CYIME_RENDER_OUT 时出图。
+ * 设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = Application::class, qualifiers = "zh-rCN-w440dp-h760dp-mdpi")
@@ -164,7 +164,7 @@ class CandidateDividerRenderTest {
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }
-        System.getenv("CYIME_RENDER_OUT")?.let { out ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { out ->
             File(out).mkdirs()
             val b = rule.onNodeWithTag("sample").fetchSemanticsNode().boundsInWindow
             File(out, "candidate-divider-$name.png").outputStream().use {

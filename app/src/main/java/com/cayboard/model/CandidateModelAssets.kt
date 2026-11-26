@@ -9,7 +9,7 @@ import java.nio.file.FileAlreadyExistsException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-/** Bridge downloaded resources to Rime's resolver without moving existing user resources. */
+/** Bridge downloaded resources to the input engine without moving existing user resources. */
 internal object CandidateModelAssets {
     private fun disabledKey(id: String) = "candidate_model_disabled_$id"
     private val verifiedRuntime = ConcurrentHashMap<String, List<String>>()
@@ -31,17 +31,17 @@ internal object CandidateModelAssets {
         }
         .joinToString("\n")
 
-    /** 用户下载过同名的候选模型（如九键词组模型）时，安装包自带的那份不再同步回 rime/，免得把用户的选择换回去。 */
+    /** 用户下载过同名的候选模型（如九键词组模型）时，安装包自带的那份不再同步回输入数据目录，免得把用户的选择换回去。 */
     private fun hasEnabledDownload(context: Context, name: String): Boolean = CandidateModelCatalog.models.any { model ->
         model.versions.any { version -> version.files.any { it.name == name } } &&
             !SettingsPreferences.getPrefsPublic(context).getBoolean(disabledKey(model.id), false) &&
             model.versions.any { hasDownloadedModelFiles(ModelStorage.getModelDir(context, model.id), it) }
     }
 
-    /** 安装包自带、由 BundledRimeSync 放进 rime/ 的同名文件同样是 Cayboard 自己的，用户下载新的一档时可以换掉。 */
+    /** 安装包自带、由 BundledInputSync 放进输入数据目录的同名文件同样是 Cayboard 自己的，用户下载新的一档时可以换掉。 */
     private fun isBundledCopy(context: Context, name: String, file: File): Boolean {
         val manifest = runCatching {
-            context.assets.open("rime-bundled-manifest.tsv").bufferedReader().use { it.readText() }
+            context.assets.open("cayboard-bundled-manifest.tsv").bufferedReader().use { it.readText() }
         }.getOrNull() ?: return false
         return isBundledCopy(manifest, name, file)
     }
@@ -49,7 +49,7 @@ internal object CandidateModelAssets {
     fun existingDirectory(context: Context, model: ModelInfo): File? {
         if (model.category != ModelCategory.CANDIDATE) return null
         if (SettingsPreferences.getPrefsPublic(context).getBoolean(disabledKey(model.id), false)) return null
-        val runtime = File(context.filesDir, "rime")
+        val runtime = File(context.filesDir, "cayboard_input")
         return runtime.takeIf {
             model.versions.any { version ->
                 if (!hasDownloadedModelFiles(runtime, version)) return@any false
@@ -73,7 +73,7 @@ internal object CandidateModelAssets {
             val source = ModelStorage.getModelDir(context, model.id)
             val version = model.versions.firstOrNull { hasDownloadedModelFiles(source, it) } ?: continue
             // A user-owned conflicting resource must never prevent ordinary keyboard startup.
-            runCatching { installCandidateModel(source, File(context.filesDir, "rime"), version) }
+            runCatching { installCandidateModel(source, File(context.filesDir, "cayboard_input"), version) }
                 .onFailure { com.cayboard.util.FileLogger.w("CandidateModels", "候选增强未应用：${it.message}") }
         }
     }
@@ -82,7 +82,7 @@ internal object CandidateModelAssets {
         check(model !in CandidateModelCatalog.retiredWordModels) { "This candidate model has been replaced" }
         // 用户主动安装时，同名文件若是目录里的已知内容（旧格式、或二选一的另一档）、安装包自带的那份，
         // 或以前的安装包带过的那份，属于 Cayboard 自己的文件，直接替换。
-        installCandidateModel(ModelStorage.getModelDir(context, model.id), File(context.filesDir, "rime"), version) { name, file ->
+        installCandidateModel(ModelStorage.getModelDir(context, model.id), File(context.filesDir, "cayboard_input"), version) { name, file ->
             val owner = knownCatalogOwner(name, file)
             if (owner != null && owner.id != model.id) setDisabled(context, owner.id, true)
             owner != null || isBundledCopy(context, name, file) || isEarlierBundledCopy(name, file)
@@ -103,7 +103,7 @@ internal object CandidateModelAssets {
     /** Keep unknown same-name files used by imported schemas. */
     private fun dropReplacedWordModels(context: Context) {
         val name = CandidateModelCatalog.RETIRED_WORD_MODEL_FILE
-        val runtime = File(context.filesDir, "rime")
+        val runtime = File(context.filesDir, "cayboard_input")
         val deployed = File(runtime, name)
         val models = CandidateModelCatalog.retiredWordModels
         if (deployed.isFile && (models.any { matchesAnyVersion(it, name, deployed) } ||
@@ -126,7 +126,7 @@ internal object CandidateModelAssets {
             if (model.id == CandidateModelCatalog.GRAMMAR) continue
             val names = model.versions.flatMap { it.files }.map { it.name }.distinct()
             val present = names.any { name ->
-                modelDownloadFile(File(context.filesDir, "rime"), name).exists() ||
+                modelDownloadFile(File(context.filesDir, "cayboard_input"), name).exists() ||
                     modelDownloadFile(ModelStorage.getModelDir(context, model.id), name).exists()
             }
             // deleteModel 只删认得的完整版本，下载到一半的残余再由 deleteStoredDownload 整个目录清掉。
@@ -140,7 +140,7 @@ internal object CandidateModelAssets {
      * 需要时可在商店重新下载（删掉词组模型后它会重新起作用）。
      */
     fun dropSupersededGrammar(context: Context) {
-        val runtime = File(context.filesDir, "rime")
+        val runtime = File(context.filesDir, "cayboard_input")
         val ngramInstalled = CandidateModelCatalog.models
             .filter { it.id == CandidateModelCatalog.NGRAM || it.id == CandidateModelCatalog.NGRAM_SMALL }
             .any { model -> model.versions.any { hasDownloadedModelFiles(runtime, it) } }
@@ -154,7 +154,7 @@ internal object CandidateModelAssets {
                 val file = File(runtime, name)
                 file.isFile && !File(modelDir, name).isFile && !isBundledCopy(context, name, file)
             }) return
-        val manifest = File(runtime, ".cyime-bundled-manifest").takeIf { it.isFile }?.readText().orEmpty()
+        val manifest = File(runtime, ".cayboard-bundled-manifest").takeIf { it.isFile }?.readText().orEmpty()
         if (hasExternalGrammarConsumer(runtime, manifest, names)) return
         if (!ModelManager.deleteModel(context, grammar))
             com.cayboard.util.FileLogger.w("CandidateModels", "语法增强已被词组模型取代，但未能删除")
@@ -170,7 +170,7 @@ internal object CandidateModelAssets {
 
     /** Explicit deletion only removes known catalog content, never a custom same-name file. */
     fun removeRuntimeCopy(context: Context, model: ModelInfo): Boolean {
-        val root = File(context.filesDir, "rime")
+        val root = File(context.filesDir, "cayboard_input")
         // 任一已知版本（含旧格式）都算本条目的内容，才能删掉老版本留下的文件。
         val files = model.versions.flatMap { it.files }.map { it.name }.distinct().map { it to modelDownloadFile(root, it) }
         if (files.any { (name, file) -> file.exists() && !matchesAnyVersion(model, name, file) }) return false
@@ -193,8 +193,8 @@ internal fun hasExternalGrammarConsumer(runtime: File, bundledManifest: String, 
 }
 
 /**
- * 以前的公开安装包带过、模型目录里又没有的文件（哈希 to 大小）。安装包换掉或不再带它以后，它留在 rime/ 里继续用
- * （BundledRimeSync 不删包里去掉的文件），但新安装包的清单里已经没有它，会被当成用户自己的同名文件，
+ * 以前的公开安装包带过、模型目录里又没有的文件（哈希 to 大小）。安装包换掉或不再带它以后，它留在输入数据目录里继续用
+ * （BundledInputSync 不删包里去掉的文件），但新安装包的清单里已经没有它，会被当成用户自己的同名文件，
  * 下载目录里的九键词组模型时装不上。1.15.73 完整版带的 t9_ngram.lm（110 MB）就是这样。
  * 以后公开包带的九键模型不在模型目录里时，把它加到这里。
  */
@@ -216,7 +216,7 @@ internal fun isBundledCopy(manifest: String, name: String, file: File): Boolean 
         runCatching { verifyModelDigest(file, entry[0]) }.isSuccess
 }
 
-/** rime/ 里的词组模型和哪一档的下载是同一个文件（硬链接）；都不是时返回 null。 */
+/** 输入数据目录里的词组模型和哪一档的下载是同一个文件（硬链接）；都不是时返回 null。 */
 internal fun activeVariant(runtime: File, variants: List<Pair<ModelInfo, File>>): ModelInfo? {
     val name = variants.firstOrNull()?.first?.files?.firstOrNull()?.name ?: return null
     val installed = modelDownloadFile(runtime, name).takeIf { it.isFile } ?: return null

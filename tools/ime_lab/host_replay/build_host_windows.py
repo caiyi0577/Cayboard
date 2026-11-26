@@ -141,7 +141,7 @@ def build(args):
         production = original.read_text(encoding="utf-8")
     else:
         original.write_text(production, encoding="utf-8")
-    anchor = "include(Rime)"
+    anchor = "include(CayboardNativeEngine)"
     if production.count(anchor) != 1:
         raise ValueError("Production CMake layout changed; review host adaptation")
     # The Linux host build silently found Boost headers under /usr/include; Windows has none. The vendored Boost
@@ -155,7 +155,7 @@ def build(args):
         (merged / ".complete").write_text("merged from boost/libs/*/include\n", encoding="utf-8")
     boost_includes = 'include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/host-boost-include")\n'
     # host-adapters/win holds Windows shims for POSIX-only headers the production plugins include (dlfcn.h).
-    # The block goes right after project(): the production prefix already adds glog/leveldb before include(Rime).
+    # The block goes right after project(): the production prefix already adds glog/leveldb before the engine module.
     windows_block = (boost_includes +
                      'include_directories(SYSTEM "${HOST_ADAPTER_DIR}/win")\n' +
                      # The MSVC runtime marks POSIX names and fopen deprecated; the production code builds with -Werror.
@@ -169,7 +169,7 @@ def build(args):
     tail = (HERE / "host_tail_windows.cmake").read_text(encoding="utf-8")
     (source / "CMakeLists.txt").write_text(prefix + "\n" + tail, encoding="utf-8")
     # librime's WIN32 branch includes ${CMAKE_SOURCE_DIR}/cmake/AddRCInfo.cmake (DLL version resource); the snapshot
-    # root is the jni tree, so give it a no-op: rime_jni.dll needs no version resource.
+    # root is the jni tree, so give it a no-op: cayboard_jni.dll needs no version resource.
     (source / "cmake/AddRCInfo.cmake").write_text("# host replay: no Windows version resource" + chr(10), encoding="utf-8")
     adapter_names = ("build_host.py", "build_host_windows.py", "host_tail_windows.cmake", "android/log.h", "win/dlfcn.h", "win/posix_compat.h", "win/unistd.h", "win/sys/mman.h", "win/unwind_stub.c", "win/host_exports.cc",
                      "FindBoost.cmake", "host_replay_jni.cc")
@@ -199,8 +199,8 @@ def build(args):
                  "-DCMAKE_LINKER_TYPE=MSVC", "-DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON",  # 150+ Boost include paths overflow CreateProcess
                  "-DHOST_ADAPTER_DIR=" + posix(adapters), "-DHOST_JNI_INCLUDE=" + posix(jdk / "include"),
                  "-DHOST_ORT_DIR=" + posix(dll.parent), "-DHOST_ORT_LIBRARY=" + posix(implib),
-                 "-DBUILD_TESTING=OFF", "-DBUILD_TEST=OFF", "-DCYIME_T9_WORK_COUNTERS=ON"]
-    compile_args = [cmake, "--build", directory, "--target", "rime_jni", "--parallel", "2"]
+                 "-DBUILD_TESTING=OFF", "-DBUILD_TEST=OFF", "-DCAYBOARD_T9_WORK_COUNTERS=ON"]
+    compile_args = [cmake, "--build", directory, "--target", "cayboard_jni", "--parallel", "2"]
     manifest = {"format_version": 1, "status": "building", "backend": "windows-x64-production-jni",
                 "source_repo": str(repo), "source_root": str(source), "source_sha256": identity,
                 "source_files": "source-files.json", "source_files_sha256": linux.sha(directory / "source-files.json"),
@@ -213,7 +213,7 @@ def build(args):
         with (directory / "build.log").open("w", encoding="utf-8") as log:
             linux.run(configure, stdout=log, stderr=subprocess.STDOUT, env=env)
             linux.run(compile_args, stdout=log, stderr=subprocess.STDOUT, env=env)
-        library = directory / "lib/librime_jni.dll"
+        library = directory / "lib/cayboard_jni.dll"
         shutil.copyfile(dll, library.parent / dll.name)
         manifest.update(status="complete", library=str(library), library_sha256=linux.sha(library),
                         library_hashes={p.name: linux.sha(p) for p in sorted(library.parent.glob("*.dll"))},

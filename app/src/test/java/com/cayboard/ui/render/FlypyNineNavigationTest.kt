@@ -12,8 +12,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cayboard.gloss.CandidateGlossary
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.*
 import com.cayboard.settings.*
 import com.cayboard.ui.keyboard.*
@@ -80,7 +80,7 @@ class FlypyNineNavigationTest {
         }
         val zero = rule.onNodeWithTag("t9-zero-key", true)
         val differentPages = CandidateState(candidates = listOf("电"),
-            expandedCandidates = listOf(RimeCandidate("电脑", "")))
+            expandedCandidates = listOf(EngineCandidate("电脑", "")))
         assertNull(differentPages.englishForHeldSelection(0, false))
         assertEquals("computer", differentPages.englishForHeldSelection(0, true))
         assertNull(differentPages.englishForHeldSelection(1, true))
@@ -106,7 +106,7 @@ class FlypyNineNavigationTest {
         save()
         rule.runOnIdle {
             candidate.value = candidate.value.copy(expandedCandidatesLoaded = true,
-                expandedCandidates = listOf("电", "银河", "电脑").map { RimeCandidate(it, "") })
+                expandedCandidates = listOf("电", "银河", "电脑").map { EngineCandidate(it, "") })
             vm.setCandidateStripExtended(true)
         }
         drop(2)
@@ -121,7 +121,7 @@ class FlypyNineNavigationTest {
     }
 
     private fun save() {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

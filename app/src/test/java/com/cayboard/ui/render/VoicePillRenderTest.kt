@@ -37,7 +37,7 @@ import java.io.File
 
 /**
  * 语音悬浮条在各主题 × 玻璃开关、贴底与拖到左边两种位置下的样子，用真实 VoiceCollapsedPill 渲染成一张对比图。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图（平时跳过）。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图（平时跳过）。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w2200dp-h1400dp-mdpi")
@@ -46,7 +46,7 @@ class VoicePillRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderVoicePill() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

@@ -30,7 +30,7 @@ class TranslationSettingsRenderTest {
    rule.runOnIdle {dark=mode}
    listOf("原文语言","翻译成","Hy-MT2-1.8B","版本：2（1.25bit） · 大小：440.5 MiB").forEach {rule.onNodeWithText(it).assertExists()}
    listOf("API 密钥","接口地址","在线模型","测试接口","已就绪","本地处理","中译英","英译中").forEach {rule.onNodeWithText(it).assertDoesNotExist()}
-   System.getenv("CYIME_RENDER_OUT")?.let {dir ->
+   System.getenv("CAYBOARD_RENDER_OUT")?.let {dir ->
     val view=rule.activity.window.decorView;val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
     rule.runOnIdle {view.draw(android.graphics.Canvas(bitmap))}
     File(dir,"translation-settings-${if(mode) "dark" else "light"}.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}

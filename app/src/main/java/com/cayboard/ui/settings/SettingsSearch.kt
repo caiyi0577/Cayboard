@@ -229,9 +229,9 @@ internal val SettingsSearchIndex: List<SettingsSearchEntry> = run {
         page("存储空间", about, SettingsRoutes.StorageSpace, "存储 空间 占用 清理 缓存 容量 内存 运行内存 RAM 释放 安装包 体积"),
         // 入口在首页「智能」组最后一行（带开关，关了统计也在），标题栏右边的小字只在开着时显示。
     ).filter {
-        // Developer-only tools (speech tuning recordings and raw Rime file manager)
+        // Developer-only tools (speech tuning recordings and raw input-resource manager)
         // are hidden in public, elder and friend packages.
-        (it.target != SettingsRoutes.RimeFileBrowser &&
+        (it.target != SettingsRoutes.EngineFileBrowser &&
             it.title != "保存语音调优录音") || com.cayboard.BuildConfig.DEV_TOOLS || com.cayboard.BuildConfig.DEBUG
     }
 }

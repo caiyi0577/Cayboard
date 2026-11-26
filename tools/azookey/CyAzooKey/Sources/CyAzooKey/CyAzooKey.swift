@@ -1,4 +1,4 @@
-// C entry points for CyIME's Japanese converter. The Rime translator (cyime_azookey) calls these;
+// C entry points for Cayboard's Japanese converter. The Rime translator (cayboard_azookey) calls these;
 // Rime keeps the romaji input, segments and selection, this library only converts.
 import FoundationEssentials
 import KanaKanjiConverterModule
@@ -43,13 +43,13 @@ private final class Engine: @unchecked Sendable {
             sharedContainerURL: memoryURL,
             textReplacer: .empty,
             specialCandidateProviders: KanaKanjiConverter.defaultSpecialCandidateProviders,
-            metadata: .init(versionString: "CyIME")
+            metadata: .init(versionString: "Cayboard")
         )
     }
 
     /// Learners type the particles は/へ/を as pronounced (wa/e/o); the dictionary only has them under
     /// ハ/ヘ/ヲ, so 私わ came out. Copy the particle entries, as the dictionary has them in a sentence,
-    /// under the pronounced readings (CyIME's former cyime_japanese_particles table did the same in Rime).
+    /// under the pronounced readings (Cayboard's former cayboard_japanese_particles table did the same in Rime).
     func importPronouncedParticles() {
         let probes: [(romaji: String, particle: String, pronounced: String)] = [
             ("watashiha", "は", "ワ"), ("gakkouhe", "へ", "エ"), ("korewo", "を", "オ"),

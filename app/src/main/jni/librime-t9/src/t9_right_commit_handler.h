@@ -40,7 +40,7 @@ class T9UndoModel;
 //   - LetterBufferStrategy: SELECTION 态子模式（含 4 个子方法）
 //
 // 状态转换通过 Context::TransitionTo* 集中管理（P11），
-// 消除 v1.0 中 15+ 处散落的 sync_state + update_candidates + set_rime_input 调用。
+// 消除 v1.0 中 15+ 处散落的 sync_state + update_candidates + set_engine_input 调用。
 //
 // 三层消费算法（设计稿 §6.2）：
 //   层级1：apostrophe 模式（selections 非空 && unassigned 非空）
@@ -73,11 +73,11 @@ public:
         // 回调（由 T9Processor 注入）
         std::function<void()> sync_state = []{};
         std::function<void(bool)> update_candidates = [](bool){};
-        std::function<void(const std::optional<std::string>&)> set_rime_input =
+        std::function<void(const std::optional<std::string>&)> set_engine_input =
             [](const std::optional<std::string>&){};
 
         // ── 高层状态转换（P11：集中散落的状态变更） ──
-        // 封装 sync_state + update_candidates + set_rime_input 组合，
+        // 封装 sync_state + update_candidates + set_engine_input 组合，
         // 让 Strategy 代码聚焦于业务分支判断。
 
         // 清空 buffer + 进入 Idle 态 + 同步
@@ -98,7 +98,7 @@ public:
             const std::string& confirmed_pinyin = "");
 
         // 同步 buffer 到 RIME 输入（用于 INPUT 态）
-        void SyncBufferToRime();
+        void SyncBufferToEngine();
     };
 
     T9RightCommitHandler();
@@ -111,15 +111,15 @@ public:
     // 右侧候选选词，返回 true = 完整消费（full commit）。
     //
     // @param ctx 控制器可变状态上下文
-    // @param candidate_pinyin RIME 候选词注释（spelling_hints）
+    // @param candidate_pinyin 引擎候选词注释（spelling_hints）
     // @param candidate_text_length 候选词文字长度（汉字数）
-    // @param rime_consumed_digits 方案 A：RIME 候选 end 换算的应消费数字位数，
+    // @param engine_consumed_digits 方案 A：引擎候选 end 换算的应消费数字位数，
     //                             -1 表示无法确定（fallback 到现有消费算法）
     // @param is_t9_user_word 候选是否为 T9 用户词：是则 unassigned 全量消费
     bool HandleRightCommit(Context& ctx,
                            const std::optional<std::string>& candidate_pinyin,
                            int candidate_text_length = 0,
-                           int rime_consumed_digits = -1,
+                           int engine_consumed_digits = -1,
                            bool is_t9_user_word = false);
 
     // ── 策略共享公共服务 ──
@@ -178,7 +178,7 @@ private:
     // @param route 路由类型（由 ClassifyRoute 预计算，CRCC 内部据此分支）
     // @param alignment S4-3：由 HandleRightCommit 一次构造的候选词对齐上下文，
     //                  CRCC 与 ApostropheStrategy 共享，消除重复 ParseSyllables 调用
-    // @param rime_consumed_digits 方案 A：RIME 候选 end 换算的应消费数字位数，
+    // @param engine_consumed_digits 方案 A：引擎候选 end 换算的应消费数字位数，
     //                             -1 表示无法确定（fallback 到现有消费算法）
     // @param is_t9_user_word 候选是否为 T9 用户词：是则 unassigned 全量消费
     std::pair<std::string, std::string> ComputeRightCommitConsumption(
@@ -186,7 +186,7 @@ private:
         const SyllableAlignment& alignment,
         const std::optional<std::string>& candidate_pinyin,
         RouteType route,
-        int rime_consumed_digits = -1,
+        int engine_consumed_digits = -1,
         bool is_t9_user_word = false);
 };
 

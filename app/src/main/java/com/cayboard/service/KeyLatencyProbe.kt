@@ -144,7 +144,7 @@ internal object KeyLatencyProbe {
     /** 后台把结果投给主线程；同一按键多次投递取最后一次。 */
     fun posted(compositionLength: Int) {
         if (!enabled) return
-        val engine = com.cayboard.rime.EngineTimeMeter.current.get()?.get(0) ?: 0L
+        val engine = com.cayboard.engine.EngineTimeMeter.current.get()?.get(0) ?: 0L
         val now = System.nanoTime()
         val cpu = android.os.Debug.threadCpuTimeNanos()
         val faults = threadFaults()

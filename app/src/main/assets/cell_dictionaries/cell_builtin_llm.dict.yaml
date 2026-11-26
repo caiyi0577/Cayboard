@@ -1,4 +1,4 @@
-# CyIME 大模型词库。由 tools/dictionaries/topics/build_topic_dict.py 生成，请勿手改。
+# Cayboard 大模型词库。由 tools/dictionaries/topics/build_topic_dict.py 生成，请勿手改。
 # 词表由 CyletixCode 整理，读音按 rime-ice 校对。
 ---
 name: cell_builtin_llm

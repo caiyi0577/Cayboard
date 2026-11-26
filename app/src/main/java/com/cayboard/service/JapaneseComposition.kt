@@ -1,11 +1,11 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.EngineCandidate
 import kotlin.concurrent.withLock
 
 /** 使用原方案的实际回显确定假名边界，不复制罗马音规则，大小写保持原样。 */
-internal fun RimeEngine.japaneseReading(input: String): String {
+internal fun InputEngine.japaneseReading(input: String): String {
     setInput(input)
     return getComposition().preedit.filterNot { it.isWhitespace() || it == '\'' }
 }
@@ -14,13 +14,13 @@ internal fun RimeEngine.japaneseReading(input: String): String {
  * 读音长度探测边界（仅供转换预览的切换范围使用）。
  *
  * 不要再用于退格删除单位：ん 与 っ 都是单字符，长度比较判不出假名边界，会把整串一次删光
- * （2026-09-25 复现）。删除单位已改为同源的 [com.cayboard.rime.romajiDeleteStart]；
- * 显示边界同理，走纯字符串的 [com.cayboard.rime.japanesePreedit]（在 UI 出口归一化），
+ * （2026-09-25 复现）。删除单位已改为同源的 [com.cayboard.engine.romajiDeleteStart]；
+ * 显示边界同理，走纯字符串的 [com.cayboard.engine.japanesePreedit]（在 UI 出口归一化），
  * 不再用引擎探测"是否拼完"——探测会把单字母的促音/拨音兜底回显当成已拼完。
  */
-internal fun RimeEngine.previousJapaneseBoundary(input: String): Int {
+internal fun InputEngine.previousJapaneseBoundary(input: String): Int {
     if (input.isEmpty()) return 0
-    RimeEngine.rimeLock.lock()
+    InputEngine.engineLock.lock()
     try {
         val reading = japaneseReading(input)
         for (end in input.lastIndex downTo 0) {
@@ -28,7 +28,7 @@ internal fun RimeEngine.previousJapaneseBoundary(input: String): Int {
             if (shorter.length < reading.length && reading.startsWith(shorter)) return end
         }
         return 0
-    } finally { setInput(input); RimeEngine.rimeLock.unlock() }
+    } finally { setInput(input); InputEngine.engineLock.unlock() }
 }
 
 /**
@@ -37,12 +37,12 @@ internal fun RimeEngine.previousJapaneseBoundary(input: String): Int {
  * 按変換才转成汉字。光标位置三选一：[caretKana] 光标前有几个假名，[caretAt] 光标在编码里的位置（落在假名边界），
  * [caretReading] 光标前有几个读音字（输入框里点的位置）。[pending]：光标处打了还没拼成假名的字母。
  */
-internal class JapaneseConversion(private val engine: RimeEngine, val input: String,
+internal class JapaneseConversion(private val engine: InputEngine, val input: String,
     converted: Boolean = true, caretKana: Int? = null, caretAt: Int? = null, caretReading: Int? = null,
     val pending: String = "", knownBoundaries: List<Int>? = null) {
     /** 假名边界（编码位置，含 0 和末尾）。[knownBoundaries]：插字时已知，不再逐字问引擎（每问一次都要转换一遍）。 */
     val boundaries: List<Int> = knownBoundaries?.takeIf { it.firstOrNull() == 0 && it.lastOrNull() == input.length }
-        ?: RimeEngine.rimeLock.withLock { buildList {
+        ?: InputEngine.engineLock.withLock { buildList {
         add(0)
         var end = input.length
         val reversed = mutableListOf(end)
@@ -52,7 +52,7 @@ internal class JapaneseConversion(private val engine: RimeEngine, val input: Str
     } }
     private var rangeIndex = when {
         caretAt != null -> boundaries.indexOfFirst { it >= caretAt }.takeIf { it >= 0 } ?: boundaries.lastIndex
-        caretReading != null -> RimeEngine.rimeLock.withLock {
+        caretReading != null -> InputEngine.engineLock.withLock {
             try { boundaries.indexOfLast { engine.japaneseReading(input.take(it)).length <= caretReading }.coerceAtLeast(0) }
             finally { engine.setInput(input) }
         }
@@ -62,7 +62,7 @@ internal class JapaneseConversion(private val engine: RimeEngine, val input: Str
         private set
     var candidateIndex = 0
         private set
-    var candidates: Array<RimeCandidate> = emptyArray()
+    var candidates: Array<EngineCandidate> = emptyArray()
         private set
     var preview = ""
         private set
@@ -96,7 +96,7 @@ internal class JapaneseConversion(private val engine: RimeEngine, val input: Str
     fun choose(index: Int) { candidateIndex = index.coerceAtLeast(0); refresh() }
     fun refresh() {
         val end = boundaries[rangeIndex]
-        RimeEngine.rimeLock.lock()
+        InputEngine.engineLock.lock()
         try {
             val suffix = engine.japaneseReading(input.drop(end))
             val reading = if (converted) "" else engine.japaneseReading(input.take(end))
@@ -107,6 +107,6 @@ internal class JapaneseConversion(private val engine: RimeEngine, val input: Str
             segment = engine.conversionPreview().ifEmpty { engine.getComposition().preedit }.replace(" ", "")
             preview = if (converted) segment + suffix
                 else reading + pending + (if (suffix.isEmpty()) "" else PREEDIT_CARET.toString()) + suffix
-        } finally { engine.setInput(input); RimeEngine.rimeLock.unlock() }
+        } finally { engine.setInput(input); InputEngine.engineLock.unlock() }
     }
 }

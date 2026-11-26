@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** 仓颉五代：键盘的字根键帽、送给 Rime 的字母码和 cyime_cangjie 方案显示的字根三者对得上；构建出的码表按字频排。 */
+/** 仓颉五代：键盘的字根键帽、送给输入引擎的字母码和 cayboard_cangjie 方案显示的字根三者对得上；构建出的码表按字频排。 */
 class CangjieSchemeTest {
     private fun repoFile(rel: String): File {
         var dir: File? = File(System.getProperty("user.dir")).absoluteFile
@@ -18,8 +18,8 @@ class CangjieSchemeTest {
         error("missing $rel")
     }
 
-    private val schema by lazy { repoFile("src/main/assets/rime_chinese/cyime_cangjie.schema.yaml").readText() }
-    private val ximeYaml by lazy { repoFile("src/main/assets/xime.yaml").readText() }
+    private val schema by lazy { repoFile("src/main/assets/cayboard_chinese/cayboard_cangjie.schema.yaml").readText() }
+    private val cayboardYaml by lazy { repoFile("src/main/assets/cayboard.yaml").readText() }
 
     /** 方案 preedit_format 的 xlit：字母码 → 屏上显示的字根。 */
     private fun radicals(): Map<Char, Char> {
@@ -29,10 +29,10 @@ class CangjieSchemeTest {
     }
 
     @Test fun `every key cap shows the radical the schema shows for its code`() {
-        assertEquals("qwerty_cangjie", KeysConfigHelper.parseSchemaBindingsYamlText(ximeYaml)["cyime_cangjie"])
-        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(ximeYaml, "qwerty_cangjie") ?: error("xime.yaml 缺少 qwerty_cangjie rows")
+        assertEquals("qwerty_cangjie", KeysConfigHelper.parseSchemaBindingsYamlText(cayboardYaml)["cayboard_cangjie"])
+        val rows = KeysConfigHelper.parseKeyboardLayoutYamlText(cayboardYaml, "qwerty_cangjie") ?: error("cayboard.yaml 缺少 qwerty_cangjie rows")
         assertEquals(listOf(10, 9, 7), rows.map { it.size })
-        val keys = KeysConfigHelper.parseKeyboardYamlSection(ximeYaml, "qwerty_cangjie") ?: error("xime.yaml 缺少 qwerty_cangjie keys")
+        val keys = KeysConfigHelper.parseKeyboardYamlSection(cayboardYaml, "qwerty_cangjie") ?: error("cayboard.yaml 缺少 qwerty_cangjie keys")
         val alphabet = Regex("""(?m)^  alphabet: (\S+)""").find(schema)!!.groupValues[1]
         val shown = radicals()
         for (key in rows.flatten()) {
@@ -46,8 +46,8 @@ class CangjieSchemeTest {
         for ((code, radical) in shown) assertEquals(radical, comment.component2()[comment.component1().indexOf(code)])
     }
 
-    @Test fun `cyime_cangjie is the Chinese cangjie scheme on 26 keys`() {
-        val profile = InputProfiles.describe("cyime_cangjie")
+    @Test fun `cayboard_cangjie is the Chinese cangjie scheme on 26 keys`() {
+        val profile = InputProfiles.describe("cayboard_cangjie")
         assertEquals(InputLanguage.CHINESE, profile.language)
         assertEquals(InputScheme.CANGJIE, profile.scheme)
         assertEquals(LayoutKind.ALPHABETIC, profile.layout.kind)
@@ -58,20 +58,20 @@ class CangjieSchemeTest {
     }
 
     @Test fun `schema converts with a bundled config and needs no missing dictionary`() {
-        assertTrue(schema.contains("schema_id: cyime_cangjie"))
-        assertTrue(schema.contains("dictionary: cyime_cangjie"))
+        assertTrue(schema.contains("schema_id: cayboard_cangjie"))
+        assertTrue(schema.contains("dictionary: cayboard_cangjie"))
         // Cayboard 不带 luna_pinyin / essay；方案不能依赖装不上的词典。
         assertTrue(schema.lines().filterNot { it.trimStart().startsWith("#") }.none { "luna_pinyin" in it || "reverse_lookup" in it })
-        assertTrue(schema.contains("  option_name: simplification\n  opencc_config: cyime_t2s.json\n"))
-        val config = repoFile("src/main/assets/rime_chinese/opencc/cyime_t2s.json").readText()
+        assertTrue(schema.contains("  option_name: simplification\n  opencc_config: cayboard_t2s.json\n"))
+        val config = repoFile("src/main/assets/cayboard_chinese/opencc/cayboard_t2s.json").readText()
         val tables = Regex(""""file":\s*"([^"]+)"""").findAll(config).map { it.groupValues[1] }.toList()
-        for (table in tables) assertTrue("$table 没有随包", repoFile("src/main/assets/rime_chinese/opencc/$table").isFile)
+        for (table in tables) assertTrue("$table 没有随包", repoFile("src/main/assets/cayboard_chinese/opencc/$table").isFile)
         // 只看实际引用的表；配置名里写着「no TSCharactersExt」不算
         assertFalse("会转出方框字的表不要", tables.any { it.startsWith("TSCharactersExt") })
     }
 
     @Test fun `generated table weights characters by use and encodes words itself`() {
-        val dict = repoFile("build/generated/cangjie-assets/rime_chinese/cyime_cangjie.dict.yaml").readLines()
+        val dict = repoFile("build/generated/cangjie-assets/cayboard_chinese/cayboard_cangjie.dict.yaml").readLines()
         assertTrue(dict.contains("use_preset_vocabulary: false"))
         val rows = dict.dropWhile { it.trim() != "..." }.drop(1).filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split('\t') }
         fun weight(text: String, code: String) = rows.first { it[0] == text && it[1] == code }[2].toLong()
@@ -81,7 +81,7 @@ class CangjieSchemeTest {
         assertTrue(weight("会", "ommi") > weight("伝", "ommi"))
         // 兼容汉字、康熙部首不进码表（同形不同码位）
         assertTrue(rows.none { it[0].codePointAt(0) in 0xF900..0xFAFF || it[0].codePointAt(0) in 0x2F00..0x2FDF })
-        // 词组不写编码，由 librime 编
+        // 词组不写编码，由输入引擎按方案规则编码
         val words = rows.filter { it[1].isEmpty() }
         assertTrue(words.size > 50000)
         assertTrue(words.any { it[0] == "我們" })
@@ -90,16 +90,16 @@ class CangjieSchemeTest {
     }
 
     @Test fun `quick shares the cangjie keyboard and cuts codes to first and last letter`() {
-        assertEquals("qwerty_cangjie", KeysConfigHelper.parseSchemaBindingsYamlText(ximeYaml)["cyime_quick"])
-        val profile = InputProfiles.describe("cyime_quick")
+        assertEquals("qwerty_cangjie", KeysConfigHelper.parseSchemaBindingsYamlText(cayboardYaml)["cayboard_quick"])
+        val profile = InputProfiles.describe("cayboard_quick")
         assertEquals(InputLanguage.CHINESE, profile.language)
         assertEquals(InputScheme.CANGJIE, profile.scheme)
-        val quick = repoFile("src/main/assets/rime_chinese/cyime_quick.schema.yaml").readText()
-        assertTrue(quick.contains("dictionary: cyime_quick"))
+        val quick = repoFile("src/main/assets/cayboard_chinese/cayboard_quick.schema.yaml").readText()
+        assertTrue(quick.contains("dictionary: cayboard_quick"))
         // 键帽、编码栏字根与仓颉同一套
         for (format in listOf("preedit_format:", "comment_format:"))
             assertEquals(schema.substringAfter(format).lines()[1], quick.substringAfter(format).lines()[1])
-        val dict = repoFile("build/generated/cangjie-assets/rime_chinese/cyime_quick.dict.yaml").readLines()
+        val dict = repoFile("build/generated/cangjie-assets/cayboard_chinese/cayboard_quick.dict.yaml").readLines()
         val rows = dict.dropWhile { it.trim() != "..." }.drop(1).filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split('\t') }
         assertTrue(rows.size > 25000)
         assertTrue(rows.all { it[1].length in 1..2 && it[1][0] !in "xz" })
@@ -111,10 +111,11 @@ class CangjieSchemeTest {
 
     /** 单字提前放在去重后面会先取走一批候选，傳、传都转成「传」时去不掉，同一码出两个「传」。 */
     @Test fun `single characters are lifted before duplicates are removed`() {
-        for (file in listOf("cyime_cangjie", "cyime_quick")) {
-            val filters = repoFile("src/main/assets/rime_chinese/$file.schema.yaml").readText()
+        for (file in listOf("cayboard_cangjie", "cayboard_quick")) {
+            val filters = repoFile("src/main/assets/cayboard_chinese/$file.schema.yaml").readText()
                 .substringAfter("  filters:\n").substringBefore("\n\n").lines().filter { it.trim().startsWith("- ") }.map { it.trim().removePrefix("- ") }
             assertEquals(file, listOf("simplifier", "single_char_filter", "uniquifier"), filters)
         }
     }
 }
+

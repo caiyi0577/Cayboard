@@ -6,10 +6,10 @@ a word it only accepts capitalized (Madrid, Haus) is stored capitalized.
 
     pip install spylls
     npm pack dictionary-de@3.0.0 && tar xzf dictionary-de-3.0.0.tgz     # es: dictionary-es@4.0.0, it: dictionary-it@2.0.0
-    python tools/wordlists/build_words.py de package/index tools/wordlists/cyime-words-de-v1.txt
+    python tools/wordlists/build_words.py de package/index tools/wordlists/cayboard-words-de-v1.txt
 
 Output: one word per line, most frequent first. The lists ship as market downloads, not in the APK:
-upload the file unchanged to the GitHub Release `models` and ModelScope Cyletix/cyime-model, then put its
+upload the file unchanged to the GitHub Release `models` and ModelScope Cyletix/cayboard-model, then put its
 sha256 and size into BuiltinModelCatalog (WordListCatalogTest checks they match this folder).
 """
 import re

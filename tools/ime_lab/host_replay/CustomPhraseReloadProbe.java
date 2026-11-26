@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,15 +11,15 @@ import java.nio.file.StandardOpenOption;
  * library directory and a copy of a deployed user directory (never an installed app's data).
  */
 public final class CustomPhraseReloadProbe {
-  static final String SCHEMA = "rime_ice";
+  static final String SCHEMA = "cayboard_pinyin";
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
     File phrases = new File(user, "custom_phrase.txt");
     Files.write(phrases.toPath(), ("# Rime table\n#@/db_name\tcustom_phrase\n#@/db_type\ttabledb\n#\n"
         + "探针短语甲\tzzqa\t1\n").getBytes(StandardCharsets.UTF_8));
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user.getPath(), user.getPath());
     try {
       if (!new File(user, "build/" + SCHEMA + ".schema.yaml").isFile()) maintain(e, true);
@@ -38,7 +38,7 @@ public final class CustomPhraseReloadProbe {
     } finally { e.nativeDestroy(); }
   }
 
-  static boolean report(String step, RimeEngine e, String code, String phrase) {
+  static boolean report(String step, InputEngine e, String code, String phrase) {
     e.nativeSetInput("");
     e.nativeSetInput(code);
     String[][] rows = e.nativeInspectCandidates(20);
@@ -50,7 +50,7 @@ public final class CustomPhraseReloadProbe {
     return found;
   }
 
-  static void maintain(RimeEngine e, boolean full) throws Exception {
+  static void maintain(InputEngine e, boolean full) throws Exception {
     e.nativeStartMaintenance(full);
     long until = System.currentTimeMillis() + 600000;
     while (e.nativeIsMaintaining()) {

@@ -2,7 +2,7 @@
 
     python tools/handwriting_training/build_hanzi_frequency.py
 
-读 app/src/main/assets/rime/pinyin_simp.dict.yaml（同一个字的多个读音权重相加），
+读 app/src/main/assets/cayboard_base/pinyin_simp.dict.yaml（同一个字的多个读音权重相加），
 写 app/src/main/assets/handwriting/hanzi_frequency.tsv：每行“字<TAB>权重”，按权重从高到低。
 """
 import collections
@@ -10,7 +10,7 @@ import pathlib
 import unicodedata
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = ROOT / "app/src/main/assets/rime/pinyin_simp.dict.yaml"
+SRC = ROOT / "app/src/main/assets/cayboard_base/pinyin_simp.dict.yaml"
 OUT = ROOT / "app/src/main/assets/handwriting/hanzi_frequency.tsv"
 
 

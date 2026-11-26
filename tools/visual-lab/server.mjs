@@ -3,7 +3,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {compile,root} from './compile.mjs';
-const dir=path.dirname(fileURLToPath(import.meta.url)), port=Number(process.env.CYIME_VISUAL_PORT||4319);
+const dir=path.dirname(fileURLToPath(import.meta.url)), port=Number(process.env.CAYBOARD_VISUAL_PORT||process.env.CYIME_VISUAL_PORT||4319);
 const mime={'.html':'text/html; charset=utf-8','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png'};
 const files=new Set(['index.html','lab.css','lab.mjs','renderer.mjs','design.json','android-resources.json']);
 http.createServer(async(req,res)=>{

@@ -3,9 +3,9 @@ package com.cayboard
 import android.app.Application
 import android.util.Log
 import com.cayboard.util.FileLogger
-import com.cayboard.rime.RimeConfigHelper
+import com.cayboard.engine.EngineConfig
 import com.cayboard.model.ModelRuntime
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.AppFonts
 import com.cayboard.settings.SettingsPreferences
@@ -42,9 +42,10 @@ class CayboardApplication : Application() {
             defaultHandler?.uncaughtException(thread, throwable)
         }
         // Model services run in separate processes. They must not copy/deploy the
-        // same Rime directory or load the keyboard runtime a second time.
+        // same input data or load the keyboard runtime a second time.
         val processName = getProcessName()
         if (processName != packageName) return
+        com.cayboard.engine.compat.LegacyNameMigration.migrate(this)
         applicationScope.launch {
             runCatching { com.cayboard.ui.keyboard.FixedKeycapAtlas.get(this@CayboardApplication) }
                 .onFailure { FileLogger.e(TAG, "Cannot preload fixed keycaps", it) }
@@ -72,10 +73,10 @@ class CayboardApplication : Application() {
         AppFonts.initialize(this)
         applicationScope.launch { com.cayboard.settings.ClipboardWordSegmenter.prewarm(this@CayboardApplication) }
 
-        // 从 xime.yaml 加载配色方案
+        // 从 cayboard.yaml 加载配色方案
         KeyboardThemes.initFromConfig(this)
 
-        // 从 xime.yaml 的 style 读取默认主题和显示模式
+        // 从 cayboard.yaml 的 style 读取默认主题和显示模式
         // color_scheme 可指定 dynamic（Material You 动态配色，仅 Android 12+，
         // 低版本 getThemeById 自动回退到内置配色）
         SettingsPreferences.defaultKeyboardTheme = com.cayboard.ui.theme.FixedKeyboardStyle.ID
@@ -86,20 +87,20 @@ class CayboardApplication : Application() {
         ModelRuntime.attach(this)
 
         com.cayboard.model.BundledModelInstaller.start(this)
-        preInitializeRimeEngine()
+        preInitializeInputEngine()
     }
     
-    private fun preInitializeRimeEngine() {
-        if (RimeEngine.isInitialized()) {
+    private fun preInitializeInputEngine() {
+        if (InputEngine.isInitialized()) {
             return
         }
         
         applicationScope.launch {
             try {
-                RimeConfigHelper.prepareAutomatically(this@CayboardApplication)
+                EngineConfig.prepareAutomatically(this@CayboardApplication)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to pre-initialize Rime engine", e)
+                Log.e(TAG, "Failed to pre-initialize input engine", e)
             }
         }
     }

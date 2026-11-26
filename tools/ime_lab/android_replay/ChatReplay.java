@@ -1,6 +1,6 @@
-package com.cyime.audit;
+package com.cayboard.audit;
 
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -34,14 +34,14 @@ public final class ChatReplay {
     private static final String[] FIELDS = {
         "text", "comment", "type", "quality", "index", "start", "end", "weight", "code", "components"
     };
-    private final RimeEngine engine = new RimeEngine();
+    private final InputEngine engine = new InputEngine();
     private BufferedWriter output;
     private int keyDelayMs;
     private int rowLimit;
     private int boundaryLimit;
     private int settleTimeoutMs;
     private String variant;
-    /** Rime schema replayed: t9_pinyin (nine-key) or a 26-key schema such as rime_ice with --variant letters. */
+    /** Rime schema replayed: t9_pinyin (nine-key) or a 26-key schema such as cayboard_pinyin with --variant letters. */
     private String schema;
     private boolean idleSpelling;
     private long rowCount;
@@ -180,10 +180,10 @@ public final class ChatReplay {
                     ? "Native engine with isolated audit resources; no app data imported, no UI, commit, or personalization"
                     : "Native engine with isolated audit resources and a preset user dictionary snapshot; no app data, UI, commit, or learning"));
             output.flush();
-            // Windows host build: load ONNX Runtime from the same directory first so librime_jni.dll resolves it.
+            // Windows host build: load ONNX Runtime from the same directory first so cayboard_jni.dll resolves it.
             File ort = new File(libDir, "onnxruntime" + NATIVE_SUFFIX);
             if (NATIVE_SUFFIX.equals(".dll") && ort.isFile()) System.load(ort.getAbsolutePath());
-            System.load(new File(libDir, "librime_jni" + NATIVE_SUFFIX).getAbsolutePath());
+            System.load(new File(libDir, "cayboard_jni" + NATIVE_SUFFIX).getAbsolutePath());
             engine.nativeInitialize(user.getPath(), user.getPath());
             initialized = true;
             engine.nativeEnsureT9SchemaPatches(schema);
@@ -227,7 +227,7 @@ public final class ChatReplay {
             }
             engine.nativeSetOption("ascii_mode", false);
             engine.nativeSetOption("full_shape", false);
-            idleSpelling = engine.nativeGetSchemaString(schema, "cyime_edit_schema") != null;
+            idleSpelling = engine.nativeGetSchemaString(schema, "cayboard_edit_schema") != null;
             JSONObject settings = new JSONObject();
             for (String key : Arrays.asList("t9/dictionary_beam", "t9/sentence_beam", "t9/result_budget",
                     "t9/word_penalty", "t9/spelling_penalty", "t9/sentence_model", "t9/sentence_weight",
@@ -275,7 +275,7 @@ public final class ChatReplay {
         for (int i = 0; i < syllables.length; i++) {
             syllables[i] = normalizePinyin(pinyin.getString(i));
             // Letters: the full pinyin typed without separators, as on the 26-key keyboard.
-            // Capitals typed on the 26-key keyboard go to Rime as capitals (KFC, Obsidian).
+            // Capitals typed on the 26-key keyboard reach the input engine unchanged (KFC, Obsidian).
             digits[i] = variant.equals("letters")
                 ? (pinyin.getString(i).matches("[A-Za-z]+") ? pinyin.getString(i) : syllables[i])
                 : variant.equals("letters14") ? keys14(syllables[i]) : digits(syllables[i]);
@@ -285,7 +285,7 @@ public final class ChatReplay {
             throw new IllegalArgumentException(id + ": keys disagree with pinyin");
         }
         engine.nativeT9ClearComposition(1);
-        engine.nativeT9FlushRimeInput();
+        engine.nativeT9FlushInput();
         // "left_context": text committed before the composition, as the app passes it from the editor (2026-11-05:
         // 58333 after 精防肩撞就 gave 觉的). Cases without it leave the engine's context untouched.
         String leftContext = item.optString("left_context", null);
@@ -296,7 +296,7 @@ public final class ChatReplay {
         for (int syllable = 0; syllable < syllables.length; syllable++) {
             if (syllable > 0 && variant.equals("separated")) {
                 engine.nativeProcessKey('\'', 0);
-                engine.nativeT9FlushRimeInput();
+                engine.nativeT9FlushInput();
                 sentKeys.append('\'');
             }
             for (int pos = 0; pos < digits[syllable].length(); pos++) {
@@ -305,7 +305,7 @@ public final class ChatReplay {
                 if (earlier != null) for (int k = 0; k < earlier.length; k++) unattributedWork[k] += earlier[k];
                 long begin = System.nanoTime();
                 boolean accepted = engine.nativeProcessKey(digit, 0);
-                engine.nativeT9FlushRimeInput();
+                engine.nativeT9FlushInput();
                 long elapsed = System.nanoTime() - begin;
                 long processMs = elapsed / 1000000;
                 long[] keyWork = takeWork();
@@ -323,7 +323,7 @@ public final class ChatReplay {
             }
             if (variant.equals("locked")) {
                 boolean locked = engine.nativeT9SelectPinyinDirect(syllables[syllable], digits[syllable].length());
-                engine.nativeT9FlushRimeInput();
+                engine.nativeT9FlushInput();
                 snapshot(id, mode, "pinyin_locked", text, typed.toString(), sentKeys.toString(),
                     syllable + 1, syllable + 1, true, syllable == syllables.length - 1, locked, 0, null, 0, takeWork());
             }
@@ -442,11 +442,11 @@ public final class ChatReplay {
             Enumeration<? extends ZipEntry> entries = zip.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (!entry.isDirectory() && entry.getName().startsWith("assets/rime/")) {
-                    extractEntry(zip, entry, inside(user, entry.getName().substring("assets/rime/".length())), null, -1);
+                if (!entry.isDirectory() && entry.getName().startsWith("assets/cayboard_base/")) {
+                    extractEntry(zip, entry, inside(user, entry.getName().substring("assets/cayboard_base/".length())), null, -1);
                 }
             }
-            ZipEntry manifest = zip.getEntry("assets/rime-bundled-manifest.tsv");
+            ZipEntry manifest = zip.getEntry("assets/cayboard-bundled-manifest.tsv");
             if (manifest == null) throw new IOException("APK has no bundled-resource manifest");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(zip.getInputStream(manifest), StandardCharsets.UTF_8))) {
                 String line;
@@ -575,8 +575,8 @@ public final class ChatReplay {
     }
 
     private static JSONObject libraryHashes(File directory) throws Exception {
-        if (!new File(directory, "librime_jni" + NATIVE_SUFFIX).isFile()) {
-            throw new IOException("Native library directory has no librime_jni" + NATIVE_SUFFIX + ": " + directory);
+        if (!new File(directory, "cayboard_jni" + NATIVE_SUFFIX).isFile()) {
+            throw new IOException("Native library directory has no cayboard_jni" + NATIVE_SUFFIX + ": " + directory);
         }
         String[] names = directory.list((dir, name) -> name.endsWith(NATIVE_SUFFIX));
         if (names == null) throw new IOException("Could not list native library directory: " + directory);
@@ -613,8 +613,8 @@ public final class ChatReplay {
             if (root.exists()) {
                 throw new IOException("Host audit root must be a new nonexistent directory: " + root);
             }
-        } else if (!root.getPath().startsWith("/data/local/tmp/cyime-chat-audit-")) {
-            throw new IllegalArgumentException("--root must be a dedicated /data/local/tmp/cyime-chat-audit-* directory");
+        } else if (!root.getPath().startsWith("/data/local/tmp/cayboard-chat-audit-")) {
+            throw new IllegalArgumentException("--root must be a dedicated /data/local/tmp/cayboard-chat-audit-* directory");
         }
         return root;
     }

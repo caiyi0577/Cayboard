@@ -14,8 +14,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.SettingsPreferences
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -34,13 +34,13 @@ class PinyinDeletionWorkflowTest {
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         val ime = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
         val wasEnabled = shell("ime list -s").lineSequence().any { it == ime }
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         var schema = ""
         var ascii = false
         var savedAscii = false
         lateinit var editor: EditText
         try {
-            assertTrue(RimeConfigHelper.prepareEngine(context))
+            assertTrue(EngineConfig.prepareEngine(context))
             assertTrue(engine.ensureSession())
             schema = engine.getCurrentSchema()
             ascii = engine.isAsciiMode()
@@ -48,9 +48,9 @@ class PinyinDeletionWorkflowTest {
             SettingsPreferences.setKeyboardHeightDp(context, 300)
             SettingsPreferences.setKeyboardBottomPaddingDp(context, 0)
             SettingsPreferences.setFloatingMode(context, false)
-            SettingsPreferences.setCurrentSchema(context, "rime_ice")
+            SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
             prefs.edit().putBoolean("neighbor_correction", true).commit()
-            assertTrue(engine.switchSchema("rime_ice"))
+            assertTrue(engine.switchSchema("cayboard_pinyin"))
             engine.setOption("ascii_mode", false)
             engine.setUserConfigBool("var/option/ascii_mode", false)
             shell("ime enable $ime")

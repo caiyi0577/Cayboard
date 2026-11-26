@@ -5,11 +5,11 @@ import org.junit.Test
 
 /** 小鹤双拼 + 14 键 → 自动提供 14 键小鹤双拼；缺一项或未安装时不出现。 */
 class SchemaCompanionTest {
-    private val installed = setOf("rime_ice", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian")
+    private val installed = setOf("cayboard_pinyin", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian")
 
     @Test fun shuangpinAndFourteenKeysImplyFourteenKeyShuangpin() {
-        assertEquals(listOf("rime_ice", "double_pinyin_flypy", "pinyin_14jian", "double_pinyin_flypy_14jian"),
-            CayboardInputDefaults.withCompanions(listOf("rime_ice", "double_pinyin_flypy", "pinyin_14jian"), installed))
+        assertEquals(listOf("cayboard_pinyin", "double_pinyin_flypy", "pinyin_14jian", "double_pinyin_flypy_14jian"),
+            CayboardInputDefaults.withCompanions(listOf("cayboard_pinyin", "double_pinyin_flypy", "pinyin_14jian"), installed))
     }
 
     @Test fun companionFollowsItsRequirementsOnly() {

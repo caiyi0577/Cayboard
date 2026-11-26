@@ -41,7 +41,7 @@ enum class DisplayMode(val value: String) {
     }
 }
 
-/** 按键布局模式，从 xime.yaml keyboard.button_layout 加载。 */
+/** 按键布局模式，从 cayboard.yaml keyboard.button_layout 加载。 */
 enum class ButtonLayout(val value: String) {
     STANDARD("standard"),
     COMPACT("compact");
@@ -101,7 +101,7 @@ data class KeyboardConfig(
 )
 
 /**
- * 键盘行布局配置，从 xime.yaml keyboard.<section>.layout 加载。
+ * 键盘行布局配置，从 cayboard.yaml keyboard.<section>.layout 加载。
  * rows[i] 为第 i 行的按键 ID 列表。
  */
 data class KeyboardLayoutConfig(
@@ -109,7 +109,7 @@ data class KeyboardLayoutConfig(
 )
 
 /**
- * 键盘阴影配置，从 xime.yaml keyboard.shadow 加载。
+ * 键盘阴影配置，从 cayboard.yaml keyboard.shadow 加载。
  */
 data class KeyboardShadowConfig(
     val enabled: Boolean = true,
@@ -126,7 +126,7 @@ data class KeyboardSpacingConfig(
 )
 
 /**
- * 键盘按键配置，从 xime.yaml keyboard.key 加载。
+ * 键盘按键配置，从 cayboard.yaml keyboard.key 加载。
  */
 data class KeyboardKeyConfig(
     val cornerRadius: Int = 8,
@@ -150,7 +150,7 @@ data class KeyboardKeyConfig(
 }
 
 /**
- * 键盘颜色配置，从 xime.yaml keyboard.colors 加载。
+ * 键盘颜色配置，从 cayboard.yaml keyboard.colors 加载。
  * 所有颜色值为 0xRRGGBB 格式（不含 alpha）。
  */
 /** 全局键盘颜色后备，背景色已由 color_schemes 的 keyboard_background 接管。 */
@@ -452,7 +452,7 @@ object ColorSchemeModeConfigSerializer :
     }
 }
 
-/** 字体配置，从 xime.yaml keyboard.fonts 节点加载。字体文件放在 rime/fonts/ 目录下。 */
+/** 字体配置，从 cayboard.yaml keyboard.fonts 节点加载。字体文件放在输入数据目录的 fonts/ 下。 */
 data class KeyboardFontConfig(
     val keyFont: String = "",
     val keyLabelFont: String = "",
@@ -461,7 +461,7 @@ data class KeyboardFontConfig(
 )
 
 /**
- * 九键（T9）键盘配置，从 xime.yaml keyboard.t9 加载。
+ * 九键（T9）键盘配置，从 cayboard.yaml keyboard.t9 加载。
  */
 data class KeyboardT9Config(
     /** 左侧快捷符号栏（空闲态），列表长度不限，超过 4 个时键盘侧滚动显示。 */
@@ -469,7 +469,7 @@ data class KeyboardT9Config(
 )
 
 /**
- * 字母键盘的对齐参数，从 xime.yaml / xime.custom.yaml keyboard.<section>.geometry 读（字段级 custom → 内置）。
+ * 字母键盘的对齐参数，从 cayboard.yaml / cayboard.custom.yaml keyboard.<section>.geometry 读（字段级 custom → 内置）。
  * 都不写时为 null，键盘照旧：标准排列按字母格自动算，其余第二行缩进 16dp、Shift 和删除键各 1.4 份。
  * 这个方案用应用内自定义布局时同样生效。
  */
@@ -494,7 +494,7 @@ data class LetterGeometryOverride(
 }
 
 /**
- * 笔画键盘配置，从 xime.yaml keyboard.stroke 加载。
+ * 笔画键盘配置，从 cayboard.yaml keyboard.stroke 加载。
  */
 data class KeyboardStrokeConfig(
     /** 左侧快捷符号列，列表长度不限，超过 3 个时键盘侧滚动显示。 */
@@ -598,8 +598,10 @@ data class KeysConfig(
 
 object KeysConfigHelper {
     private const val TAG = "KeysConfigHelper"
-    private const val XIME_CONFIG_FILE = "xime.yaml"
-    private const val XIME_CUSTOM_CONFIG_FILE = "xime.custom.yaml"
+    private const val INPUT_CONFIG_FILE = "cayboard.yaml"
+    private const val INPUT_CUSTOM_CONFIG_FILE = "cayboard.custom.yaml"
+    private const val LEGACY_CONFIG_FILE = com.cayboard.engine.compat.LegacyNames.OLD_CONFIG
+    private const val LEGACY_CUSTOM_CONFIG_FILE = com.cayboard.engine.compat.LegacyNames.OLD_CUSTOM_CONFIG
 
     /** 九键左侧快捷符号栏内置默认值：最常用的中文标点，按使用频率排，括号只留一对（用户 10-31）。 */
     /** 都取自常用符号面板（commonSymbolsFor 中文）；超过 4 个时侧栏可滑动。 */
@@ -679,7 +681,7 @@ object KeysConfigHelper {
     private var _appliedLayoutSchemaId: String? = null
     private var _activeSchemaId: String = ""
 
-    // 合并键绑定缓存：schemaId → 键盘 section（xime.yaml keyboard.<section>.schemas 声明）
+    // 合并键绑定缓存：schemaId → 键盘 section（cayboard.yaml keyboard.<section>.schemas 声明）
     private var _schemaSectionBindings: Map<String, String> = emptyMap()
     @Volatile internal var hasLoadedLayoutBindings: Boolean = false
         private set
@@ -697,12 +699,12 @@ object KeysConfigHelper {
     private var _t9GestureConfigs: Map<String, KeyGestureConfig> = emptyMap()
     private var _strokeGestureConfigs: Map<String, KeyGestureConfig> = emptyMap()
 
-    /** 合并键方案（pinyin_14jian 等）对应的 xime.yaml 键盘 section，非合并键方案返回 null。 */
+    /** 合并键方案（pinyin_14jian 等）对应的 cayboard.yaml 键盘 section，非合并键方案返回 null。 */
     internal fun mergedSectionForSchema(schemaId: String): String? =
         resolveMergedSection(schemaId, _schemaSectionBindings) ?: generatedSection(schemaId)
 
     /**
-     * 绑定解析：仅认 schemas 声明（xime.yaml / xime.custom.yaml keyboard.<section>.schemas），
+     * 绑定解析：仅认 schemas 声明（cayboard.yaml / cayboard.custom.yaml keyboard.<section>.schemas），
      * 未声明的方案一律全键盘（26 键），不做 id 关键字猜测。
      * 代码布局 section（t9/stroke）不是行数据布局，不作为合并键解析结果。
      */
@@ -714,7 +716,7 @@ object KeysConfigHelper {
         ?: "t9".takeIf { DoublePinyinSchemes.isT9(schemaId) } ?: generatedSection(schemaId)
 
     /**
-     * 由键位表生成的双拼 14 键版本不写进 xime.yaml，用 14 键小鹤双拼的布局；用户在 xime.custom.yaml
+     * 由键位表生成的双拼 14 键版本不写进 cayboard.yaml，用 14 键小鹤双拼的布局；用户在 cayboard.custom.yaml
      * 给它声明了别的布局时以声明为准（上面先查绑定）。
      */
     private fun generatedSection(schemaId: String): String? =
@@ -727,7 +729,7 @@ object KeysConfigHelper {
     /**
      * 仅供单测：清空方案绑定缓存。
      *
-     * 绑定只在 [loadConfig] 里由 xime.yaml / xime.custom.yaml 写入，是进程级状态；
+     * 绑定只在 [loadConfig] 里由 cayboard.yaml / cayboard.custom.yaml 写入，是进程级状态；
      * 其他用例（如 [CayboardResearchPresetTest]）会加载绑定，若先于"未声明即不识别"的断言执行，
      * 断言就会随用例执行顺序变红。需要"未加载绑定"场景的用例先调用本方法。
      */
@@ -783,7 +785,7 @@ object KeysConfigHelper {
 
     /**
      * ing 在分号上的双拼（微软双拼）：排列里没有分号键时在第二排末尾补一个，第二排正好排满十格；
-     * 排不下（第二排已满、蜂窝排列）就保持原样，换个带分号的排列再打。分号键按下时送进 Rime，由方案组成编码。
+     * 排不下（第二排已满、蜂窝排列）就保持原样，换个带分号的排列再打。分号键按下时送进输入引擎，由方案组成编码。
      */
     internal fun withSemicolonKey(rows: List<List<String>>): List<List<String>> =
         if (rows.size != 3 || rows.any { ";" in it } || rows[1].sumOf { it.length } != 9) rows
@@ -865,7 +867,7 @@ object KeysConfigHelper {
     fun loadConfig(context: Context): KeysConfig {
         val previousNodes = loadYamlNodes.get()
         loadYamlNodes.set(mutableMapOf())
-        try { loadXimeConfig(context) }
+        try { loadCayboardConfig(context) }
         finally {
             if (previousNodes == null) loadYamlNodes.remove() else loadYamlNodes.set(previousNodes)
         }
@@ -890,7 +892,7 @@ object KeysConfigHelper {
     /** 自建双字母布局各自的角标修改，按布局 id。 */
     private var symbolOverridesCustom: Map<String, Map<String, String>> = emptyMap()
 
-    private fun loadXimeConfig(context: Context) {
+    private fun loadCayboardConfig(context: Context) {
         try {
             val customLayouts = CustomKeyboardLayouts.load(context)
             LetterLayouts.load(context)
@@ -937,7 +939,7 @@ object KeysConfigHelper {
             _enRowsBase = parsedRows.second
             applyEnglishLetterLayout()
             // 合并键绑定（keyboard.<section>.schemas，custom 覆盖 builtIn 同名方案的绑定）
-            val builtInBindings = readAssetText(context, XIME_CONFIG_FILE)
+            val builtInBindings = readInputConfigAsset(context)
                 ?.let { parseSchemaBindingsYamlText(it) } ?: emptyMap()
             val customBindings = readCustomText(context)
                 ?.let { parseSchemaBindingsYamlText(it) } ?: emptyMap()
@@ -976,7 +978,7 @@ object KeysConfigHelper {
             }
             _configVersion.value++
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to load xime config", e)
+            Log.w(TAG, "Failed to load Cayboard config", e)
         }
     }
 
@@ -1016,20 +1018,20 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析键盘手势配置。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析键盘手势配置。 */
     private fun parseKeyboardFromAssets(context: Context): Pair<Map<String, KeyGestureConfig>, Map<String, KeyGestureConfig>>? {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE) ?: return null
+        val defaultText = readInputConfigAsset(context) ?: return null
         val defaultZh = parseKeyboardYamlSection(defaultText, "qwerty") ?: return null
         val defaultEn = parseKeyboardYamlSection(defaultText, "qwerty_en") ?: emptyMap()
-        // 支持两种来源：files/rime/（浏览器导入）或 assets/（内置），自动 fallback
-        val userData = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
+        // 支持两种来源：应用输入数据目录（浏览器导入）或 assets/（内置），自动 fallback
+        val userData = readInputConfigText(context, INPUT_CUSTOM_CONFIG_FILE, LEGACY_CUSTOM_CONFIG_FILE)
         val customZh: Map<String, KeyGestureConfig>?
         val customEn: Map<String, KeyGestureConfig>?
         if (userData != null) {
             customZh = parseKeyboardYamlSection(userData, "qwerty")
             customEn = parseKeyboardYamlSection(userData, "qwerty_en")
         } else {
-            val assetText = readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+            val assetText = readCustomText(context)
             customZh = assetText?.let { parseKeyboardYamlSection(it, "qwerty") }
             customEn = assetText?.let { parseKeyboardYamlSection(it, "qwerty_en") }
         }
@@ -1038,9 +1040,9 @@ object KeysConfigHelper {
         return Pair(zh, en)
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析键盘颜色配置（字段级一路 fallback）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析键盘颜色配置（字段级一路 fallback）。 */
     private fun parseKeyboardColorsFromAssets(context: Context): KeyboardColorsConfig {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardColorsYamlText(it) }
         val custom = readCustomText(context)?.let { parseKeyboardColorsYamlText(it) }
         return mergeColorsConfigs(custom, builtIn)
@@ -1104,9 +1106,9 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析键盘阴影配置（字段级一路 fallback）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析键盘阴影配置（字段级一路 fallback）。 */
     private fun parseKeyboardShadowFromAssets(context: Context): KeyboardShadowConfig {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardShadowYamlText(it) }
         val custom = readCustomText(context)?.let { parseKeyboardShadowYamlText(it) }
         return mergeShadowConfigs(custom, builtIn)
@@ -1145,9 +1147,9 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析键盘按键配置（字段级一路 fallback）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析键盘按键配置（字段级一路 fallback）。 */
     private fun parseKeyboardKeyFromAssets(context: Context): KeyboardKeyConfig {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardKeyYamlPartial(it) }
         val custom = readCustomText(context)?.let { parseKeyboardKeyYamlPartial(it) }
         return mergeKeyConfigs(custom, builtIn)
@@ -1263,9 +1265,9 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析九键键盘配置。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析九键键盘配置。 */
     private fun parseKeyboardT9FromAssets(context: Context): KeyboardT9Config {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardT9YamlPartial(it) }
         val custom = readCustomText(context)?.let { parseKeyboardT9YamlPartial(it) }
         return mergeT9Configs(custom, builtIn)
@@ -1293,9 +1295,9 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析笔画键盘配置。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析笔画键盘配置。 */
     private fun parseKeyboardStrokeFromAssets(context: Context): KeyboardStrokeConfig {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardStrokeYamlPartial(it) }
         val custom = readCustomText(context)?.let { parseKeyboardStrokeYamlPartial(it) }
         return mergeStrokeConfigs(custom, builtIn)
@@ -1323,9 +1325,9 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析字体配置（字段级一路 fallback）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析字体配置（字段级一路 fallback）。 */
     private fun parseKeyboardFontsFromAssets(context: Context): KeyboardFontConfig {
-        val builtIn = readAssetText(context, XIME_CONFIG_FILE)
+        val builtIn = readInputConfigAsset(context)
             ?.let { parseKeyboardFontsYamlText(it) }
         val custom = readCustomText(context)?.let { parseKeyboardFontsYamlText(it) }
         return mergeFontConfigs(custom, builtIn)
@@ -1372,13 +1374,12 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析按键布局模式（中英文分开）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析按键布局模式（中英文分开）。 */
     private fun parseButtonLayoutFromAssets(context: Context): Pair<ButtonLayout, ButtonLayout> {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE) ?: return Pair(ButtonLayout.STANDARD, ButtonLayout.STANDARD)
+        val defaultText = readInputConfigAsset(context) ?: return Pair(ButtonLayout.STANDARD, ButtonLayout.STANDARD)
         val defaultZh = parseButtonLayoutYamlText(defaultText, "qwerty")
         val defaultEn = parseButtonLayoutYamlText(defaultText, "qwerty_en")
-        val customText = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
-            ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+        val customText = readCustomText(context)
         val customZh = customText?.let { parseButtonLayoutYamlText(it, "qwerty") }
         val customEn = customText?.let { parseButtonLayoutYamlText(it, "qwerty_en") }
         val result = Pair(
@@ -1388,15 +1389,14 @@ object KeysConfigHelper {
         return result
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析键盘行布局。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析键盘行布局。 */
     private fun parseKeyboardLayoutFromAssets(context: Context): Pair<List<List<String>>, List<List<String>>> {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE) ?: return Pair(DEFAULT_ZH_ROWS, DEFAULT_EN_ROWS)
+        val defaultText = readInputConfigAsset(context) ?: return Pair(DEFAULT_ZH_ROWS, DEFAULT_EN_ROWS)
 
         val defaultZh = parseKeyboardLayoutYamlText(defaultText, "qwerty")
         val defaultEn = parseKeyboardLayoutYamlText(defaultText, "qwerty_en")
 
-        val customText = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
-            ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+        val customText = readCustomText(context)
 
         val customZh = customText?.let { parseKeyboardLayoutYamlText(it, "qwerty") }
         val customEn = customText?.let { parseKeyboardLayoutYamlText(it, "qwerty_en") }
@@ -1407,12 +1407,11 @@ object KeysConfigHelper {
         )
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析指定 section 的键盘行布局（custom 整段覆盖 built-in）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析指定 section 的键盘行布局（custom 整段覆盖 built-in）。 */
     private fun parseLayoutSection(context: Context, section: String): List<List<String>>? {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE)
+        val defaultText = readInputConfigAsset(context)
         val default = defaultText?.let { parseKeyboardLayoutYamlText(it, section) }
-        val customText = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
-            ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+        val customText = readCustomText(context)
         val custom = customText?.let { parseKeyboardLayoutYamlText(it, section) }
         return custom ?: default
     }
@@ -1424,7 +1423,7 @@ object KeysConfigHelper {
 
     /** 各 section 的对齐参数：custom 写了的字段覆盖内置，两边都没写的 section 不进表。 */
     private fun parseSectionGeometries(context: Context, sections: Collection<String>): Map<String, LetterGeometryOverride> {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE)
+        val defaultText = readInputConfigAsset(context)
         val customText = readCustomText(context)
         return sections.distinct().mapNotNull { section ->
             val custom = customText?.let { parseLetterGeometryYamlText(it, section) }
@@ -1471,12 +1470,12 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从 xime.yaml + xime.custom.yaml 合并解析指定 section 的手势配置（custom 键级覆盖 built-in）。 */
+    /** 从 cayboard.yaml + cayboard.custom.yaml 合并解析指定 section 的手势配置（custom 键级覆盖 built-in）。 */
     private fun parseGesturesSection(context: Context, section: String): Map<String, KeyGestureConfig> {
-        val defaultText = readAssetText(context, XIME_CONFIG_FILE)
+        val defaultText = readInputConfigAsset(context)
         val default = defaultText?.let { parseKeyboardYamlSection(it, section) } ?: emptyMap()
-        val userData = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
-        val custom = (userData ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE))
+        val userData = readInputConfigText(context, INPUT_CUSTOM_CONFIG_FILE, LEGACY_CUSTOM_CONFIG_FILE)
+        val custom = (userData ?: readCustomText(context))
             ?.let { parseKeyboardYamlSection(it, section) }
         return if (custom != null) default + custom else default
     }
@@ -1627,10 +1626,10 @@ object KeysConfigHelper {
         if (mergedConfigCache != null && mergedConfigVersion == currentVersion) {
             return mergedConfigCache!!
         }
-        val default = parseConfig(readAssetText(context, XIME_CONFIG_FILE))
-        val custom = readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
+        val default = parseConfig(readInputConfigAsset(context))
+        val custom = readInputConfigText(context, INPUT_CUSTOM_CONFIG_FILE, LEGACY_CUSTOM_CONFIG_FILE)
             ?.let { parseConfig(it) }
-            ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+            ?: readCustomText(context)
                 ?.let { parseConfig(it) }
         val config = mergeConfig(default, custom)
         mergedConfigCache = config
@@ -1643,7 +1642,7 @@ object KeysConfigHelper {
         return try {
             yaml.decodeFromString(CayboardConfig.serializer(), content)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse xime config", e)
+            Log.w(TAG, "Failed to parse Cayboard config", e)
             null
         }
     }
@@ -1653,7 +1652,7 @@ object KeysConfigHelper {
         if (default == null) return custom
         return CayboardConfig(
             // 合并而非替换：custom 覆盖同名字题，其余保留内置主题，
-            // 这样用户只需在 xime.custom.yaml 中添加自定义背景主题而不会丢失内置主题。
+            // 这样用户只需在 cayboard.custom.yaml 中添加自定义背景主题而不会丢失内置主题。
             colorSchemes = mergeColorSchemes(default.colorSchemes, custom.colorSchemes),
             style = mergeStyle(default.style, custom.style),
             metadata = custom.metadata ?: default.metadata,
@@ -1742,9 +1741,12 @@ object KeysConfigHelper {
         }
     }
 
-    /** 从用户数据目录 (context.filesDir/rime/) 读取文件。 */
+    private fun readInputConfigAsset(context: Context): String? =
+        readAssetText(context, INPUT_CONFIG_FILE) ?: readAssetText(context, LEGACY_CONFIG_FILE)
+
+    /** 从用户输入数据目录读取文件。 */
     private fun readUserDataText(context: Context, fileName: String): String? {
-        val file = File(context.filesDir, "rime/$fileName")
+        val file = File(context.filesDir, "cayboard_input/$fileName")
         if (!file.exists()) return null
         return try {
             val text = file.readText().trimStart('\uFEFF')
@@ -1755,20 +1757,24 @@ object KeysConfigHelper {
         }
     }
 
+    private fun readInputConfigText(context: Context, currentName: String, legacyName: String): String? =
+        readUserDataText(context, currentName) ?: readUserDataText(context, legacyName)
+
     /** 读取自定义配置文本：优先用户数据目录（浏览器导入），回退 assets 内置。 */
     private fun readCustomText(context: Context): String? =
-        readUserDataText(context, XIME_CUSTOM_CONFIG_FILE)
-            ?: readAssetText(context, XIME_CUSTOM_CONFIG_FILE)
+        readInputConfigText(context, INPUT_CUSTOM_CONFIG_FILE, LEGACY_CUSTOM_CONFIG_FILE)
+            ?: readAssetText(context, INPUT_CUSTOM_CONFIG_FILE)
+            ?: readAssetText(context, LEGACY_CUSTOM_CONFIG_FILE)
 
 
 
-    /** 从 xime.yaml 加载 color_schemes 配置。 */
+    /** 从 cayboard.yaml 加载 color_schemes 配置。 */
     fun loadColorSchemes(context: Context): Map<String, ColorSchemeEntry> {
         val merged = loadMergedConfig(context)
         return merged.colorSchemes ?: emptyMap()
     }
 
-    /** 从 xime.yaml 加载默认主题 ID（style.color_scheme 的 light 字段）。 */
+    /** 从 cayboard.yaml 加载默认主题 ID（style.color_scheme 的 light 字段）。 */
     fun loadDefaultThemeId(context: Context): String {
         val merged = loadMergedConfig(context)
         return merged.style?.colorScheme?.light ?: com.cayboard.ui.theme.FixedKeyboardStyle.ID
@@ -1782,7 +1788,7 @@ object KeysConfigHelper {
                else cs.light ?: com.cayboard.ui.theme.FixedKeyboardStyle.ID
     }
 
-    /** 从 xime.yaml 加载默认显示模式（style.dark_mode）。 */
+    /** 从 cayboard.yaml 加载默认显示模式（style.dark_mode）。 */
     fun loadDefaultDarkMode(context: Context): Int {
         val merged = loadMergedConfig(context)
         return merged.style?.darkMode ?: 1
@@ -1790,26 +1796,26 @@ object KeysConfigHelper {
 
     // ── 新公开 API ──
 
-    /** 获取键盘颜色配置（从 xime.yaml keyboard.colors 加载）。 */
+    /** 获取键盘颜色配置（从 cayboard.yaml keyboard.colors 加载）。 */
     fun getKeyboardColors(): KeyboardColorsConfig = keyboardColorsConfig
 
-    /** 获取键盘阴影配置（从 xime.yaml keyboard.shadow 加载）。 */
+    /** 获取键盘阴影配置（从 cayboard.yaml keyboard.shadow 加载）。 */
     fun getKeyboardShadow(): KeyboardShadowConfig = keyboardShadowConfig
 
-    /** 获取键盘按键配置（从 xime.yaml keyboard.key 加载）；圆角按主题里选的按键形状收小。 */
+    /** 获取键盘按键配置（从 cayboard.yaml keyboard.key 加载）；圆角按主题里选的按键形状收小。 */
     fun getKeyboardKeyConfig(): KeyboardKeyConfig = keyboardKeyConfig.let { config ->
         val radius = com.cayboard.ui.theme.KeyShapes.current.radius(config.cornerRadius)
         if (radius == config.cornerRadius) config else config.copy(cornerRadius = radius)
     }
 
-    /** xime.yaml 配置的按键圆角，未按按键形状收小；设置页预览各形状用。 */
+    /** cayboard.yaml 配置的按键圆角，未按按键形状收小；设置页预览各形状用。 */
     fun configuredKeyCornerRadius(): Int = keyboardKeyConfig.cornerRadius
 
-    /** 获取九键左侧快捷符号栏配置（xime.custom.yaml → xime.yaml → 内置默认值）。 */
+    /** 获取九键左侧快捷符号栏配置（cayboard.custom.yaml → cayboard.yaml → 内置默认值）。 */
     fun getT9SideSymbols(): List<String> =
         keyboardT9Config.sideSymbols ?: DEFAULT_T9_SIDE_SYMBOLS
 
-    /** 获取九键数字键手势配置（xime.yaml keyboard.t9.keys，custom 键级覆盖）。
+    /** 获取九键数字键手势配置（cayboard.yaml keyboard.t9.keys，custom 键级覆盖）。
      *  键 id 为数字字符串 "1"~"9"；无配置返回 null（布局不启用滑动）。 */
     fun getT9KeyGesture(key: String): KeyGestureConfig? = _t9GestureConfigs[key]
 
@@ -1817,7 +1823,7 @@ object KeysConfigHelper {
     fun getStrokeSideSymbols(): List<String> =
         keyboardStrokeConfig.sideSymbols ?: DEFAULT_STROKE_SIDE_SYMBOLS
 
-    /** 获取笔画键手势配置（xime.yaml keyboard.stroke.keys，custom 键级覆盖）。
+    /** 获取笔画键手势配置（cayboard.yaml keyboard.stroke.keys，custom 键级覆盖）。
      *  键 id 为键面标签：一、丨、丿、丶、乛、*、分词、，、。 */
     fun getStrokeKeyGesture(key: String): KeyGestureConfig? = _strokeGestureConfigs[key]
 
@@ -1883,7 +1889,7 @@ object KeysConfigHelper {
     fun getKeyGesture(key: String): KeyGestureConfig? = getKeyGesture(key, false)
 
     /**
-     * 日语 26 键等自带角标的键盘：第一排的角标是数字（xime.yaml）。开着数字行时数字已经在上面一排，
+     * 日语 26 键等自带角标的键盘：第一排的角标是数字（cayboard.yaml）。开着数字行时数字已经在上面一排，
      * 第一排不再重复画数字（用户 11-11「开启数字行多了一堆符号」）；不是数字的角标照旧。
      */
     internal fun withoutNumberRowDigits(key: String, config: KeyGestureConfig): KeyGestureConfig {
@@ -1899,7 +1905,7 @@ object KeysConfigHelper {
     fun getKeyGesture(key: String, isAsciiMode: Boolean): KeyGestureConfig? {
         val normalized = key.lowercase()
         val profile = InputProfiles.current(_activeSchemaId, isAsciiMode)
-        // 英文单词方案（cyime_english）不开 ascii 也是英文键盘：用英文的按键和角标，不套中文符号（11-12 反馈）。
+        // 英文单词方案（cayboard_english）不开 ascii 也是英文键盘：用英文的按键和角标，不套中文符号（11-12 反馈）。
         val englishKeyboard = isAsciiMode || profile.language == InputLanguage.ENGLISH
         val config = if (englishKeyboard) _keyGestureConfigEn.value else _keyGestureConfig.value
         val letters = LetterLanguage.of(profile.language)
@@ -1928,7 +1934,7 @@ object KeysConfigHelper {
                     else _zhRows.flatten().filter { cell -> cell.isNotEmpty() && cell.all { it in 'a'..'z' } }
                 val owner = MergedKeySymbols.ownerOf(keys, normalized)
                 if (owner !in keys) return config[normalized]
-                // 自建布局的手势表按旧的位置填过 swipe，不算用户写的；内置 14/17/18 键只认 xime.custom.yaml 写的。
+                // 自建布局的手势表按旧的位置填过 swipe，不算用户写的；内置 14/17/18 键只认 cayboard.custom.yaml 写的。
                 val configured = config[owner]?.let { if (custom != null) it.copy(swipeUp = null, swipeDown = null) else it }
                 // 14 键和自建布局在符号设置页改的；17/18 键没有设置页。
                 val overrides = if (fourteen) symbolOverridesK14 else custom?.let { symbolOverridesCustom[it.id] }.orEmpty()

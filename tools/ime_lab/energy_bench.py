@@ -31,7 +31,7 @@ Run it under the guarded runner with a 装到我的设备 build, after reading <
     python tools/ime_lab/energy_bench.py --serial TABLET_SERIAL \\
       --layouts tools/demo_typer/layouts/sm-x800.json --layout cn26 \\
       --host-cmd "am start -n md.obsidian/.MainActivity" --host-window md.obsidian \\
-      --out D:/CyIME-Data/eval/energy-<date>
+      --out D:/Cayboard-Data/eval/energy-<date>
 Read-only on the app: it does not change any Cayboard setting. Run the same command before and after a change.
 """
 import argparse
@@ -246,7 +246,7 @@ def main():
     parser.add_argument("--other-layouts", default="")
     parser.add_argument("--other-layout", default="cn26")
     parser.add_argument("--cool", type=int, default=20)
-    parser.add_argument("--dex", default="D:/CyIME-Data/demo-video/cyime-inject.dex")
+    parser.add_argument("--dex", default="D:/Cayboard-Data/demo-video/cayboard-inject.dex")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     os.makedirs(args.out, exist_ok=True)

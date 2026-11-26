@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
  * through InputManager, like scrcpy does from app_process. Unlike `monkey -f`, it never freezes and
  * thaws the display rotation, so a tablet resting upside down is not flipped between runs.
  *
- *   CLASSPATH=/data/local/tmp/cyime-inject.dex app_process / Inject /data/local/tmp/script.txt
+ *   CLASSPATH=/data/local/tmp/cayboard-inject.dex app_process / Inject /data/local/tmp/script.txt
  */
 public final class Inject {
     private static final int INJECT_ASYNC = 0;

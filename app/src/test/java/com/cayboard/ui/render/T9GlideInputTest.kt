@@ -18,7 +18,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.ui.keyboard.*
 import com.cayboard.viewmodel.KeyboardUiState
 import java.io.File
@@ -71,7 +71,7 @@ class T9GlideInputTest {
         val five = centerOf("JKL"); val two = centerOf("ABC"); val four = centerOf("GHI")
         board.performTouchInput { down(five); moveTo(two); moveTo(four) }
         assertEquals("", input)
-        System.getenv("CYIME_RENDER_OUT")?.let { dir ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { dir ->
             val root = rule.activity.window.decorView
             val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
             rule.runOnIdle { root.draw(android.graphics.Canvas(image)) }
@@ -190,10 +190,10 @@ class T9GlideInputTest {
         org.mockito.Mockito.verify(controller, org.mockito.Mockito.never()).onLetterFlicked("L")
     }
 
-    @Test fun nineKeySettingsAreIndependentOfLetterKeyboardGlide() {
+    @Test fun nineKeyGestureSettingsRemainAvailable() {
         rule.setContent { com.cayboard.ui.settings.LayoutInputSettingsContent(
-            com.cayboard.ui.settings.LayoutInputCategory.Glide, onBack = {}) }
-        val row = rule.onNodeWithText("九键滑行", useUnmergedTree = true).performScrollTo()
+            com.cayboard.ui.settings.LayoutInputCategory.Nine, onBack = {}) }
+        val row = rule.onNodeWithText("左右滑动选字母", useUnmergedTree = true).performScrollTo()
         org.junit.Assert.assertFalse(KeyboardInputPreferences.read(rule.activity).t9GlideTyping)
         row.performTouchInput { click() }
         rule.runOnIdle {

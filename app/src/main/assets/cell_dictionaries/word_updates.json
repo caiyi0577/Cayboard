@@ -1,5 +1,5 @@
 {
-  "format": "cyime.cell-words.v1",
+  "format": "cayboard.cell-words.v1",
   "revision": 1,
   "dictionaries": {
     "builtin_arknights": [

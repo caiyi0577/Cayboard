@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 
 data class CandidateState(
     val candidates: List<String> = emptyList(),
@@ -26,7 +26,7 @@ data class CandidateState(
     val correctedCandidates: Map<String, String> = emptyMap(),
     /** 跨页全量候选（仅候选展开态时由服务层填充，供本地分页与单字筛选）。
      *  空列表 = 未填充或引擎无候选。全局索引用于 selectCandidateByGlobalIndex。 */
-    val expandedCandidates: List<RimeCandidate> = emptyList(),
+    val expandedCandidates: List<EngineCandidate> = emptyList(),
     val expandedCandidatesLoaded: Boolean = false,
     /** Identity of the native candidate list, independent of displayed preedit text. */
     val engineRevision: Long = 0L,
@@ -72,7 +72,7 @@ internal fun CandidateState.englishForHeldSelection(index: Int, global: Boolean)
 }
 
 /** A refreshed row elsewhere in the bar does not invalidate the actual item under the finger. */
-internal fun CandidateState.stillOffers(current: CandidateState, index: Int, expanded: RimeCandidate?): Boolean {
+internal fun CandidateState.stillOffers(current: CandidateState, index: Int, expanded: EngineCandidate?): Boolean {
     if (engineRevision != current.engineRevision || inputText != current.inputText ||
         isShowingRecentClipboard != current.isShowingRecentClipboard) return false
     if (expanded != null) return expandedCandidates.getOrNull(index) == expanded && current.expandedCandidates.getOrNull(index) == expanded

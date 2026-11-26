@@ -61,7 +61,7 @@ import java.io.File
 /**
  * 候选栏左右滑动、长候选完整显示、展开页「单字/候选」按钮（用户 10-23）。
  * 收起：右边放不下的候选照常显示、被栏边裁掉，滑过去看全；展开：放不全的长候选在展开页里折行显示全文。
- * 主题 × 玻璃 × 26 键/九键，用真实 CandidateBar / CandidatePage 代码出图。只在设了 CYIME_RENDER_OUT 时出图。
+ * 主题 × 玻璃 × 26 键/九键，用真实 CandidateBar / CandidatePage 代码出图。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w900dp-h1300dp-hdpi")
@@ -100,7 +100,7 @@ class CandidateScrollRenderTest {
         }
         rule.runOnIdle { width = end - 5.dp }
         item.performClick()
-        System.getenv("CYIME_RENDER_OUT")?.let { shot(it, "cef-at-edge", "candidate-scroll-row") }
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { shot(it, "cef-at-edge", "candidate-scroll-row") }
         val actualWidth = strip.fetchSemanticsNode().boundsInRoot.width
         rule.runOnIdle {
             org.junit.Assert.assertEquals(3, selected)
@@ -137,7 +137,7 @@ class CandidateScrollRenderTest {
     }
 
     @Test fun renderCandidateScroll() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)

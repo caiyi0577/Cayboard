@@ -19,7 +19,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.*
+import com.cayboard.engine.*
 import com.cayboard.settings.SettingsPreferences
 import java.io.File
 import org.junit.Assert.*
@@ -35,16 +35,16 @@ class FixedImeAvoidanceTest {
         org.junit.Assume.assumeTrue(context.packageName.endsWith(".freshcheck"))
         val prefs = SettingsPreferences.getPrefsPublic(context)
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         lateinit var editor: EditText
         try {
-            val (user, shared) = RimeConfigHelper.initializeRimeData(context)
+            val (user, shared) = EngineConfig.initializeInputData(context)
             engine.initialize(user, shared)
-            assertTrue(RimeConfigHelper.ensureDeployment(context))
+            assertTrue(EngineConfig.ensureDeployment(context))
             assertTrue(engine.ensureSession(180_000L))
-            assertTrue(engine.switchSchema("rime_ice"))
+            assertTrue(engine.switchSchema("cayboard_pinyin"))
             engine.setOption("ascii_mode", false)
-            SettingsPreferences.setCurrentSchema(context, "rime_ice")
+            SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
             prefs.edit().putBoolean("landscape_layout_v2", true)
                 .putBoolean("floating_mode", false).putBoolean("floating_mode_landscape", false)
                 .putInt("keyboard_height_dp",300).putInt("keyboard_height_dp_landscape",300)

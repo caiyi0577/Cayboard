@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.PinyinSyllableChoices
+import com.cayboard.engine.PinyinSyllableChoices
 import com.cayboard.settings.InputLanguage
 import com.cayboard.settings.InputLayout
 import com.cayboard.settings.InputScheme
@@ -20,9 +20,9 @@ internal class ImePinyinSyllableSelector(private val service: CayboardInputMetho
         if (!eligible(owner)) { reply(null); return }
         val layout = owner.inputProfile.layout
         val isCurrent = { current(owner.inputSessionId, owner.currentSchemaId, layout) }
-        service.keyRouter.postRimeJob {
-            if (!isCurrent()) return@postRimeJob
-            val snapshot = service.rimeEngine.readPinyinSyllableChoices(revision, layout == InputLayout.MERGED14, isCurrent)
+        service.keyRouter.postEngineJob {
+            if (!isCurrent()) return@postEngineJob
+            val snapshot = service.inputEngine.readPinyinSyllableChoices(revision, layout == InputLayout.MERGED14, isCurrent)
                 ?.copy(inputSessionId = owner.inputSessionId)
             withContext(Dispatchers.Main) {
                 if (isCurrent() && service.candidateState.value.engineRevision == revision) reply(snapshot)
@@ -34,11 +34,11 @@ internal class ImePinyinSyllableSelector(private val service: CayboardInputMetho
         val layout = service.uiState.value.inputProfile.layout
         val isCurrent = { current(snapshot.inputSessionId, snapshot.schemaId, layout) }
         if (!isCurrent() || (snapshot.letterGroup != null && layout != InputLayout.MERGED14)) { reply(null); return }
-        service.keyRouter.postRimeJob {
-            if (!isCurrent()) return@postRimeJob
-            val result = service.rimeEngine.selectPinyinSyllable(snapshot, index, isCurrent)
+        service.keyRouter.postEngineJob {
+            if (!isCurrent()) return@postEngineJob
+            val result = service.inputEngine.selectPinyinSyllable(snapshot, index, isCurrent)
             val next = result?.let {
-                service.rimeEngine.readPinyinSyllableChoices(it.engineRevision, layout == InputLayout.MERGED14, isCurrent)
+                service.inputEngine.readPinyinSyllableChoices(it.engineRevision, layout == InputLayout.MERGED14, isCurrent)
             }?.copy(inputSessionId = snapshot.inputSessionId)
             withContext(Dispatchers.Main) {
                 if (!isCurrent()) return@withContext
@@ -54,11 +54,11 @@ internal class ImePinyinSyllableSelector(private val service: CayboardInputMetho
         val layout = service.uiState.value.inputProfile.layout
         val isCurrent = { current(snapshot.inputSessionId, snapshot.schemaId, layout) }
         if (!isCurrent() || snapshot.chosen <= 0) { notConsumed(); return }
-        service.keyRouter.postRimeJob {
-            if (!isCurrent()) return@postRimeJob
-            val result = service.rimeEngine.undoPinyinSyllable(snapshot, isCurrent)
+        service.keyRouter.postEngineJob {
+            if (!isCurrent()) return@postEngineJob
+            val result = service.inputEngine.undoPinyinSyllable(snapshot, isCurrent)
             val next = result?.let {
-                service.rimeEngine.readPinyinSyllableChoices(it.engineRevision, layout == InputLayout.MERGED14, isCurrent)
+                service.inputEngine.readPinyinSyllableChoices(it.engineRevision, layout == InputLayout.MERGED14, isCurrent)
             }?.copy(inputSessionId = snapshot.inputSessionId)
             withContext(Dispatchers.Main) {
                 if (!isCurrent()) return@withContext

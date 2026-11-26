@@ -30,17 +30,17 @@ class CayboardResearchPresetTest {
 
     @Test fun `install and rollback retain default Chinese and function keys`() {
         val filesDir = tmp.newFolder("files")
-        val userDir = File(filesDir, "rime").apply { mkdirs() }
-        val custom = File(userDir, "xime.custom.yaml")
+        val userDir = File(filesDir, "cayboard_input").apply { mkdirs() }
+        val custom = File(userDir, "cayboard.custom.yaml")
         custom.writeText(preset)
-        val defaults = asset("xime.yaml")
+        val defaults = asset("cayboard.yaml")
         val assets = mock<AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { ByteArrayInputStream(defaults.toByteArray()) }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(IOException("no default override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { ByteArrayInputStream(defaults.toByteArray()) }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(IOException("no default override"))
         val context = mock<Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(filesDir)
-        whenever(context.getSharedPreferences("kime_settings", Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         KeysConfigHelper.loadConfig(context)
         assertEquals("qwyrd;lkup", KeysConfigHelper.getKeyRows(true)[0].joinToString(""))

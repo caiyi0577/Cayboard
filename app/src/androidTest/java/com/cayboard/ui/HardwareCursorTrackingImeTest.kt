@@ -14,7 +14,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -56,8 +56,8 @@ class HardwareCursorTrackingImeTest {
                 }
             }
             rule.waitUntil(30_000) { rule.onAllNodesWithTag("hardware-keyboard-toolbar").fetchSemanticsNodes().isNotEmpty() }
-            val engine = RimeEngine.getInstance()
-            rule.waitUntil(30_000) { RimeEngine.isInitialized() && engine.getCurrentSchema().isNotEmpty() }
+            val engine = InputEngine.getInstance()
+            rule.waitUntil(30_000) { InputEngine.isInitialized() && engine.getCurrentSchema().isNotEmpty() }
             shell("input keyboard keyevent KEYCODE_N KEYCODE_I")
             rule.waitUntil(30_000) { rule.onAllNodesWithTag("hardware-candidate-card", true).fetchSemanticsNodes().isNotEmpty() }
             rule.waitForIdle()

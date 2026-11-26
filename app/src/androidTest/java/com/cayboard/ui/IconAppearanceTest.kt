@@ -104,7 +104,7 @@ class IconAppearanceTest {
     @Test fun exportLauncherAssetsFromProductionGenerator() {
         VisualStyle.entries.filter { it != VisualStyle.ORIGINAL }.forEach { style ->
             for (foreground in listOf(false, true)) {
-                val name = "cyime_${style.id}" + if (foreground) "_foreground" else ""
+                val name = "cayboard_${style.id}" + if (foreground) "_foreground" else ""
                 val bitmap = CayboardIconGenerator.render(context, style, 432, foreground)
                 // Catch reintroduced baked-in tiles/frames, including the old inset squircle.
                 val edge = (bitmap.width * .18f).toInt()

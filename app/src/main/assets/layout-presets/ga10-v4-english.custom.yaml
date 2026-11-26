@@ -1,5 +1,5 @@
-# CyIME optional GA_10 v4 English experiment; see docs/cyime-keyboard-research.md.
-# Merge into rime/xime.custom.yaml after backing it up. Not enabled by default.
+# Cayboard optional GA_10 v4 English experiment; see docs/cayboard-keyboard-research.md.
+# Merge into rime/cayboard.custom.yaml after backing it up. Not enabled by default.
 keyboard:
   qwerty_en:
     layout:

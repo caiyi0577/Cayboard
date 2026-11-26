@@ -2,9 +2,9 @@
 # Tuning runs on tuning/dev sets only (never the evaluation sets). Run inside WSL.
 set -u
 REPO=/mnt/d/GitHub/Cayboard
-SCHEMA=$REPO/app/src/main/assets/rime_chinese/t9_pinyin.schema.yaml
+SCHEMA=$REPO/app/src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml
 OUT=$REPO/.codex-artifacts/t9-ngram-20261010/tune
-M=${M:-$HOME/cyime-work/ngram}  # build workspace; inputs archived in D:/CyIME-Data/corpus, models in D:/CyIME-Data/models
+M=${M:-$HOME/cayboard-work/ngram}  # build workspace; inputs archived in D:/Cayboard-Data/corpus, models in D:/Cayboard-Data/models
 SETS="tune=.codex-artifacts/t9-ngram-20261010/gen/tune/fixture.json dev=.codex-artifacts/t9-ngram-20261010/dev/fixture.json"
 config() {  # label model start
   sed -i "s/^  ngram_sentence_start: .*/  ngram_sentence_start: $3/" "$SCHEMA"

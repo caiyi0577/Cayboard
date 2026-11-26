@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
@@ -12,10 +12,10 @@ public final class T9PartialClearProbe {
   static final String SCHEMA = "t9_pinyin";
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File logs = new File(args[1], "logs");
     if (!logs.isDirectory() && !logs.mkdirs()) throw new Exception("cannot create native log directory");
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(args[1], args[1]);
     try {
       e.nativeEnsureT9SchemaPatches(SCHEMA);
@@ -32,18 +32,18 @@ public final class T9PartialClearProbe {
       String before = afterPartialChoice(e, false);
       // The fix: T9's own state is cleared with Rime's.
       String after = afterPartialChoice(e, true);
-      System.out.println("RIME-ONLY CLEAR then 64 => input '" + before + "'");
+      System.out.println("ENGINE-ONLY CLEAR then 64 => input '" + before + "'");
       System.out.println("T9 CLEAR then 64 => input '" + after + "'");
       if (!after.equals("64")) throw new Exception("old digits survived the T9 clear: " + after);
       System.out.println(before.equals("64")
-          ? "PASS (the Rime-only clear no longer reproduces the stale buffer on this engine)"
-          : "PASS (Rime-only clear reproduces the report; the T9 clear starts a new code)");
+          ? "PASS (the input-engine-only clear no longer reproduces the stale buffer)"
+          : "PASS (input-engine-only clear reproduces the report; the T9 clear starts a new code)");
     } finally { e.nativeDestroy(); }
   }
 
-  static String afterPartialChoice(RimeEngine e, boolean clearT9) throws Exception {
+  static String afterPartialChoice(InputEngine e, boolean clearT9) throws Exception {
     e.nativeT9ClearComposition(1);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
     type(e, "9447426926");
     String[][] rows = e.nativeInspectCandidates(200);
     int index = -1;
@@ -51,7 +51,7 @@ public final class T9PartialClearProbe {
     if (index < 0) throw new Exception("至少 not offered for 9447426926: " + Arrays.deepToString(Arrays.copyOf(rows, Math.min(rows.length, 8))));
     // As the app does: T9 consumes the chosen reading itself (comment = its pinyin).
     e.nativeT9SelectCandidate(rows[index][1], "至少", 2);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
     String remaining = e.nativeGetInput();
     if (remaining.isEmpty()) throw new Exception("choosing 至少 left no code; not a partial choice");
     if (clearT9) e.nativeT9ClearComposition(1);
@@ -60,10 +60,10 @@ public final class T9PartialClearProbe {
     return e.nativeGetInput();
   }
 
-  static void type(RimeEngine e, String digits) throws Exception {
+  static void type(InputEngine e, String digits) throws Exception {
     for (char c : digits.toCharArray()) {
       if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     }
   }
 }

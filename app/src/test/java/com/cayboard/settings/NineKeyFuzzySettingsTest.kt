@@ -37,9 +37,9 @@ class NineKeyFuzzySettingsTest {
 
     @Test fun fullAndDoubleNineKeyUseTheSelectedReadingsWithoutChangingOtherSchemes() {
         val app = ApplicationProvider.getApplicationContext<Application>()
-        val dir = File(app.cacheDir, "fuzzy-rime").apply { mkdirs() }
+        val dir = File(app.cacheDir, "fuzzy-engine").apply { mkdirs() }
         val nine = File(dir, "t9_pinyin.schema.yaml")
-        File("src/main/assets/rime_chinese/t9_pinyin.schema.yaml").copyTo(nine)
+        File("src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml").copyTo(nine)
         val doubleNine = DoublePinyinScheme.t9Id(DoublePinyinScheme.FLYPY.id)
         File(dir, "$doubleNine.schema.yaml").writeText(DoublePinyinScheme.FLYPY.t9Schema())
         for (id in listOf("pinyin_14jian", "stroke", "japanese_kana")) nine.copyTo(File(dir, "$id.schema.yaml"))
@@ -62,7 +62,7 @@ class NineKeyFuzzySettingsTest {
         val doubleReadings = NineKeyFuzzyReadings(DoublePinyinScheme.FLYPY, groups).options("7454")
         assertTrue(doubleReadings.any { it.pinyin == "si" && !it.near })
         assertTrue(doubleReadings.any { it.pinyin == "shi" && it.spelling == "ui" && it.digits == 2 && it.near })
-        System.getenv("CYIME_FUZZY_FIXTURE")?.let { path ->
+        System.getenv("CAYBOARD_FUZZY_FIXTURE")?.let { path ->
             val output = File(path).apply { mkdirs() }
             listOf(nine, File(dir, "$doubleNine.schema.yaml"), full, double).forEach { it.copyTo(File(output, it.name), overwrite = true) }
         }
@@ -80,10 +80,10 @@ class NineKeyFuzzySettingsTest {
     @Test fun digitsSwitchDerivesTheSelectedGroupsBeforeTheDigitMappingAndIsOffByDefault() {
         val app = ApplicationProvider.getApplicationContext<Application>()
         val dir = File(app.cacheDir, "fuzzy-digits").apply { mkdirs() }
-        File("src/main/assets/rime_chinese/t9_pinyin.schema.yaml").copyTo(File(dir, "t9_pinyin.schema.yaml"))
+        File("src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml").copyTo(File(dir, "t9_pinyin.schema.yaml"))
         val doubleNine = DoublePinyinScheme.t9Id(DoublePinyinScheme.FLYPY.id)
         File(dir, "$doubleNine.schema.yaml").writeText(DoublePinyinScheme.FLYPY.t9Schema())
-        File("src/main/assets/rime_chinese/t9_pinyin.schema.yaml").copyTo(File(dir, "rime_ice.schema.yaml"))
+        File("src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml").copyTo(File(dir, "cayboard_pinyin.schema.yaml"))
         val full = File(dir, "t9_pinyin.custom.yaml")
         val double = File(dir, "$doubleNine.custom.yaml")
         assertFalse(SpellingPatches.fuzzyT9Digits(app))
@@ -103,7 +103,7 @@ class NineKeyFuzzySettingsTest {
         }
         assertTrue(full.readText().indexOf("fuzz/^sh/s/") > full.readText().indexOf("derive/[wxyz]/9/"))
         // 26 键的全拼方案不受这个开关影响（26 键写降权的 fuzz）。
-        val qwerty = File(dir, "rime_ice.custom.yaml").readText()
+        val qwerty = File(dir, "cayboard_pinyin.custom.yaml").readText()
         assertEquals(1, Regex(Regex.escape("fuzz/^sh/s/")).findAll(qwerty).count())
         assertFalse(qwerty.contains("derive/^sh/s/"))
         assertFalse(SpellingPatches.sync(app, dir))

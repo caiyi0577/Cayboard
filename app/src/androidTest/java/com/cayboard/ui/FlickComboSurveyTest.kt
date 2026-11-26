@@ -67,7 +67,7 @@ class FlickComboSurveyTest {
                 else -> edit.remove(name)
             }
         } }.commit()
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     @Test fun t9FlickOff() = survey("t9", flick = false, disc = false)

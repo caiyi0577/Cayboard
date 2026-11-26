@@ -38,11 +38,11 @@ class KeyboardSwipeIntegrationTest {
     private val preferenceKeys = listOf("cursor_gesture_mode", "symbol_input_mode", "reverse_symbol_swipe",
         "neighbor_correction", "fourteen_letter_swipe", SettingsPreferences.KEY_SPLIT_KEYBOARD)
     private var originalPreferences: Map<String, Any?> = emptyMap()
-    private val schema = mutableStateOf("rime_ice")
+    private val schema = mutableStateOf("cayboard_pinyin")
     private val commits = mutableListOf<String>()
     private val cursorMoves = mutableListOf<Int>()
     private data class Layout(val schema: String, val label: String, val symbol: String)
-    private val layouts = listOf(Layout("rime_ice", "q", "1"), Layout("pinyin_14jian", "qw", "1"),
+    private val layouts = listOf(Layout("cayboard_pinyin", "q", "1"), Layout("pinyin_14jian", "qw", "1"),
         Layout("t9_pinyin", "ABC", "2"))
 
     @Before fun before() {
@@ -54,7 +54,7 @@ class KeyboardSwipeIntegrationTest {
             .putBoolean(SettingsPreferences.KEY_SPLIT_KEYBOARD, false)
             .commit()
         KeysConfigHelper.loadConfig(app)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     @After fun after() {
@@ -66,7 +66,7 @@ class KeyboardSwipeIntegrationTest {
                 else -> edit.remove(name)
             }
         } }.commit()
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     private fun show() {
@@ -85,7 +85,7 @@ class KeyboardSwipeIntegrationTest {
                                     keyboardWidthDp = 360, fixedWidthDp = 360, isDarkTheme = true),
                                 KeyboardCallbacks(onKeyPress = { text, _ -> commits += "key:$text" },
                                     onCandidateSelect = {}, onCommitText = { commits += "literal:$it" },
-                                    // Do not invoke Rime if a failed T9 gesture becomes an ordinary digit tap.
+                                    // Do not invoke the input engine if a failed T9 gesture becomes an ordinary digit tap.
                                     onPreeditKeyInput = { commits += "preedit:$it"; true },
                                     onCursorMove = { cursorMoves += it }),
                                 modifier = Modifier.size(360.dp, 320.dp).testTag("swipe-keyboard"))

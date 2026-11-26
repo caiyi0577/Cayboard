@@ -11,11 +11,11 @@ import com.cayboard.ui.keyboard.isHandwritingSchema
 import com.cayboard.ui.keyboard.isT9Schema
 import com.cayboard.ui.keyboard.JapaneseKanaAction
 import com.cayboard.ui.keyboard.japaneseKanaRomaji
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SchemaConfigHelper
 import com.cayboard.settings.SchemaManager
-import com.cayboard.rime.RimeConfigHelper
+import com.cayboard.engine.EngineConfig
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.settings.InputLanguage
 import com.cayboard.settings.InputMode
@@ -51,8 +51,8 @@ internal fun settingsActivityIntent(context: android.content.Context, route: Str
  * 共享状态通过 service 引用访问。
  */
 internal class ImeSchemaController(private val service: CayboardInputMethodService) {
-    private fun currentLanguage(): InputLanguage = if (service.rimeEngine.isAsciiMode()) InputLanguage.ENGLISH
-        else InputModes.languageOf(service.rimeEngine.getCurrentSchema(), service.uiState.value.schemas)
+    private fun currentLanguage(): InputLanguage = if (service.inputEngine.isAsciiMode()) InputLanguage.ENGLISH
+        else InputModes.languageOf(service.inputEngine.getCurrentSchema(), service.uiState.value.schemas)
 
     /** 手写面板（临时手写或手写方案页）此刻是否开着。 */
     private fun handwritingOpen(): Boolean = service.keyboardViewModel.let {
@@ -76,7 +76,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         englishProfile: String? = null): Boolean {
         if (service.editorInputPolicy.locksNativeInput) return false
         val fromLanguage = currentLanguage()
-        val currentSchema = service.rimeEngine.getCurrentSchema()
+        val currentSchema = service.inputEngine.getCurrentSchema()
         val schemaLanguage = InputModes.languageOf(currentSchema, service.uiState.value.schemas)
         val entries = InputModes.available(service.uiState.value.schemas)
         val enabled = LanguagePreferences.enabled(service)
@@ -92,7 +92,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
             LanguageSwitchPreferences.target(fromLanguage, nativeLanguage, LanguageSwitchPreferences.forRequest(
                 LanguageSwitchPreferences.read(service), languageSwitchMode),
                 InputModes.languageOrder(service), available)
-        else if (service.rimeEngine.isAsciiMode() || schemaLanguage == InputLanguage.ENGLISH) nativeLanguage else InputLanguage.ENGLISH
+        else if (service.inputEngine.isAsciiMode() || schemaLanguage == InputLanguage.ENGLISH) nativeLanguage else InputLanguage.ENGLISH
         if (target == null || target !in available) return false
         val localChoice = service.editorInputPolicy.schemaOverride?.takeIf { id ->
             entries.any { it.schemaId == id && it.profile.language == target }
@@ -126,7 +126,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                     associationCandidates = emptyList()
                 )
             }
-        } else if (candState.isComposing || service.rimeEngine.getInput().isNotEmpty() ||
+        } else if (candState.isComposing || service.inputEngine.getInput().isNotEmpty() ||
             service.t9PartialSegments.isNotEmpty()) {
             // 打拼音时切语言：字母原样上屏，不上屏首选（Gboard 规则，用户 2026-10-24）。
             if (!service.textCommit.commitCompositionAndLiteral(asTyped = true)) return false
@@ -137,7 +137,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
             // commit path; a rejected editor commit must leave the original language intact.
             if (service.keyRouter.hasPendingCandidateCommit) return false
             val partial = service.t9PartialSegments.joinToString("") { it.text }
-            val remainder = service.rimeEngine.conversionPreview().ifEmpty { service.rimeEngine.getInput() }
+            val remainder = service.inputEngine.conversionPreview().ifEmpty { service.inputEngine.getInput() }
             if (partial.isNotEmpty() || remainder.isNotEmpty()) {
                 service.keyRouter.commitSelectedText(partial + remainder)
                 if (service.keyRouter.hasPendingCandidateCommit) return false
@@ -150,7 +150,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         if (fromLanguage != InputLanguage.ENGLISH && target == InputLanguage.ENGLISH) nativeBeforeEnglish = fromLanguage
         if (changesSchema) {
             applyPageSizeSetting(targetSchema)
-            if (!service.rimeEngine.switchSchema(targetSchema)) {
+            if (!service.inputEngine.switchSchema(targetSchema)) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(service, "所选方案尚未就绪，请检查输入资源", Toast.LENGTH_SHORT).show()
                 }
@@ -158,30 +158,30 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
             }
         }
         val targetAscii = englishTarget?.asciiMode == true
-        if (service.rimeEngine.isAsciiMode() != targetAscii && !service.rimeEngine.toggleAsciiMode()) {
+        if (service.inputEngine.isAsciiMode() != targetAscii && !service.inputEngine.toggleAsciiMode()) {
             FileLogger.e(CayboardInputMethodService.TAG, "switchInputMethod: engine unavailable")
             withContext(Dispatchers.Main) { Toast.makeText(service, "输入法引擎不可用，请稍后再试", Toast.LENGTH_SHORT).show() }
             return false
         }
-        if (!service.rimeEngine.isAsciiMode()) {
+        if (!service.inputEngine.isAsciiMode()) {
             // 回到中文/日文：按用户的「全角／半角」选择回写标点宽度。
             // 过去只恢复 full_shape（且取自 user.yaml），与菜单显示用的是两套状态，
             // 于是出现"显示半角、实际输出全角"。
-            service.sessionController.applyPunctuationWidth(service.rimeEngine.isAsciiMode())
+            service.sessionController.applyPunctuationWidth(service.inputEngine.isAsciiMode())
         }
-        service.editorInputPolicy.choose(service.rimeEngine.isAsciiMode(), targetSchema)
-        service.sessionController.persistSchemaOption("ascii_mode", service.rimeEngine.isAsciiMode())
+        service.editorInputPolicy.choose(service.inputEngine.isAsciiMode(), targetSchema)
+        service.sessionController.persistSchemaOption("ascii_mode", service.inputEngine.isAsciiMode())
         // 换了方案就在这里先取好新方案名，和退出英文同一帧换上：以前名字要等 updateSchemaName 在后台读完，
         // 从英文切到意大利语时空格先闪一下旧的「中文26键」（11-09）。
-        val switchedName = if (changesSchema) service.rimeEngine.getCurrentSchema().let { id ->
+        val switchedName = if (changesSchema) service.inputEngine.getCurrentSchema().let { id ->
             SchemaManager.getSchemaDisplayName(service, id) ?: id } else null
         withContext(Dispatchers.Main) {
-            // 显式同步 uiState.isAsciiMode（权威源 = rime 引擎状态），
-            // 不依赖 updateUI 链路异步回写，避免键盘 UI 与 rime 状态脱钩。
-            val ascii = service.rimeEngine.isAsciiMode()
-            FileLogger.i(CayboardInputMethodService.TAG, "switchInputMethod: rime ascii=$ascii, ui before=${service.uiState.value.isAsciiMode}")
+            // 显式同步 uiState.isAsciiMode（权威源 = 输入引擎状态），
+            // 不依赖 updateUI 链路异步回写，避免键盘 UI 与输入引擎状态脱钩。
+            val ascii = service.inputEngine.isAsciiMode()
+            FileLogger.i(CayboardInputMethodService.TAG, "switchInputMethod: engine ascii=$ascii, ui before=${service.uiState.value.isAsciiMode}")
             service.uiState.value = service.uiState.value.copy(isAsciiMode = ascii,
-                currentSchemaId = service.rimeEngine.getCurrentSchema(),
+                currentSchemaId = service.inputEngine.getCurrentSchema(),
                 schemaName = switchedName ?: service.uiState.value.schemaName)
             val keepHandwriting = changesSchema && handwritingOpen()
             if (changesSchema) {
@@ -198,12 +198,12 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                     t9RightCandidateSelectedCount = 0, t9SelectedCandidatePinyin = "")
                 service.sessionController.updateSchemaName()
             }
-            if (!service.editorInputPolicy.scoped) SettingsPreferences.setCurrentSchema(service, service.rimeEngine.getCurrentSchema(),
-                com.cayboard.settings.InputModes.languageOf(service.rimeEngine.getCurrentSchema(), service.uiState.value.schemas))
+            if (!service.editorInputPolicy.scoped) SettingsPreferences.setCurrentSchema(service, service.inputEngine.getCurrentSchema(),
+                com.cayboard.settings.InputModes.languageOf(service.inputEngine.getCurrentSchema(), service.uiState.value.schemas))
             service.updateUI()
-            // 主线程直接权威下发键盘布局切换（与 rime 状态一致），
+            // 主线程直接权威下发键盘布局切换（与输入引擎状态一致），
             // 不依赖 Compose LaunchedEffect 侦测 uiState 后再异步 dispatch（部分机型调度延迟导致 UI 不更新）。
-            val schemaId = service.rimeEngine.getCurrentSchema()
+            val schemaId = service.inputEngine.getCurrentSchema()
             service.keyboardViewModel.dispatch(
                 com.cayboard.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(ascii, schemaId)
             )
@@ -226,9 +226,9 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                 // 布局、双拼键位改过，方案的拼写规则就变了：模糊音补丁里抄的那份规则跟着重写，免得盖住新键位。
                 runCatching { com.cayboard.settings.SpellingPatches.sync(service) }
                     .onFailure { FileLogger.e(CayboardInputMethodService.TAG, "Failed to sync spelling patches", it) }
-                check(RimeConfigHelper.ensureDeployment(service)) { "方案部署失败" }
+                check(EngineConfig.ensureDeployment(service)) { "方案部署失败" }
                 val id = SettingsPreferences.getCurrentSchema(service)
-                check(service.rimeEngine.switchSchema(id)) { "无法恢复当前输入方案" }
+                check(service.inputEngine.switchSchema(id)) { "无法恢复当前输入方案" }
                 withContext(Dispatchers.Main) {
                     service.sessionController.updateSchemaName()
                     service.updateUI()
@@ -245,9 +245,9 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         // 同 [applyCustomLayouts]：不挂在输入框上，部署中换焦点不会让它半途作废。
         service.inputCommands.submit(kind = "deploy") {
             try {
-                check(RimeConfigHelper.ensureDeployment(service)) { "方案部署失败" }
+                check(EngineConfig.ensureDeployment(service)) { "方案部署失败" }
                 val id = SettingsPreferences.getCurrentSchema(service)
-                check(service.rimeEngine.switchSchema(id)) { "无法恢复当前输入方案" }
+                check(service.inputEngine.switchSchema(id)) { "无法恢复当前输入方案" }
                 withContext(Dispatchers.Main) {
                     service.sessionController.updateSchemaName()
                     service.updateUI()
@@ -267,36 +267,36 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         
         // 部署投递到 key-processing 队列：与按键/切换同队列串行执行，
         // 部署期间输入/切换操作排队等待，完成后自动恢复，
-        // 不再因 rimeLock 被部署占用而失败或静默丢弃。
-        service.keyRouter.postRimeJob {
+        // 不再因 engineLock 被部署占用而失败或静默丢弃。
+        service.keyRouter.postEngineJob {
             try {
                 KeysConfigHelper.loadConfig(service)
-                // 重新加载配色方案（用户可能在 xime.custom.yaml 中修改了 color_schemes）
+                // 重新加载配色方案（用户可能在 cayboard.custom.yaml 中修改了 color_schemes）
                 KeyboardThemes.reload(service)
                 
-                check(RimeConfigHelper.redeploy(service)) { "方案部署失败，输入会话未就绪" }
+                check(EngineConfig.redeploy(service)) { "方案部署失败，输入会话未就绪" }
 
-                // 部署完成后重新加载配置（Rime 可能在部署过程中改写文件）
+                // 部署完成后重新加载配置（引擎可能在部署过程中改写文件）
                 KeysConfigHelper.loadConfig(service)
                 KeyboardThemes.reload(service)
                 
-                val availableSchemas = service.rimeEngine.getAvailableSchemas()
+                val availableSchemas = service.inputEngine.getAvailableSchemas()
                 
                 val savedSchema = SettingsPreferences.getCurrentSchema(service)
                 if (savedSchema in availableSchemas) {
                     applyPageSizeSetting(savedSchema)
-                    service.rimeEngine.switchSchema(savedSchema)
+                    service.inputEngine.switchSchema(savedSchema)
                 } else {
                     FileLogger.w(CayboardInputMethodService.TAG, "Schema $savedSchema not found in available schemas")
                 }
                 
                 // 直接在 key-processing 线程同步读取 name，避免嵌套协程的时序问题
-                val currentSchemaId = service.rimeEngine.getCurrentSchema()
+                val currentSchemaId = service.inputEngine.getCurrentSchema()
                 val schemaName = SchemaManager.getSchemaDisplayName(
                     service, currentSchemaId
                 ) ?: currentSchemaId
 
-                val problem = RimeConfigHelper.deploymentProblem(service)
+                val problem = EngineConfig.deploymentProblem(service)
                 withContext(Dispatchers.Main) {
                     service.uiState.value = service.uiState.value.copy(
                         schemaName = schemaName,
@@ -308,7 +308,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                 }
             } catch (e: Exception) {
                 FileLogger.e(CayboardInputMethodService.TAG, "Failed to reload config", e)
-                if (RimeConfigHelper.deploymentProblem(service).isEmpty()) RimeConfigHelper.recordFailure(service, e)
+                if (EngineConfig.deploymentProblem(service).isEmpty()) EngineConfig.recordFailure(service, e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(service, "方案部署失败，到「已安装的方案」点「重新部署(修复)」可看原因", Toast.LENGTH_LONG).show()
                 }
@@ -345,26 +345,26 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         val original = service.currentInputConnection ?: return
         val inputSession = service.uiState.value.inputSessionId
         val profileId = service.uiState.value.currentSchemaId
-        service.keyRouter.postRimeJob {
+        service.keyRouter.postEngineJob {
             if (service.currentInputConnection !== original || service.uiState.value.inputSessionId != inputSession ||
-                service.rimeEngine.getCurrentSchema() != profileId || service.rimeEngine.isAsciiMode()) return@postRimeJob
+                service.inputEngine.getCurrentSchema() != profileId || service.inputEngine.isAsciiMode()) return@postEngineJob
             val profile = com.cayboard.settings.InputProfiles.current(profileId)
             if (profile.scheme != com.cayboard.settings.InputScheme.KANA ||
-                profile.layout.kind != com.cayboard.settings.LayoutKind.KANA_KEYPAD) return@postRimeJob
+                profile.layout.kind != com.cayboard.settings.LayoutKind.KANA_KEYPAD) return@postEngineJob
             if (japaneseKanaSession != inputSession) {
                 japaneseKanaComposer.reset()
                 japaneseKanaSession = inputSession
             }
             service.japaneseInputController.prepareKana(action == JapaneseKanaAction.Modify)
-            val before = service.rimeEngine.getInput()
-            var result: RimeProcessResult? = null
+            val before = service.inputEngine.getInput()
+            var result: EngineProcessResult? = null
             val committed = StringBuilder()
             when (action) {
                 is JapaneseKanaAction.Input -> {
-                    if (action.romaji !in japaneseKanaRomaji) return@postRimeJob
+                    if (action.romaji !in japaneseKanaRomaji) return@postEngineJob
                     var allProcessed = true
                     for (char in action.romaji) {
-                        val next = service.rimeEngine.processQueuedKeyAndGetResult(char.code, 0)
+                        val next = service.inputEngine.processQueuedKeyAndGetResult(char.code, 0)
                         result = next
                         committed.append(next.committedText)
                         if (!next.processed) { allProcessed = false; break }
@@ -374,19 +374,19 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                 }
                 JapaneseKanaAction.Modify -> {
                     if (japaneseKanaComposer.replacement(before) == null && before.isNotEmpty()) {
-                        val boundary = service.rimeEngine.previousJapaneseBoundary(before)
+                        val boundary = service.inputEngine.previousJapaneseBoundary(before)
                         japaneseKanaComposer.recordInput(before.take(boundary), before.drop(boundary), before, false)
                     }
-                    val replacement = japaneseKanaComposer.replacement(before) ?: return@postRimeJob
+                    val replacement = japaneseKanaComposer.replacement(before) ?: return@postEngineJob
                     // 整体改写引擎中的未提交编码，不发送退格，绝不删除宿主里已经上屏的字。
-                    if (!service.rimeEngine.setInput(replacement.input)) return@postRimeJob
-                    result = service.rimeEngine.getProcessResult(true)
+                    if (!service.inputEngine.setInput(replacement.input)) return@postEngineJob
+                    result = service.inputEngine.getProcessResult(true)
                     committed.append(result.committedText)
                     if (committed.isEmpty()) japaneseKanaComposer.recordReplacement(replacement, result.inputText)
                     else japaneseKanaComposer.reset()
                 }
             }
-            val finalResult = result ?: return@postRimeJob
+            val finalResult = result ?: return@postEngineJob
             val transformed = service.candidateTransform.transformFor(finalResult)
             withContext(Dispatchers.Main) {
                 if (service.currentInputConnection !== original || service.uiState.value.inputSessionId != inputSession ||
@@ -403,7 +403,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
     /**
      * [preeditKey] 标记手势类光标移动（键盘滑动、空格滑动）。手势按下时界面可能还没认出组合
      * （九键解码慢时常见），排队执行时却已在拼音：此时与按下时就在拼音一样转为编码内移动，
-     * 编码内移动不可用时放弃这一步——绝不把未完成的拼音定格进输入框，也不清空 Rime。
+     * 编码内移动不可用时放弃这一步——绝不把未完成的拼音定格进输入框，也不清空引擎。
      * 工具栏等明确的编辑命令不传 [preeditKey]，沿用原行为。
      */
     // 内部输入框每次新建连接会让 EditorCursor 当成换了输入框而丢掉选择锚点，同一输入框复用一个连接。
@@ -425,7 +425,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
         internalConnection = null
         val original = service.currentInputConnection ?: return
         val inputSession = service.uiState.value.inputSessionId
-        service.keyRouter.postRimeJob {
+        service.keyRouter.postEngineJob {
             withContext(Dispatchers.Main) {
                 // 焦点/会话检查与清理必须在同一个主线程任务内，中间不可挂起，
                 // 否则队列里旧输入框的编辑操作可能清掉新输入框的组合串。
@@ -443,7 +443,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                     service.candidateState.value.isComposing
                 if (preserveComposition) {
                     service.finishComposingInputBoxKeepingText()
-                    service.rimeEngine.endComposition(isT9Schema(service.uiState.value.currentSchemaId))
+                    service.inputEngine.endComposition(isT9Schema(service.uiState.value.currentSchemaId))
                 }
                 action(original)
                 if (preserveComposition) service.updateUI()
@@ -515,7 +515,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
      */
     internal fun moveJapaneseReadingCaret(steps: Int): Boolean {
         if (steps == 0 || !japaneseReadingOnScreen()) return false
-        service.keyRouter.postRimeJob("japanese_caret") { service.japaneseInputController.moveCaret(steps) }
+        service.keyRouter.postEngineJob("japanese_caret") { service.japaneseInputController.moveCaret(steps) }
         return true
     }
 
@@ -623,7 +623,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
     internal fun applyPageSizeSetting(schemaId: String) {
         val userPageSize = SettingsPreferences.getPageSize(service)
         if (userPageSize > 0) {
-            service.rimeEngine.setPageSize(schemaId, userPageSize)
+            service.inputEngine.setPageSize(schemaId, userPageSize)
         }
     }
 
@@ -635,7 +635,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
             return
         }
         if (model.page.value == com.cayboard.keyboard.KeyboardPage.Main(com.cayboard.keyboard.MainType.HANDWRITING)) {
-            switchSchema(service.previousSchemaId.ifEmpty { service.rimeEngine.getCurrentSchema() }.ifEmpty { "pinyin_simp" })
+            switchSchema(service.previousSchemaId.ifEmpty { service.inputEngine.getCurrentSchema() }.ifEmpty { "pinyin_simp" })
             return
         }
         val language = service.uiState.value.inputProfile.language
@@ -664,12 +664,12 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
     internal fun switchSchema(schemaId: String, stayInHandwriting: Boolean = true) {
         if (service.editorInputPolicy.locksNativeInput) return
         if (schemaId == com.cayboard.settings.InputModes.ENGLISH) {
-            service.keyRouter.postRimeJob {
+            service.keyRouter.postEngineJob {
                 // 点的是「英文 · 直接输入」：记下这个选择，之后语言键切英文也用直接输入（不是单词方案）。
                 if (!service.editorInputPolicy.scoped) InputModes.selectProfile(service, InputModes.ENGLISH, InputLanguage.ENGLISH)
-                if (!service.rimeEngine.isAsciiMode() && !switchInputMethod(targetLanguage = InputLanguage.ENGLISH,
-                        englishProfile = InputModes.ENGLISH)) return@postRimeJob
-                val engineSchema = service.rimeEngine.getCurrentSchema()
+                if (!service.inputEngine.isAsciiMode() && !switchInputMethod(targetLanguage = InputLanguage.ENGLISH,
+                        englishProfile = InputModes.ENGLISH)) return@postEngineJob
+                val engineSchema = service.inputEngine.getCurrentSchema()
                 service.editorInputPolicy.choose(true, engineSchema)
                 service.sessionController.persistSchemaOption("ascii_mode", true)
                 withContext(Dispatchers.Main) {
@@ -701,7 +701,7 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
                 return
             }
             service.keyboardViewModel.discardTemporaryHandwriting()
-            service.previousSchemaId = service.rimeEngine.getCurrentSchema()
+            service.previousSchemaId = service.inputEngine.getCurrentSchema()
             if (!service.editorInputPolicy.scoped) SettingsPreferences.setCurrentSchema(service, schemaId,
                         com.cayboard.settings.InputModes.languageOf(schemaId, service.uiState.value.schemas))
             service.editorInputPolicy.choose(false, schemaId)
@@ -713,20 +713,20 @@ internal class ImeSchemaController(private val service: CayboardInputMethodServi
             return
         }
         // 显式选择语言方案与普通按键串行，成功后一次性更新引擎、页面和模式记忆。
-        service.keyRouter.postRimeJob {
+        service.keyRouter.postEngineJob {
             try {
                 val targetLanguage = InputModes.languageOf(schemaId, service.uiState.value.schemas)
-                if (targetLanguage !in LanguagePreferences.enabled(service)) return@postRimeJob
+                if (targetLanguage !in LanguagePreferences.enabled(service)) return@postEngineJob
                 applyPageSizeSetting(schemaId)
-                if (!service.rimeEngine.switchSchema(schemaId)) {
+                if (!service.inputEngine.switchSchema(schemaId)) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(service, if (service.rimeEngine.isMaintaining())
+                        Toast.makeText(service, if (service.inputEngine.isMaintaining())
                             "词库部署中，请稍后再切换方案" else "方案还没应用好，请稍等再试；一直不行到「已安装的方案」点「重新部署(修复)」", Toast.LENGTH_SHORT).show()
                     }
-                    return@postRimeJob
+                    return@postEngineJob
                 }
                 // 英文是独立入口；选中中文/日语方案必须退出此前遗留的 ASCII 模式。
-                service.rimeEngine.setOption("ascii_mode", false)
+                service.inputEngine.setOption("ascii_mode", false)
                 service.editorInputPolicy.choose(false, schemaId)
                 service.sessionController.persistSchemaOption("ascii_mode", false)
                 // 同 switchInputMethod：长按语言列表从英文选别的语言时，名字和退出英文同一帧换上，不闪旧方案名。

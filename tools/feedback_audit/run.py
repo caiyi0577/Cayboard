@@ -53,9 +53,9 @@ def run_tests(cases, output):
     command = [str(wrapper), "--offline", "--console=plain", "-I", str(HERE / "probes.gradle"),
                ":app:testDebugUnitTest", "--rerun", *args]
     env = os.environ.copy()
-    if os.name == "nt" and Path("D:/CyIME-Data/uds").is_dir():
+    if os.name == "nt" and Path("D:/Cayboard-Data/uds").is_dir():
         env["JAVA_TOOL_OPTIONS"] = (env.get("JAVA_TOOL_OPTIONS", "") +
-                                    " -Djdk.net.unixdomain.tmpdir=D:/CyIME-Data/uds").strip()
+                                    " -Djdk.net.unixdomain.tmpdir=D:/Cayboard-Data/uds").strip()
     with (output / "gradle.log").open("w", encoding="utf-8") as log:
         plan = subprocess.run(command + ["--dry-run"], cwd=ROOT, env=env, capture_output=True)
         plan_text = (plan.stdout + plan.stderr).decode("utf-8", "replace")
@@ -167,7 +167,7 @@ def combine_runs(paths):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True, help="new report directory")
-    parser.add_argument("--archives", type=Path, default=Path("D:/CyIME-Data/eval"))
+    parser.add_argument("--archives", type=Path, default=Path("D:/Cayboard-Data/eval"))
     parser.add_argument("--apk", type=Path, help="existing APK for the size breakdown")
     parser.add_argument("--case", dest="ids", action="append", help="run one feedback ID (repeatable)")
     parser.add_argument("--from-run", type=Path, action="append", help="report existing raw JUnit instead of rerunning (repeatable)")

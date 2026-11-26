@@ -24,7 +24,7 @@ import com.cayboard.ui.keyboard.KeyboardCallbacks
 import com.cayboard.ui.keyboard.KeyboardInputPreferences
 import com.cayboard.ui.keyboard.KeyboardLayoutScreen
 import com.cayboard.ui.keyboard.KeyboardLayoutState
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import org.mockito.kotlin.doReturn
 import com.cayboard.ui.keyboard.LocalKeyboardExplicitWidth
 import com.cayboard.ui.keyboard.LocalKeyboardInputPreferences
@@ -44,7 +44,7 @@ import java.io.File
 
 /**
  * 九键左栏（用户 10-30：只有四个标点、滑不动、找不到在哪改）：默认一列常用标点（10-31 括号只留一对），右缘滚动条，
- * 列尾「编辑」。柔和蓝 / 黑白 / iOS 渐变 × 深浅色 × 毛玻璃，各出列首和滑到底两张。只在设了 CYIME_RENDER_OUT 时出图。
+ * 列尾「编辑」。柔和蓝 / 黑白 / iOS 渐变 × 深浅色 × 毛玻璃，各出列首和滑到底两张。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w400dp-h400dp-xhdpi")
@@ -53,7 +53,7 @@ class T9SideRailRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderRailAcrossThemes() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
@@ -62,7 +62,7 @@ class T9SideRailRenderTest {
         var theme by mutableStateOf("soft_blue")
         var dark by mutableStateOf(false)
         var glass by mutableStateOf(false)
-        // 九键只画键盘，不碰 Rime：控制器用桩，左栏停在空闲态的符号列。
+        // 九键只画键盘，不调用输入引擎：控制器用桩，左栏停在空闲态的符号列。
         val t9 = org.mockito.kotlin.mock<T9InputController> {
             on { leftPanelState } doReturn T9InputController.LeftPanelState.IDLE
             on { firstOptions } doReturn emptyList()

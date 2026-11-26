@@ -5,7 +5,7 @@ import org.junit.Test
 
 class ChineseAssetMigrationPolicyTest {
     @Test fun dictionariesNeverEnterTheStartupComparisonPathEvenWhenSmall() {
-        listOf("rime_ice.dict.yaml", "cn_dicts/tencent.dict.yaml", "en_dicts/en.dict.yaml").forEach {
+        listOf("cayboard_pinyin.dict.yaml", "cn_dicts/tencent.dict.yaml", "en_dicts/en.dict.yaml").forEach {
             assertFalse(ChineseSchemas.isSmallMigrationCandidate(it, 100))
             assertFalse(ChineseSchemas.isSmallMigrationCandidate(it, 20_000_000))
         }
@@ -17,7 +17,7 @@ class ChineseAssetMigrationPolicyTest {
         }
     }
     @Test fun userPatchesAndResourcesAreNeverMigrationCandidates() {
-        listOf("rime_ice.custom.yaml", "opencc/emoji.txt", "README.md", "LICENSE").forEach {
+        listOf("cayboard_pinyin.custom.yaml", "opencc/emoji.txt", "README.md", "LICENSE").forEach {
             assertFalse(ChineseSchemas.isSmallMigrationCandidate(it, 2048))
         }
     }

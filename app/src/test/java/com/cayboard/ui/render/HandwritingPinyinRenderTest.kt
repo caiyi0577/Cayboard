@@ -44,7 +44,7 @@ import java.io.File
 
 /**
  * 中文手写候选旁显示读音（带声调），和打字候选的注释同一个样子，跟着候选注释的显示／隐藏走。
- * 设了 CYIME_RENDER_OUT=<目录> 时另出一张各主题的对照图 handwriting-pinyin.png。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时另出一张各主题的对照图 handwriting-pinyin.png。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w900dp-h1400dp-hdpi")
@@ -130,7 +130,7 @@ class HandwritingPinyinRenderTest {
     }
 
     @Test fun renderHandwritingPinyin() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         SettingsPreferences.setCandidateCommentMode(context(), CandidateCommentMode.SHOW)
         KeyboardThemes.initFromConfig(context())

@@ -2,7 +2,7 @@ package com.cayboard.service
 
 import androidx.compose.runtime.mutableStateOf
 import com.cayboard.clipboard.ClipboardManager
-import com.cayboard.rime.InputCommandQueue
+import com.cayboard.engine.InputCommandQueue
 import com.cayboard.settings.SensitiveInputState
 import com.cayboard.viewmodel.KeyboardViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

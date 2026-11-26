@@ -90,7 +90,7 @@ class DarkKeycapDepthRenderTest {
                 val color = feedback.getPixel(feedback.width / 2, feedback.height / 5)
                 assertNotEquals(idle.getPixel(idle.width / 2, idle.height / 5), color)
                 key.performTouchInput { up() }
-                val out = File(System.getenv("CYIME_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
+                val out = File(System.getenv("CAYBOARD_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
                 File(out, "delete-${if (night) "dark" else "light"}-${if (direction < 0) "up" else "down"}.png")
                     .outputStream().use { feedback.compress(Bitmap.CompressFormat.PNG, 100, it) }
             }
@@ -122,7 +122,7 @@ class DarkKeycapDepthRenderTest {
                 }
             }
         }
-        val out = File(System.getenv("CYIME_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
+        val out = File(System.getenv("CAYBOARD_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
         for (night in listOf(true, false)) {
             rule.runOnIdle { dark = night; pressed = false }
             rule.waitForIdle()

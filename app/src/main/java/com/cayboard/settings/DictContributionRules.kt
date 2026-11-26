@@ -3,7 +3,7 @@ package com.cayboard.settings
 /**
  * 「贡献词库」从本机用户词库里挑词的规则和文件格式。纯函数，不碰 Android，单测见 DictContributionRulesTest。
  *
- * 用户词库（Rime 的 .userdb.txt 快照）每行是 `拼音码<TAB>文字<TAB>c=次数 d=权重 t=时间`。Rime 会把一次上屏的
+ * 用户词库（.userdb.txt 快照）每行是 `拼音码<TAB>文字<TAB>c=次数 d=权重 t=时间`。引擎会把一次上屏的
  * 整句也当一条记下来，所以原件里有整句原文。这里只留：
  * - 2～[MAX_CHARS] 个字、全是汉字的词：整句、长短语、带数字字母符号的（电话、门牌、账号、网址）都不要；
  * - 选过至少 [MIN_COUNT] 次的：只打过一两次的名字、地址片段不出去；
@@ -14,7 +14,7 @@ package com.cayboard.settings
  * 不带权重、时间、设备编号和文件头；次数封顶 [MAX_COUNT]，最多 [MAX_WORDS] 个，按次数从多到少。
  */
 object DictContributionRules {
-    const val FORMAT = "cyime-dict-contribute"
+    const val FORMAT = "cayboard-dict-contribute"
     const val VERSION = 1
     const val MIN_CHARS = 2
     const val MAX_CHARS = 4

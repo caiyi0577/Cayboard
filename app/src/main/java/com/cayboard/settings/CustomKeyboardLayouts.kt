@@ -165,7 +165,7 @@ data class CustomKeyboardLayout(
     /** Generate an independent prism; the base dictionary, translator and all other options are reused. */
     fun schema(base: String): String {
         require(valid())
-        var text = base.replace("schema_id: rime_ice", "schema_id: $id")
+        var text = base.replace("schema_id: cayboard_pinyin", "schema_id: $id")
             .replace("name: 雾凇拼音", "name: ${JSONObject.quote(name)}")
         if (rows.flatten().any { it.length == 2 }) {
             val speller = Regex("(?ms)^speller:.*?(?=^[a-zA-Z_][a-zA-Z_0-9]*:|\\z)").find(text)
@@ -175,8 +175,8 @@ data class CustomKeyboardLayout(
             text = text.replace(Regex("(?m)^  prism:.*$"), "  prism: $id")
             if (!text.contains("  prism: $id")) text = text.replace("translator:\n", "translator:\n  prism: $id\n")
             val letters = "abcdefghijklmnopqrstuvwxyz"
-            text = text.replace("cyime_particle_shortcuts:/common\n  alphabet: $letters",
-                "cyime_particle_shortcuts:/common\n  alphabet: ${encode(letters)}")
+            text = text.replace("cayboard_particle_shortcuts:/common\n  alphabet: $letters",
+                "cayboard_particle_shortcuts:/common\n  alphabet: ${encode(letters)}")
         }
         return text
     }
@@ -265,8 +265,8 @@ object CustomKeyboardLayouts {
             val old = load(context)
             require(old.none { it.id != layout.id && it.name == layout.name }) { "已有同名方案" }
             val updated = if (old.any { it.id == layout.id }) old.map { if (it.id == layout.id) layout else it } else old + layout
-            val dir = SchemaManager.getRimeDir(context)
-            val base = File(dir, "rime_ice.schema.yaml")
+            val dir = SchemaManager.getInputDataDir(context)
+            val base = File(dir, "cayboard_pinyin.schema.yaml")
             check(base.isFile) { "请先完成中文26键部署" }
             val schema = File(dir, "${layout.id}.schema.yaml")
             val previous = schema.takeIf { it.isFile }?.readText()
@@ -286,27 +286,27 @@ object CustomKeyboardLayouts {
     }
 
     /**
-     * The schema a layout should have now. Layout schemas are copies of 中文26键 (rime_ice) with their own ID,
-     * name and key order, so they are generated again from the current rime_ice instead of staying a snapshot of
+     * The schema a layout should have now. Layout schemas are copies of 中文26键 (cayboard_pinyin) with their own ID,
+     * name and key order, so they are generated again from the current cayboard_pinyin instead of staying a snapshot of
      * the version they were made from. A saved layout uses its rows; a built-in arrangement nobody adjusted keeps
-     * the ID and name its file has. Null when rime_ice is not Cayboard's own (a market version stays its own).
+     * the ID and name its file has. Null when cayboard_pinyin is not Cayboard's own (a market version stays its own).
      */
     internal fun refreshedSchema(base: String, current: String, saved: CustomKeyboardLayout?): String? {
-        if (!base.contains("schema_id: rime_ice") || !base.contains("cyime_neighbor_correction: true")) return null
+        if (!base.contains("schema_id: cayboard_pinyin") || !base.contains("cayboard_neighbor_correction: true")) return null
         val text = saved?.takeIf { it.valid() }?.schema(base) ?: run {
             if (saved != null || !base.contains("name: 雾凇拼音")) return null
             val id = Regex("(?m)^  schema_id: (\\S+)").find(current)?.groupValues?.get(1) ?: return null
             val name = Regex("(?m)^  name: (.+)$").find(current)?.groupValues?.get(1) ?: return null
-            base.replace("schema_id: rime_ice", "schema_id: $id").replace("name: 雾凇拼音", "name: $name")
+            base.replace("schema_id: cayboard_pinyin", "schema_id: $id").replace("name: 雾凇拼音", "name: $name")
         }
         return EnglishCandidatePolicy.install(text)
     }
 
-    /** Bring every layout schema up to the current rime_ice; the previous file is backed up once. */
+    /** Bring every layout schema up to the current cayboard_pinyin; the previous file is backed up once. */
     fun followBaseSchema(context: Context) {
         synchronized(this) {
-            val dir = SchemaManager.getRimeDir(context)
-            val base = File(dir, "rime_ice.schema.yaml").takeIf { it.isFile }?.readText() ?: return
+            val dir = SchemaManager.getInputDataDir(context)
+            val base = File(dir, "cayboard_pinyin.schema.yaml").takeIf { it.isFile }?.readText() ?: return
             val saved = load(context).associateBy { it.id }
             for (id in BuiltinLetterLayouts.ids + saved.keys) {
                 val file = File(dir, "$id.schema.yaml")
@@ -314,7 +314,7 @@ object CustomKeyboardLayouts {
                 val old = file.readText()
                 val updated = refreshedSchema(base, old, saved[id]) ?: continue
                 if (updated == old) continue
-                val backup = File(context.filesDir, "rime-upgrade-backups/layout-base/${file.name}")
+                val backup = File(context.filesDir, "cayboard-upgrade-backups/layout-base/${file.name}")
                 if (!backup.exists()) { backup.parentFile!!.mkdirs(); writeAtomically(backup, old) }
                 writeAtomically(file, updated)
             }
@@ -323,21 +323,21 @@ object CustomKeyboardLayouts {
 
     /** Upgrade translator flags and the shared candidate policy; keep user key order and dictionaries. */
     fun enableMeasuredCorrection(context: Context) = synchronized(this) {
-        val dir = SchemaManager.getRimeDir(context)
+        val dir = SchemaManager.getInputDataDir(context)
         for (layout in load(context)) {
             val file = File(dir, "${layout.id}.schema.yaml")
             if (!file.isFile) continue
             val old = file.readText()
             // 旧的整表 xlit 换成逐组派生：长按选的第二个字母按原拼音认（见 mergedRules），点按的结果不变。
             var updated = EnglishCandidatePolicy.install(old.replace(CustomKeyboardLayout.legacyRule(layout), layout.mergedRules()))
-            if (!updated.contains("cyime_neighbor_correction: true")) {
+            if (!updated.contains("cayboard_neighbor_correction: true")) {
                 val section = Regex("(?ms)^translator:\\r?\\n.*?(?=^[a-zA-Z_][a-zA-Z_0-9]*:|\\z)").find(updated) ?: continue
                 val translator = section.value.replace(Regex("(?m)^  enable_correction:.*\\r?\\n"), "")
-                    .replaceFirst(Regex("^translator:\\r?\\n"), "translator:\n  enable_correction: true\n  cyime_neighbor_correction: true\n")
+                    .replaceFirst(Regex("^translator:\\r?\\n"), "translator:\n  enable_correction: true\n  cayboard_neighbor_correction: true\n")
                 updated = updated.replaceRange(section.range, translator)
             }
             if (updated == old) continue
-            val backup = File(context.filesDir, "rime-upgrade-backups/neighbor-correction/${file.name}")
+            val backup = File(context.filesDir, "cayboard-upgrade-backups/neighbor-correction/${file.name}")
             if (!backup.exists()) { backup.parentFile!!.mkdirs(); writeAtomically(backup, old) }
             writeAtomically(file, updated)
         }
@@ -347,7 +347,7 @@ object CustomKeyboardLayouts {
         synchronized(this) {
             val old = load(context)
             require(old.any { it.id == id })
-            val schema = File(SchemaManager.getRimeDir(context), "$id.schema.yaml")
+            val schema = File(SchemaManager.getInputDataDir(context), "$id.schema.yaml")
             val previous = schema.takeIf { it.isFile }?.readText()
             // Remove only the schema we own; user dictionaries and learned data are retained.
             check(!schema.exists() || schema.delete()) { "无法删除布局配置" }
@@ -358,8 +358,8 @@ object CustomKeyboardLayouts {
         CustomLayoutSymbols.clear(context, id)
         // 删掉双拼在这个布局上的版本；正在用时换回那个双拼方案的 26 键。
         DoublePinyinSchemes.syncLayouts(context)
-        if (SettingsPreferences.getCurrentSchema(context) == id) SettingsPreferences.setCurrentSchema(context, "rime_ice")
-        SchemaManager.setEnabledSchemas(context, (remaining + "rime_ice").distinct())
+        if (SettingsPreferences.getCurrentSchema(context) == id) SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
+        SchemaManager.setEnabledSchemas(context, (remaining + "cayboard_pinyin").distinct())
         notifyChanged(context)
     }
     private fun notifyChanged(context: Context) {

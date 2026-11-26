@@ -10,10 +10,10 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.MergedLetterInput
-import com.cayboard.rime.PinyinSyllableChoices
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.MergedLetterInput
+import com.cayboard.engine.PinyinSyllableChoices
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
@@ -60,7 +60,7 @@ class MergedLetterRailTest {
             }
             state.value = CandidateState(engineRevision = state.value.engineRevision + 1,
                 inputText = code, preeditText = code.lowercase(), candidates = words.take(4), isComposing = true,
-                hasNextPage = true, expandedCandidates = words.map { RimeCandidate(it, "") }, expandedCandidatesLoaded = true)
+                hasNextPage = true, expandedCandidates = words.map { EngineCandidate(it, "") }, expandedCandidatesLoaded = true)
         }
         fun choices(): PinyinSyllableChoices {
             val raw = state.value.inputText
@@ -116,7 +116,7 @@ class MergedLetterRailTest {
     }
 
     private fun save() {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

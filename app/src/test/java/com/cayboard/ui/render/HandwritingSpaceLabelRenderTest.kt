@@ -38,7 +38,7 @@ import java.io.File
 /**
  * 手写空格键上的「中文手写」「英文手写」：手写底排比全键盘矮（五行），看字和空格图标会不会挤在一起。
  * 手写区高度 = 键盘总高减 44dp 候选栏；手机 400dp、平板 800/1280dp × 160/228/301（手机默认）/448（平板竖屏默认） × 字号 1.0/1.3 × 浅色/深色。
- * 只在设了 CYIME_RENDER_OUT 时出图。
+ * 只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1300dp-h900dp-xhdpi")
@@ -47,7 +47,7 @@ class HandwritingSpaceLabelRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderSpaceLabel() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)

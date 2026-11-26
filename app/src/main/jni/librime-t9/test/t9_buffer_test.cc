@@ -126,10 +126,10 @@ TEST(T9BufferTest, ToBufferString_MultipleSeparators) {
     EXPECT_EQ("5'43'6", buf.ToBufferString());
 }
 
-TEST(T9BufferTest, ToRimeInputString_MultipleSeparators) {
+TEST(T9BufferTest, ToEngineInputString_MultipleSeparators) {
     T9Buffer buf("5436");
     buf.separator_positions = {1, 3};
-    EXPECT_EQ("5'43'6", buf.ToRimeInputString());
+    EXPECT_EQ("5'43'6", buf.ToEngineInputString());
 }
 
 TEST(T9BufferTest, ToPreeditString_MultipleSeparators) {

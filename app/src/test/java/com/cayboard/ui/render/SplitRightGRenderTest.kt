@@ -49,7 +49,7 @@ import java.io.File
  * - 不分体的 26 键、英文、日语罗马字、14 键、注音，固定和悬浮、手机和平板：开关开着和关着逐像素相同。
  * - 分体 14 键、注音（不能分体）：同样逐像素相同。九键、手写等别的键盘不经过这段代码，也不读这个开关。
  * - 分体 26 键：右半多一个 G，g h j k l 在 y u i o p 正下方、l 右边到行尾；左半各键和上下两排不动，中缝不变。
- * 设了 CYIME_RENDER_OUT=<目录> 时另存分体开关前后的对照图。
+ * 设了 CAYBOARD_RENDER_OUT=<目录> 时另存分体开关前后的对照图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -60,7 +60,7 @@ class SplitRightGRenderTest {
     private data class Case(val schema: String, val ascii: Boolean = false, val split: Boolean = false,
         val tablet: Boolean = false, val floating: Boolean = false, val voice: Boolean = false, val theme: String = "soft_blue")
 
-    private var case by mutableStateOf(Case("rime_ice"))
+    private var case by mutableStateOf(Case("cayboard_pinyin"))
     private var rightG by mutableStateOf(false)
     private lateinit var vm: KeyboardViewModel
 
@@ -118,7 +118,7 @@ class SplitRightGRenderTest {
     private fun count(tag: String) = rule.onAllNodesWithTag(tag, true).fetchSemanticsNodes().size
 
     private fun save(name: String, bitmap: Bitmap) {
-        val out = System.getenv("CYIME_RENDER_OUT")?.takeIf { it.isNotEmpty() } ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT")?.takeIf { it.isNotEmpty() } ?: return
         File(out).mkdirs()
         File(out, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
@@ -131,17 +131,17 @@ class SplitRightGRenderTest {
     @Test fun everyOtherKeyboardIsPixelIdentical() {
         val cases = buildList {
             for (tablet in listOf(false, true)) for (floating in listOf(false, true)) {
-                add(Case("rime_ice", tablet = tablet, floating = floating))
-                add(Case("rime_ice", ascii = true, tablet = tablet, floating = floating))
+                add(Case("cayboard_pinyin", tablet = tablet, floating = floating))
+                add(Case("cayboard_pinyin", ascii = true, tablet = tablet, floating = floating))
                 add(Case("pinyin_14jian", tablet = tablet, floating = floating))
-                add(Case("cyime_zhuyin", tablet = tablet, floating = floating))
+                add(Case("cayboard_zhuyin", tablet = tablet, floating = floating))
                 add(Case("japanese", tablet = tablet, floating = floating))
                 // 分体开着也不变：14 键拆开的 g/h 不补，注音不能分体。
                 add(Case("pinyin_14jian", split = true, tablet = tablet, floating = floating))
-                add(Case("cyime_zhuyin", split = true, tablet = tablet, floating = floating))
+                add(Case("cayboard_zhuyin", split = true, tablet = tablet, floating = floating))
             }
-            add(Case("rime_ice", voice = true))
-            add(Case("rime_ice", theme = "pure_black"))
+            add(Case("cayboard_pinyin", voice = true))
+            add(Case("cayboard_pinyin", theme = "pure_black"))
         }
         val changed = cases.filter { c ->
             show(c, false); val off = shot()
@@ -155,9 +155,9 @@ class SplitRightGRenderTest {
     /** 分体 26 键：右半 g h j k l 对齐 y u i o p，左半和上下两排、中缝都不动。 */
     @Test fun splitQwertyGetsARightGUnderY() {
         val px = 1.5f
-        for (c in listOf(Case("rime_ice", split = true), Case("rime_ice", split = true, tablet = true),
-            Case("rime_ice", ascii = true, split = true), Case("rime_ice", split = true, floating = true),
-            Case("rime_ice", split = true, tablet = true, theme = "pure_black"))) {
+        for (c in listOf(Case("cayboard_pinyin", split = true), Case("cayboard_pinyin", split = true, tablet = true),
+            Case("cayboard_pinyin", ascii = true, split = true), Case("cayboard_pinyin", split = true, floating = true),
+            Case("cayboard_pinyin", split = true, tablet = true, theme = "pure_black"))) {
             show(c, false)
             val offShot = shot()
             val off = listOf("g", "a", "y", "p", "z", "m").associateWith { bounds("qwerty-key:$it") }
@@ -195,7 +195,7 @@ class SplitRightGRenderTest {
 
     /** 语音时的占位键盘与正常键盘同一排法：中排的缝一样宽、一样位置。 */
     @Test fun voicePlaceholderMatchesTheTypingRow() {
-        val typing = Case("rime_ice", split = true)
+        val typing = Case("cayboard_pinyin", split = true)
         show(typing, true)
         val gap = bounds("split-keyboard-gap:1")
         show(typing.copy(voice = true), true)

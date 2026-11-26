@@ -1,9 +1,9 @@
-#ifndef CYIME_T9_LOOKUP_TRACE_H_
-#define CYIME_T9_LOOKUP_TRACE_H_
+#ifndef CAYBOARD_T9_LOOKUP_TRACE_H_
+#define CAYBOARD_T9_LOOKUP_TRACE_H_
 #include <map>
 #include <cstddef>
 #include <algorithm>
-#if defined(CYIME_T9_WORK_COUNTERS)
+#if defined(CAYBOARD_T9_WORK_COUNTERS)
 #include <cstdint>
 #endif
 namespace rime {
@@ -28,11 +28,11 @@ struct T9OriginScope {
   explicit T9OriginScope(int origin) { t9_lookup_origin = origin; }
   ~T9OriginScope() { t9_lookup_origin = previous; }
 };
-#if defined(CYIME_T9_WORK_COUNTERS)
+#if defined(CAYBOARD_T9_WORK_COUNTERS)
 // Per-key work counters for the host replay speed gate (tools/ime_lab). Only
-// the host build defines CYIME_T9_WORK_COUNTERS; Android builds compile every
+// the host build defines CAYBOARD_T9_WORK_COUNTERS; Android builds compile every
 // T9_WORK_* use to nothing. Counting never reads back into any decision.
-#define CYIME_T9_WORK_COUNTER_LIST(X)                                   \
+#define CAYBOARD_T9_WORK_COUNTER_LIST(X)                                   \
   X(joint_decodes) X(joint_cache_hits) X(joint_frame_reuse)             \
   X(joint_origins_queried) X(joint_origins_reused)                      \
   X(dict_lookup_calls) X(dict_lookup_all_calls) X(dict_lookup_all_starts) \
@@ -44,15 +44,15 @@ struct T9OriginScope {
   X(beam_rejected) X(beam_insertions) X(grammar_queries)                \
   X(gram_lookups) X(whole_text_priors) X(ngram_lookups)
 enum T9WorkCounter {
-#define CYIME_T9_WORK_ENUM(name) kT9Work_##name,
-  CYIME_T9_WORK_COUNTER_LIST(CYIME_T9_WORK_ENUM)
-#undef CYIME_T9_WORK_ENUM
+#define CAYBOARD_T9_WORK_ENUM(name) kT9Work_##name,
+  CAYBOARD_T9_WORK_COUNTER_LIST(CAYBOARD_T9_WORK_ENUM)
+#undef CAYBOARD_T9_WORK_ENUM
   kT9WorkCounterCount
 };
 inline thread_local uint64_t t9_work_counters[kT9WorkCounterCount] = {};
 #endif
 }
-#if defined(CYIME_T9_WORK_COUNTERS)
+#if defined(CAYBOARD_T9_WORK_COUNTERS)
 #define T9_WORK_ADD(name, n) \
   (::rime::t9_work_counters[::rime::kT9Work_##name] += static_cast<uint64_t>(n))
 #else

@@ -28,7 +28,7 @@ data class SchemaInfo(
     val language: InputLanguage = InputLanguage.forSchema(schemaId),
     val scheme: InputScheme = InputProfiles.describe(schemaId).scheme,
 ) {
-    /** Rime/package identity is retained for compatibility, not exposed as an encoding scheme. */
+    /** Decoder/package identity is retained for compatibility, not exposed as an encoding scheme. */
     val profile: InputProfile get() = InputProfiles.arranged(baseProfile)
     /** Before English/Japanese romaji take their language's letter arrangement: the layout is the language's own. */
     val baseProfile: InputProfile get() = if (KeysConfigHelper.hasLoadedLayoutBindings)

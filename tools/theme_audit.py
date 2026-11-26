@@ -13,7 +13,7 @@ The numbers drive which themes stay; the Kotlin guard in FrostedKeyColors enforc
 import sys
 import yaml
 
-XIME = 'app/src/main/assets/xime.yaml'
+CONFIG = 'app/src/main/assets/cayboard.yaml'
 
 
 def rgb(v):
@@ -148,7 +148,7 @@ def audit(name, s):
 
 
 def main():
-    data = yaml.safe_load(open(XIME, encoding='utf-8'))
+    data = yaml.safe_load(open(CONFIG, encoding='utf-8'))
     glob = data['keyboard']['colors']
     schemes = builtins()
     for sid, entry in data['color_schemes'].items():

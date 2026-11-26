@@ -146,7 +146,7 @@ class ClipboardDirectActionsTest {
         rule.onAllNodesWithText("删除").assertCountEquals(0)
     }
     private fun capture(name:String) {
-        System.getenv("CYIME_RENDER_OUT")?.let {dir->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let {dir->
             val view=rule.activity.window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             rule.runOnIdle {view.draw(android.graphics.Canvas(bitmap))}

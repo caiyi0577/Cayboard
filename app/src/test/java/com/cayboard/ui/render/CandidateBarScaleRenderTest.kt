@@ -56,7 +56,7 @@ import java.io.File
 
 /**
  * 候选栏随键盘尺寸半速放大：手机/平板、几档键盘尺寸、九键与 26 键、深浅色与玻璃，
- * 每档出改前（固定 44dp）与改后两张，拼音浮块画在候选栏上方。只在设了 CYIME_RENDER_OUT 时出图。
+ * 每档出改前（固定 44dp）与改后两张，拼音浮块画在候选栏上方。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1400dp-h1100dp-hdpi")
@@ -67,18 +67,18 @@ class CandidateBarScaleRenderTest {
     private data class Size(val name: String, val width: Int, val height: Int, val screenWidth: Int, val screenHeight: Int)
 
     @Test fun renderCandidateBarScale() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         // 九键要靠 keyboard.t9.schemas 绑定才认得出来。
-        val custom = File(app.filesDir, "rime/xime.custom.yaml").apply { parentFile?.mkdirs() }
+        val custom = File(app.filesDir, "cayboard_input/cayboard.custom.yaml").apply { parentFile?.mkdirs() }
         custom.writeText("keyboard:\n  t9:\n    schemas: [t9_pinyin]\n")
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
         com.cayboard.ui.keyboard.AppFonts.initialize(app)
         val vm = KeyboardViewModel(app)
         val callbacks = KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {})
-        // 真控制器要加载 Rime 原生库；画键盘只读它的状态，用空壳代替。
-        val t9 = org.mockito.kotlin.mock<com.cayboard.rime.T9InputController>(defaultAnswer = org.mockito.Mockito.RETURNS_MOCKS)
+        // 真控制器要加载原生输入库；画键盘只读它的状态，用空壳代替。
+        val t9 = org.mockito.kotlin.mock<com.cayboard.engine.T9InputController>(defaultAnswer = org.mockito.Mockito.RETURNS_MOCKS)
         var size by mutableStateOf(SIZES.first())
         var theme by mutableStateOf("soft_blue")
         var glass by mutableStateOf(false)
@@ -152,7 +152,7 @@ class CandidateBarScaleRenderTest {
             val key = if (layout == "t9_pinyin") "t9" else "26"
             shot("${s.name}-$key-$t-${if (g) "glass" else "solid"}-${if (after) "after" else "before"}")
         }
-        for (s in SIZES) for (layout in listOf("t9_pinyin", "rime_ice")) for (after in listOf(false, true))
+        for (s in SIZES) for (layout in listOf("t9_pinyin", "cayboard_pinyin")) for (after in listOf(false, true))
             show(s, "soft_blue", false, layout, after)
         for (s in SIZES.filter { it.name in setOf("phone-tall", "tablet-portrait", "tablet-landscape-tall") })
             for ((t, g) in listOf("pure_black" to false, "pure_black" to true, "transparent_glass" to true, "soft_blue" to true))

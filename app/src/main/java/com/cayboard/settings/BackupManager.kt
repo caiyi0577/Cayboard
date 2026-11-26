@@ -14,15 +14,15 @@ import java.util.zip.ZipOutputStream
 /**
  * 本地备份与恢复：备份包只写到用户用系统文件选择器选定的位置。
  *
- * 备份包格式（v2，兼容 v1：`_xime_backup/` 前缀外的条目一律视为 rime 目录相对路径）：
- * - `_xime_backup/manifest.json`                    格式版本、应用版本、是否含个人数据
- * - `_xime_backup/settings.json`                    设置项（kime_settings，类型保留，剔除设备状态键）
- * - `_xime_backup/prefs/<name>.json`                其他设置文件（[SETTINGS_PREFS]）
- * - `_xime_backup/files/<path>`                     自定义布局、双拼键位表（[isFilesEntry]）
- * - `_xime_backup/cells/<name>`                     导入的分类词库（[isCellEntry]），不论是否勾选个人数据
- * - `_xime_backup/clipboard.json`                   剪贴板文字记录（[ClipboardExport] 的 JSON，见 [clipboardBackupItems]），
+ * 备份包格式（v2，兼容旧版 `_xime_backup/` 前缀）：
+ * - `_cayboard_backup/manifest.json`                格式版本、应用版本、是否含个人数据
+ * - `_cayboard_backup/settings.json`                设置项（类型保留，剔除设备状态键）
+ * - `_cayboard_backup/prefs/<name>.json`            其他设置文件（[SETTINGS_PREFS]）
+ * - `_cayboard_backup/files/<path>`                 自定义布局、双拼键位表（[isFilesEntry]）
+ * - `_cayboard_backup/cells/<name>`                 导入的分类词库（[isCellEntry]），不论是否勾选个人数据
+ * - `_cayboard_backup/clipboard.json`               剪贴板文字记录（[ClipboardExport] 的 JSON，见 [clipboardBackupItems]），
  *   恢复时合并进剪贴板，已有的不重复；旧版恢复不认识这个条目，会跳过
- * - 包根的 rime 文件：`*.custom.yaml`、自定义布局方案；
+ * - 输入数据目录中的配置：`*.custom.yaml`、自定义布局方案；
  *   勾选个人数据时另含手动设置的自定义短语与个人词库
  *
  * 恢复走 [BackupRestoreTransaction]：先完整校验再落盘，失败回滚。
@@ -31,15 +31,16 @@ object BackupManager {
 
     private const val TAG = "BackupManager"
 
-    /** 备份包内元数据条目前缀（保留字，rime 目录不应有同名顶层文件）。 */
-    const val META_PREFIX = "_xime_backup/"
+    /** Backup metadata prefix reserved for Cayboard archives. */
+    const val META_PREFIX = "_cayboard_backup/"
+    internal const val LEGACY_META_PREFIX = com.cayboard.engine.compat.LegacyNames.OLD_BACKUP_PREFIX
 
     const val FORMAT_VERSION = 2
 
     /** 设置项 SharedPreferences 文件名（SettingsPreferences.PREFS_NAME，此处避免依赖私有常量）。 */
-    private const val PREFS_NAME_SETTINGS = "kime_settings"
+    private const val PREFS_NAME_SETTINGS = SettingsPreferences.PREFS_NAME
 
-    /** 除 kime_settings 外随备份保存的设置文件。 */
+    /** 除系统偏好文件外随备份保存的设置文件。 */
     internal val SETTINGS_PREFS = listOf("handwriting", "translation")
 
     
@@ -54,14 +55,15 @@ object BackupManager {
 
     /** 描述本机部署/安装状态或指向未备份插件的键：导出不写，导入不覆盖（另含 `device_` 前缀的本机硬件判定）。 */
     internal val DEVICE_STATE_KEYS = setOf(
-        "deployment_done", "builtin_schemas_merged", "deployment_hash", "rime_assets_version",
+        "deployment_done", "builtin_schemas_merged", "deployment_hash",
+        com.cayboard.engine.compat.LegacyNames.OLD_ASSET_VERSION_KEY, "cayboard_assets_version",
         "setup_completed", "installed_market_ids", "stt_online_plugin_id",
         "clipboard_sync_enabled", "clipboard_sync_plugin_id", "backup_plugin_id"
     )
 
     private const val MAX_ARCHIVE_BYTES = 256L * 1024 * 1024
 
-    /** filesDir 下允许经 `_xime_backup/files/` 往返的文件。 */
+    /** filesDir 下允许经备份元数据往返的文件。 */
     internal fun isFilesEntry(relative: String, personal: Boolean): Boolean = when {
         relative == "custom-keyboard-layouts.json" -> true
         relative == DoublePinyinSchemes.FILE -> true
@@ -70,6 +72,7 @@ object BackupManager {
 
     /** 剪贴板记录在备份包里的条目。 */
     internal const val CLIPBOARD_ENTRY = META_PREFIX + "clipboard.json"
+    internal const val LEGACY_CLIPBOARD_ENTRY = LEGACY_META_PREFIX + "clipboard.json"
 
     
     internal fun clipboardBackupItems(items: List<com.cayboard.clipboard.ClipboardItem>, includeHistory: Boolean): List<com.cayboard.clipboard.ClipboardItem> =
@@ -91,16 +94,26 @@ object BackupManager {
 
     /** 备份包里的剪贴板记录；没有（旧备份）或太大时为 null。 */
     internal fun clipboardEntry(bytes: ByteArray): String? = ZipInputStream(bytes.inputStream()).use { input ->
-        generateSequence { input.nextEntry }.firstOrNull { it.name == CLIPBOARD_ENTRY } ?: return null
-        val out = java.io.ByteArrayOutputStream()
-        val chunk = ByteArray(64 * 1024)
-        while (true) {
-            val read = input.read(chunk)
-            if (read < 0) break
-            out.write(chunk, 0, read)
-            if (out.size() > com.cayboard.clipboard.ClipboardImport.MAX_FILE_BYTES) return null
+        var result: String? = null
+        while (result == null) {
+            val entry = input.nextEntry ?: break
+            if (entry.name != CLIPBOARD_ENTRY && entry.name != LEGACY_CLIPBOARD_ENTRY) continue
+            val out = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(64 * 1024)
+            var tooLarge = false
+            while (true) {
+                val read = input.read(chunk)
+                if (read < 0) break
+                out.write(chunk, 0, read)
+                if (out.size() > com.cayboard.clipboard.ClipboardImport.MAX_FILE_BYTES) {
+                    tooLarge = true
+                    break
+                }
+            }
+            if (tooLarge) break
+            result = out.toString(Charsets.UTF_8.name())
         }
-        out.toString(Charsets.UTF_8.name())
+        result
     }
 
     /** 分类词库目录（[CellDictionaryManager.store]）。 */
@@ -108,33 +121,33 @@ object BackupManager {
 
     /**
      * 导入的分类词库：词库文件、英文词表、启用状态和词条更新。随 APK 的内置词库不带，装好会自己补上。
-     * 放在 `_xime_backup/cells/` 下：旧版恢复不认识这个目录会跳过，新备份在旧版上其余内容照样能恢复。
+     * 放在备份元数据的 cells/ 下：旧版恢复不认识这个目录会跳过，新备份在旧版上其余内容照样能恢复。
      */
     internal fun isCellEntry(name: String): Boolean =
         !name.contains('/') && !name.contains('\\') && !name.startsWith("cell_builtin_") && (name == "state.json" ||
             (name.startsWith("cell_") && (name.endsWith(".dict.yaml") || name.endsWith(".en.txt"))) ||
             (name.startsWith("word-updates-") && name.endsWith(".json")))
 
-    /** rime 目录中属于设置（总是导出）的文件。 */
-    internal fun isRimeSettingsFile(relative: String): Boolean =
+    /** 输入数据目录中属于设置（总是导出）的文件。 */
+    internal fun isInputSettingsFile(relative: String): Boolean =
         (!relative.contains('/') && relative.endsWith(".custom.yaml")) ||
             (!relative.contains('/') && relative.startsWith("custom_pinyin_") && relative.endsWith(".schema.yaml"))
 
-    /** rime 目录中由用户手动维护的短语、词库和候选降权。 */
-    internal fun isRimePersonalFile(relative: String): Boolean {
+    /** 输入数据目录中由用户手动维护的短语、词库和候选降权。 */
+    internal fun isInputPersonalFile(relative: String): Boolean {
         if (relative.contains('/')) return false
         return (relative.startsWith("custom_phrase") && relative.endsWith(".txt")) ||
-            // 补充词库生成的 user_cyime_cells_* 由补充词库设置重建，不算个人词库
-            (relative.startsWith("user_") && !relative.startsWith("user_cyime_cells_") && relative.endsWith(".dict.yaml"))
+            // 补充词库生成的 user_cayboard_cells_* 由补充词库设置重建，不算个人词库
+            (relative.startsWith("user_") && !relative.startsWith("user_cayboard_cells_") && relative.endsWith(".dict.yaml"))
     }
 
     /** 列出本地备份要写入的文件：条目名 → 源文件（纯 JVM，便于单测）。 */
     internal fun localBackupFiles(filesDir: File, includePersonal: Boolean): List<Pair<String, File>> {
         val result = mutableListOf<Pair<String, File>>()
-        val rimeDir = File(filesDir, "rime")
-        rimeDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val relative = file.relativeTo(rimeDir).path.replace('\\', '/')
-            if (isRimeSettingsFile(relative) || (includePersonal && isRimePersonalFile(relative))) {
+        val inputDataDir = File(filesDir, "cayboard_input")
+        inputDataDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val relative = file.relativeTo(inputDataDir).path.replace('\\', '/')
+            if (isInputSettingsFile(relative) || (includePersonal && isInputPersonalFile(relative))) {
                 result += relative to file
             }
         }
@@ -202,7 +215,7 @@ object BackupManager {
         output.use { writeLocalBackup(context, it, includePersonal, clipboard) }
     }.onFailure { Log.e(TAG, "exportTo failed", it) }
 
-    /** 读取用户选择的备份包；不是 Cayboard 备份时拒绝，避免把任意 zip 解进 rime 目录。 */
+    /** 读取用户选择的备份包；不是 Cayboard 备份时拒绝，避免把任意 zip 解进输入数据目录。 */
     fun readBackup(context: Context, uri: Uri): Result<ByteArray> = runCatching {
         val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
             val buffer = java.io.ByteArrayOutputStream()
@@ -223,11 +236,13 @@ object BackupManager {
 
     internal fun isCayboardBackup(bytes: ByteArray): Boolean = runCatching {
         ZipInputStream(bytes.inputStream()).use { input ->
-            generateSequence { input.nextEntry }.any { it.name == META_PREFIX + "settings.json" }
+            generateSequence { input.nextEntry }.any {
+                it.name == META_PREFIX + "settings.json" || it.name == LEGACY_META_PREFIX + "settings.json"
+            }
         }
     }.getOrDefault(false)
 
-    /** 恢复后重新部署 Rime 并刷新自定义布局缓存，使设置立即生效。 */
+    /** 恢复后重新部署输入方案并刷新自定义布局缓存，使设置立即生效。 */
     suspend fun importBackup(context: Context, bytes: ByteArray): Result<Unit> {
         restoreArchive(context, bytes).onFailure { return Result.failure(it) }
         // 剪贴板记录合并进来，已有的不重复；这一步失败不算恢复失败。
@@ -240,14 +255,14 @@ object BackupManager {
         runCatching { CustomKeyboardLayouts.load(context) }
             .onFailure { Log.w(TAG, "reload custom layouts failed", it) }
         // 自定义双拼只备份键位表，方案文件按它重新生成。
-        runCatching { DoublePinyinSchemes.install(context, SchemaManager.getRimeDir(context)) }
+        runCatching { DoublePinyinSchemes.install(context, SchemaManager.getInputDataDir(context)) }
             .onFailure { Log.w(TAG, "regenerate double pinyin schemes failed", it) }
-        val deployed = runCatching { com.cayboard.rime.RimeConfigHelper.redeploy(context) }.getOrDefault(false)
+        val deployed = runCatching { com.cayboard.engine.EngineConfig.redeploy(context) }.getOrDefault(false)
         return if (deployed) Result.success(Unit)
         else Result.failure(Exception("设置已恢复，但输入方案重新部署失败，请在方案设置中重新部署"))
     }
 
-    /** 校验 zip 条目路径并解压覆盖（rime 文件 + META 元数据路由），Android 入口。 */
+    /** 校验 zip 条目路径并解压覆盖（输入引擎文件 + 元数据路由），Android 入口。 */
     fun restoreArchive(context: Context, bytes: ByteArray): Result<Unit> {
         val filesDir = context.filesDir
         val store = object : BackupPreferenceStore {
@@ -265,7 +280,7 @@ object BackupManager {
                 restorePrefsJson(context.getSharedPreferences(name, Context.MODE_PRIVATE), data, replace)
             }
         }
-        return com.cayboard.rime.RimeEngine.getInstance().restoreUserData {
+        return com.cayboard.engine.InputEngine.getInstance().restoreUserData {
             BackupRestoreTransaction.restore(filesDir, store, bytes)
         }.onSuccess {
             Log.i(TAG, "Restore done -> ${filesDir.path}")
@@ -314,10 +329,31 @@ object BackupManager {
         }
     }
 
+    /** Rename setting keys and known schema IDs while importing archives from older releases. */
+    internal fun migratePreferenceJson(json: ByteArray): ByteArray {
+        val values = parsePrefs(json)
+        val migrated = com.cayboard.engine.compat.LegacyNames.migratePreferences(values)
+        val root = org.json.JSONObject()
+        migrated.forEach { (key, value) ->
+            val entry = org.json.JSONObject()
+            when (value) {
+                is Boolean -> entry.put("t", "b").put("v", value)
+                is Int -> entry.put("t", "i").put("v", value)
+                is Long -> entry.put("t", "l").put("v", value)
+                is Float -> entry.put("t", "f").put("v", value.toDouble())
+                is String -> entry.put("t", "s").put("v", value)
+                is Set<*> -> entry.put("t", "ss").put("v", org.json.JSONArray(value))
+                else -> return@forEach
+            }
+            root.put(key, entry)
+        }
+        return root.toString().toByteArray(Charsets.UTF_8)
+    }
+
     fun restorePrefsJson(prefs: SharedPreferences, json: ByteArray, replace: Boolean = false) {
         val values = parsePrefs(json)
         val editor = prefs.edit()
-        if (replace) editor.clear()
+            if (replace) editor.clear()
         values.forEach { (key, value) ->
             when (value) {
                 is Boolean -> editor.putBoolean(key, value)

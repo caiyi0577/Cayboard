@@ -4,13 +4,13 @@
 set -euo pipefail
 P="$1"            # output dir holding cases.tsv (results written here)
 REPO=/mnt/d/GitHub/Cayboard
-TEMPLATE=${TEMPLATE:-$HOME/.cache/cyime-t9-host/replay-roots/eng2-gen-everyday-47e5bb80/user}
-LIB=${LIB:-$HOME/.cache/cyime-t9-host/builds/9636457bb8860baac1b8/lib}
-WORK=~/.cache/cyime-ark-probe
+TEMPLATE=${TEMPLATE:-$HOME/.cache/cayboard-t9-host/replay-roots/eng2-gen-everyday-47e5bb80/user}
+LIB=${LIB:-$HOME/.cache/cayboard-t9-host/builds/9636457bb8860baac1b8/lib}
+WORK=~/.cache/cayboard-ark-probe
 rm -rf "$WORK"; mkdir -p "$WORK/classes"
-~/.cache/cyime-t9-host/dependencies/javac -encoding UTF-8 --release 8 -d "$WORK/classes" \
-  "$REPO/tools/ime_lab/android_replay/RimeEngine.java" "$REPO/tools/dictionaries/arknights/probe/ArkProbe.java"
-PACK=user_cyime_cells_$(printf rime_ice | sha256sum | cut -c1-16)
+~/.cache/cayboard-t9-host/dependencies/javac -encoding UTF-8 --release 8 -d "$WORK/classes" \
+  "$REPO/tools/ime_lab/android_replay/InputEngine.java" "$REPO/tools/dictionaries/arknights/probe/ArkProbe.java"
+PACK=user_cayboard_cells_$(printf cayboard_pinyin | sha256sum | cut -c1-16)
 for variant in base ark; do
   U="$WORK/$variant"; mkdir -p "$U"
   for f in "$TEMPLATE"/*; do
@@ -21,16 +21,16 @@ for variant in base ark; do
       *) cp -r "$f" "$U/$name" ;;
     esac
   done
-  sed -i 's/^    - schema: t9_pinyin$/    - schema: t9_pinyin\n    - schema: rime_ice\n    - schema: double_pinyin_flypy/' "$U/default.custom.yaml"
+  sed -i 's/^    - schema: t9_pinyin$/    - schema: t9_pinyin\n    - schema: cayboard_pinyin\n    - schema: double_pinyin_flypy/' "$U/default.custom.yaml"
   if [ "$variant" = ark ]; then
-    mkdir -p "$U/cyime_cells"
-    cp "$REPO/app/src/main/assets/cell_dictionaries/cell_builtin_arknights.dict.yaml" "$U/cyime_cells/"
-    printf -- '---\nname: %s\nversion: "1"\nsort: by_weight\nuse_preset_vocabulary: false\nimport_tables:\n  - cyime_cells/cell_builtin_arknights\n...\n' "$PACK" > "$U/$PACK.dict.yaml"
-    for s in rime_ice t9_pinyin double_pinyin_flypy; do
+    mkdir -p "$U/cayboard_cells"
+    cp "$REPO/app/src/main/assets/cell_dictionaries/cell_builtin_arknights.dict.yaml" "$U/cayboard_cells/"
+    printf -- '---\nname: %s\nversion: "1"\nsort: by_weight\nuse_preset_vocabulary: false\nimport_tables:\n  - cayboard_cells/cell_builtin_arknights\n...\n' "$PACK" > "$U/$PACK.dict.yaml"
+    for s in cayboard_pinyin t9_pinyin double_pinyin_flypy; do
       f="$U/$s.custom.yaml"
       if [ ! -s "$f" ] || ! grep -q '^patch:' "$f"; then printf 'patch:\n' >> "$f"; fi
-      # Same managed block CellDictionaryRime.patch inserts right after "patch:".
-      sed -i "0,/^patch:.*/s//patch:\n  # BEGIN CYIME CELL DICTIONARIES\n  \"translator\/packs\/+\": [\"$PACK\"]\n  # END CYIME CELL DICTIONARIES/" "$f"
+      # Same managed block CellDictionaryEngine.patch inserts right after "patch:".
+      sed -i "0,/^patch:.*/s//patch:\n  # BEGIN CAYBOARD CELL DICTIONARIES\n  \"translator\/packs\/+\": [\"$PACK\"]\n  # END CAYBOARD CELL DICTIONARIES/" "$f"
     done
   fi
   echo "== $variant"

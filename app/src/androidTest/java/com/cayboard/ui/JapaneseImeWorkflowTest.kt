@@ -15,7 +15,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.*
+import com.cayboard.engine.*
 import com.cayboard.settings.SettingsPreferences
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -31,11 +31,11 @@ class JapaneseImeWorkflowTest {
         val prefs = SettingsPreferences.getPrefsPublic(context)
         val saved = prefs.all.toMap()
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         lateinit var editor: EditText
         try {
-            val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
-            engine.initialize(user, shared); assertTrue(RimeConfigHelper.ensureDeployment(context)); assertTrue(engine.ensureSession())
+            val (user, shared) = EngineConfig.initializeInputDataAsync(context)
+            engine.initialize(user, shared); assertTrue(EngineConfig.ensureDeployment(context)); assertTrue(engine.ensureSession())
             assertTrue(engine.switchSchema("japanese_kana")); engine.setOption("ascii_mode", false)
             engine.setUserConfigBool("var/option/ascii_mode", false)
             SettingsPreferences.setCurrentSchema(context, "japanese_kana")

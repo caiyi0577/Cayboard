@@ -6,8 +6,8 @@ import java.util.zip.ZipFile
 // Pinned upstream dictionaries; local schema/filter adaptations are recorded below.
 val chineseRevision = "9e66b0729083b37d217312294f6d516c8d7234be"
 val chineseArchiveSha = "85c66668255de755b51d3513ecdc612eada0e0b8d4ea27716a046257f17464e0"
-val chineseRoot = layout.buildDirectory.dir("generated/chinese-assets/rime_ice")
-val chineseTopFiles = setOf("LICENSE", "README.md", "rime_ice.schema.yaml", "rime_ice.dict.yaml",
+val chineseRoot = layout.buildDirectory.dir("generated/chinese-assets/cayboard_pinyin")
+val chineseTopFiles = setOf("LICENSE", "README.md", "cayboard_pinyin.schema.yaml", "cayboard_pinyin.dict.yaml",
     "double_pinyin_flypy.schema.yaml", "melt_eng.schema.yaml", "melt_eng.dict.yaml",
     "radical_pinyin.schema.yaml", "radical_pinyin.dict.yaml", "symbols_v.yaml", "symbols_caps_v.yaml")
 fun chineseSha(file: File): String {
@@ -18,8 +18,8 @@ fun chineseSha(file: File): String {
     }
     return md.digest().joinToString("") { "%02x".format(it) }
 }
-/** cyime_english.dict.yaml: english.txt frequency order, rime-ice spellings for the rest (see the call site). */
-fun cyimeEnglishWords(englishTxt: List<String>, rimeIceLines: List<String>, contractionLines: List<String>): String {
+/** cayboard_english.dict.yaml: english.txt frequency order, rime-ice spellings for the rest (see the call site). */
+fun cayboardEnglishWords(englishTxt: List<String>, rimeIceLines: List<String>, contractionLines: List<String>): String {
     val wordPattern = Regex("[A-Za-z][A-Za-z']*")
     val literal = mutableListOf<String>()
     var body = false
@@ -75,14 +75,14 @@ fun cyimeEnglishWords(englishTxt: List<String>, rimeIceLines: List<String>, cont
     }
     literal.forEach { add(it, 1) }
     return "# Generated from bundled english.txt (order) and rime-ice en_dicts (spellings); licenses retained alongside sources.\n" +
-        "---\nname: cyime_english\nversion: \"1\"\nsort: by_weight\n...\n" +
+        "---\nname: cayboard_english\nversion: \"1\"\nsort: by_weight\n...\n" +
         rows.entries.joinToString("\n", postfix = "\n") { (key, weight) -> key + "\t" + weight }
 }
 
 val prepareChineseDictionaries by tasks.registering {
     group = "build setup"
     inputs.property("revision", chineseRevision)
-    inputs.property("fixedDictionaryBundle", "20261117.2")
+    inputs.property("fixedDictionaryBundle", "20261117.3")
     inputs.file(file("src/main/assets/fixed-dictionaries/english-phrases.tsv"))
     inputs.property("sha256", chineseArchiveSha)
     inputs.property("files", chineseTopFiles)
@@ -98,17 +98,17 @@ val prepareChineseDictionaries by tasks.registering {
     inputs.property("learnedMixedWords", 2)
     inputs.property("sentenceMixedWords", 3)
     // 中英混合词按公开语料词频排（2026-11-11「都按权重算」），不再全是 1000。
-    val mixedWordCounts = file("data/cyime_mixed_word_counts.tsv")
+    val mixedWordCounts = file("data/cayboard_mixed_word_counts.tsv")
     inputs.file(mixedWordCounts)
     // cn_en 没有的混合词（AI漫剧、PPT、PDF），2026-11-13。
-    val extraMixedWords = file("data/cyime_mixed_words.tsv")
+    val extraMixedWords = file("data/cayboard_mixed_words.tsv")
     inputs.file(extraMixedWords)
     inputs.property("particleShortcuts", 2)
     inputs.property("pinyinFinalNe", 1)
     inputs.property("pinyin26WordModel", 5)
     inputs.property("pinyinUAsV", 1)
     inputs.property("candidateComments", 1)
-    inputs.property("cyimeTerms", 1)
+    inputs.property("cayboardTerms", 1)
     inputs.property("taiwanTraditional", 1)
     inputs.property("rareCharacters", 2)
     inputs.property("datetimeHints", 2)
@@ -119,33 +119,33 @@ val prepareChineseDictionaries by tasks.registering {
     inputs.property("shortcutOrder", 1)
     inputs.property("englishWordsDictionary", 1)
     inputs.file(file("src/main/assets/english_contractions.txt"))
-    val extWeights = file("data/rime_ice_ext_weights.tsv.gz")
+    val extWeights = file("data/cayboard_pinyin_ext_weights.tsv.gz")
     inputs.file(extWeights)
-    val baseWeights = file("data/rime_ice_base_weights.tsv.gz")
+    val baseWeights = file("data/cayboard_pinyin_base_weights.tsv.gz")
     inputs.file(baseWeights)
-    val charWeights = file("data/rime_ice_8105_weights.tsv.gz")
+    val charWeights = file("data/cayboard_pinyin_8105_weights.tsv.gz")
     inputs.file(charWeights)
-    val tencentWeights = file("data/rime_ice_tencent_weights.tsv.gz")
+    val tencentWeights = file("data/cayboard_pinyin_tencent_weights.tsv.gz")
     inputs.file(tencentWeights)
-    val domainTerms = file("data/cyime_domain_terms.tsv")
+    val domainTerms = file("data/cayboard_domain_terms.tsv")
     inputs.file(domainTerms)
-    val userFixes = file("data/cyime_user_fixes.tsv")
+    val userFixes = file("data/cayboard_user_fixes.tsv")
     inputs.file(userFixes)
-    val removedWords = file("data/cyime_removed_words.txt.gz")
+    val removedWords = file("data/cayboard_removed_words.txt.gz")
     inputs.file(removedWords)
-    val removedNames = file("data/cyime_removed_names.txt")
+    val removedNames = file("data/cayboard_removed_names.txt")
     inputs.file(removedNames)
-    val acronymFilter = file("data/cyime_acronym_filter.lua")
+    val acronymFilter = file("data/cayboard_acronym_filter.lua")
     inputs.file(acronymFilter)
-    val singleSyllable = file("data/cyime_single_syllable.lua")
+    val singleSyllable = file("data/cayboard_single_syllable.lua")
     inputs.file(singleSyllable)
-    val mixedInput = file("data/cyime_mixed_input.lua")
+    val mixedInput = file("data/cayboard_mixed_input.lua")
     inputs.file(mixedInput)
-    val rareChars = file("data/cyime_rare_chars.lua")
+    val rareChars = file("data/cayboard_rare_chars.lua")
     inputs.file(rareChars)
-    val greekLetters = file("data/cyime_greek_letters.lua")
+    val greekLetters = file("data/cayboard_greek_letters.lua")
     inputs.file(greekLetters)
-    val shortcutOrder = file("data/cyime_shortcut_order.lua")
+    val shortcutOrder = file("data/cayboard_shortcut_order.lua")
     inputs.file(shortcutOrder)
     val finalParticles = file("data/sentence_final_particles.txt")
     inputs.file(finalParticles)
@@ -171,12 +171,16 @@ val prepareChineseDictionaries by tasks.registering {
         val root = chineseRoot.get().asFile.apply { mkdirs() }
         ZipFile(archive).use { zip ->
             zip.entries().asSequence().filterNot { it.isDirectory }.forEach { entry ->
-                val relative = entry.name.substringAfter('/')
+                val relative = entry.name.substringAfter('/').replace("rime_ice", "cayboard_pinyin")
                 if (relative in chineseTopFiles || listOf("cn_dicts/", "en_dicts/", "lua/", "opencc/").any { relative.startsWith(it) }) {
                     val target = File(root, relative)
                     check(target.canonicalPath.startsWith(root.canonicalPath + File.separator))
                     target.parentFile.mkdirs()
-                    zip.getInputStream(entry).use { i -> target.outputStream().use { i.copyTo(it) } }
+                    if (relative.endsWith(".schema.yaml") || relative == "cayboard_pinyin.dict.yaml") {
+                        zip.getInputStream(entry).bufferedReader().use {
+                            target.writeText(it.readText().replace("rime_ice", "cayboard_pinyin"))
+                        }
+                    } else zip.getInputStream(entry).use { i -> target.outputStream().use { i.copyTo(it) } }
                 }
             }
         }
@@ -211,10 +215,10 @@ val prepareChineseDictionaries by tasks.registering {
         // tencent.dict.yaml (about a million phrases) also gives every entry the placeholder 100, so 被嫌弃 and 被掀起
         // tied and the sentence took either. Same corpus estimate as ext, spread less (ext_weights.py tencent).
         reweight("tencent", tencentWeights)
-        // IME vocabulary (app/data/cyime_domain_terms.tsv) gets at least its listed weight: the chat counts above
+        // IME vocabulary (app/data/cayboard_domain_terms.tsv) gets at least its listed weight: the chat counts above
         // rate the IME's own words near zero (上屏 43, 出词 11), so 只输入声母 came out 只输入圣母 and 每个键
-        // 每个见. Raise the existing rime-ice entries here; missing ones are added to cyime_terms below.
-        // The user's must-pass words (app/data/cyime_user_fixes.tsv) use the same floor, one code each.
+        // 每个见. Raise the existing rime-ice entries here; missing ones are added to cayboard_terms below.
+        // The user's must-pass words (app/data/cayboard_user_fixes.tsv) use the same floor, one code each.
         val domainFloors = (domainTerms.readLines() + userFixes.readLines()).filter { it.isNotBlank() && !it.startsWith("#") }
             .map { it.split('\t') }.associate { (it[0] + "\t" + it[1]) to it[2].toInt() }.toMutableMap()
         // Sentence pattern verb + 完了/好了 + 吗/没 (user 2026-10-30: 测完了吗 came out 测验了吗 on nine-key): these
@@ -236,7 +240,7 @@ val prepareChineseDictionaries by tasks.registering {
         }
         // Web phrases that never occur in the subtitle, chat or wiki corpora (2026-10-30: 173,590, mostly from
         // tencent.dict: 玻璃打砂机, 未满十八岁勿进, 训练家) are dropped: nine-key 600 fresh SMS clauses 397 → 399 right,
-        // 26-key unchanged. List built by D:/CyIME-Data/eval/junk-sweep-20261030 (count_all.py, remove-A.txt).
+        // 26-key unchanged. List built by D:/Cayboard-Data/eval/junk-sweep-20261030 (count_all.py, remove-A.txt).
         val removed = java.util.zip.GZIPInputStream(removedWords.inputStream()).bufferedReader().useLines { lines ->
             lines.filter { it.isNotBlank() }.toHashSet()
         }
@@ -298,29 +302,29 @@ val prepareChineseDictionaries by tasks.registering {
         // translator has generated them. Let the host retain that real spelling
         // for responsive candidate UI without disabling pronunciation corrections.
         // Lowercase short acronyms (kfc → KFC): upstream derives lowercase codes only from four letters up, so
-        // a two/three-letter acronym needed its capitals. Derive them too; cyime_acronym_filter keeps such
+        // a two/three-letter acronym needed its capitals. Derive them too; cayboard_acronym_filter keeps such
         // an acronym out of the first four candidates (kfc is also the Chinese abbreviation 开发出).
         val meltEng = File(root, "melt_eng.schema.yaml")
         val lowerFour = "  - derive/^.{4,}\$/\\L\$0/\n"
         check(meltEng.readText().split(lowerFour).size == 2) { "Upstream melt_eng lowercase derivation changed" }
         meltEng.writeText(meltEng.readText().replace(lowerFour, lowerFour + "  - derive/^[A-Z]{2,3}\$/\\L\$0/\n"))
-        acronymFilter.copyTo(File(root, "lua/cyime_acronym_filter.lua"), overwrite = true)
+        acronymFilter.copyTo(File(root, "lua/cayboard_acronym_filter.lua"), overwrite = true)
         // One complete syllable (an, ai, en) keeps its single characters ahead of initial-letter words.
-        singleSyllable.copyTo(File(root, "lua/cyime_single_syllable.lua"), overwrite = true)
-        // 中英混输（nihaohello → 你好hello），Rime 选项 cyime_mixed_input 打开才出候选；设置默认关。
-        mixedInput.copyTo(File(root, "lua/cyime_mixed_input.lua"), overwrite = true)
-        // 生僻字（瀺 chan…），Rime 选项 cyime_rare_chars 打开才出候选；设置默认关。表在下面生成。
-        rareChars.copyTo(File(root, "lua/cyime_rare_chars.lua"), overwrite = true)
-        // 打希腊字母名出希腊字母（xita → θ），Rime 选项 cyime_greek_letters 打开才插入；设置默认关。
-        greekLetters.copyTo(File(root, "lua/cyime_greek_letters.lua"), overwrite = true)
+        singleSyllable.copyTo(File(root, "lua/cayboard_single_syllable.lua"), overwrite = true)
+        // 中英混输（nihaohello → 你好hello），cayboard_mixed_input 选项打开才出候选；设置默认关。
+        mixedInput.copyTo(File(root, "lua/cayboard_mixed_input.lua"), overwrite = true)
+        // 生僻字（瀺 chan…），cayboard_rare_chars 选项打开才出候选；设置默认关。表在下面生成。
+        rareChars.copyTo(File(root, "lua/cayboard_rare_chars.lua"), overwrite = true)
+        // 打希腊字母名出希腊字母（xita → θ），cayboard_greek_letters 选项打开才插入；设置默认关。
+        greekLetters.copyTo(File(root, "lua/cayboard_greek_letters.lua"), overwrite = true)
         // 时间日期快捷码（sj rq xq dt nl）不再占满第一屏：第一个格式第 2 位，其余在后面 3 个词之后，简拼词照常出。
-        shortcutOrder.copyTo(File(root, "lua/cyime_shortcut_order.lua"), overwrite = true)
+        shortcutOrder.copyTo(File(root, "lua/cayboard_shortcut_order.lua"), overwrite = true)
         val dateLua = File(root, "lua/date_translator.lua")
         val timestampYield = "yield_cand(seg, string.format('%d', current_time))"
         val dateSource = dateLua.readText()
         check(dateSource.split(timestampYield).size == 2) { "Upstream timestamp translator changed" }
         dateLua.writeText(dateSource.replace(timestampYield, """
-            if env.engine.context:get_option('_cyime_datetime_off') then return end
+            if env.engine.context:get_option('_cayboard_datetime_off') then return end
             local stamp = Candidate('timestamp', seg.start, seg._end, string.format('%d', current_time), '时间戳')
             stamp.quality = 100
             yield(stamp)
@@ -342,7 +346,7 @@ val prepareChineseDictionaries by tasks.registering {
         val commentGate = "if env.keep_comment then"
         check(source.split(commentGate).size == 2) { "Upstream corrector comment gate changed" }
         corrector.writeText(source.replace(commentGate,
-            "if env.keep_comment or env.engine.context:get_option(\"_cyime_candidate_comments\") then"))
+            "if env.keep_comment or env.engine.context:get_option(\"_cayboard_candidate_comments\") then"))
         // Re-index the pinned English word sources; never lowercase the displayed text.
         // Exact whole-word digits only: no abbreviation/completion collisions with Chinese.
         // Words of the bundled frequency-ordered english.txt, upstream's curated internet/brand list and
@@ -405,7 +409,7 @@ val prepareChineseDictionaries by tasks.registering {
             }
         }
         // Mixed words' weights on the Chinese dictionary's scale (2026-11-11「都按权重算」: B站, 哆啦A梦, C罗 typed in
-        // full sat 6th by a placing rule, off the candidate bar). data/cyime_mixed_word_counts.tsv holds each word's
+        // full sat 6th by a placing rule, off the candidate bar). data/cayboard_mixed_word_counts.tsv holds each word's
         // public-corpus counts and the two scale factors; weight = lccc_scale × (LCCC + subs_to_lccc × subtitles), at
         // least 1 like the lowest base.dict entries. Ranking then follows Rime's own weight, no placing rule.
         val mixedWeights: Map<String, Long> = run {
@@ -419,13 +423,13 @@ val prepareChineseDictionaries by tasks.registering {
             }
         }
         check((mixedWeights["B站"] ?: 0) > 1000) { "Mixed word counts missing or rescaled" }
-        // Words upstream's cn_en lacks (data/cyime_mixed_words.tsv: text, code as in cn_en.txt, least weight). The
+        // Words upstream's cn_en lacks (data/cayboard_mixed_words.tsv: text, code as in cn_en.txt, least weight). The
         // public corpora predate them or seldom talk office software (AI漫剧 0 times in LCCC), so a floor as in
-        // cyime_domain_terms.tsv keeps them typable; a larger corpus count still wins.
+        // cayboard_domain_terms.tsv keeps them typable; a larger corpus count still wins.
         val extraMixed: List<List<String>> = extraMixedWords.readLines()
             .filter { it.isNotBlank() && !it.startsWith("#") }.map { it.split('\t') }
         check(extraMixed.all { it.size == 3 && it[1].all { c -> c in 'a'..'z' } && it[2].toLong() > 0 }) {
-            "Bad row in data/cyime_mixed_words.tsv"
+            "Bad row in data/cayboard_mixed_words.tsv"
         }
         val mixedFloors = extraMixed.associate { it[0] to it[2].toLong() }
         fun mixedWeight(word: String) = maxOf(mixedWeights[word] ?: 1L, mixedFloors[word] ?: 1L)
@@ -450,8 +454,8 @@ val prepareChineseDictionaries by tasks.registering {
         }
         // 26 keys' mixed words, learned (2026-11-09「打 bzhan 选了 B站 记不住」): upstream reads en_dicts/cn_en.txt as a
         // read-only stabledb, so a pick was never remembered. The same words and codes (both Bzhan and bzhan) become
-        // the cyime_cn_en table with a user dictionary, compiled by its own dependency schema like cyime_t9_english;
-        // weights from data/cyime_mixed_word_counts.tsv (above); a picked word gains weight like any learned word.
+        // the cayboard_cn_en table with a user dictionary, compiled by its own dependency schema like cayboard_t9_english;
+        // weights from data/cayboard_mixed_word_counts.tsv (above); a picked word gains weight like any learned word.
         val cnEnWords = linkedSetOf<String>()
         mixedSourceLines().let { lines ->
             lines.forEach { line ->
@@ -467,7 +471,7 @@ val prepareChineseDictionaries by tasks.registering {
         // matches only on its own, so the sentence maker never had B站 and read bzhan… as 不站…. Its acronym words
         // (capital letters and Chinese: B站, X光片, AD钙奶) also go into the pinyin dictionary with the same weights.
         // Capitals join the syllable after them (B站 = Bzhan, AD钙奶 = ADgai nai), or the one before when they end the
-        // word; such a syllable is typed as its lowercase letters, spelled as an abbreviation (rime_ice speller
+        // word; such a syllable is typed as its lowercase letters, spelled as an abbreviation (cayboard_pinyin speller
         // below): input of initials keeps the same syllable graph (bzd, xgp), and B站 against 霸占 for bzhan is
         // decided by weight. librime's stray-initial check counts such a long abbreviation as typed in full.
         val hanReadings = HashMap<Int, MutableSet<String>>()
@@ -514,7 +518,7 @@ val prepareChineseDictionaries by tasks.registering {
             // AIman ju): nine keys share this dictionary, and such a syllable has no spelling in digits or a digit
             // prefix, so nine-key lookups never reach it. 维生素C (wei sheng suC) or 阿Q精神 (a Qjing shen) would
             // hang under wei/a, and 维C (weiC, nine keys 934C) completes 934: both lengthened every nine-key lookup
-            // (table_edges +0.69%). They stay whole words in cyime_cn_en, typed on their own as before.
+            // (table_edges +0.69%). They stay whole words in cayboard_cn_en, typed on their own as before.
             capitalSyllables(text, code)?.takeIf { s ->
                 s[0] in 'A'..'Z' && s.split(' ').all { syllable -> syllable[0] in 'A'..'Z' || syllable.none { it in 'A'..'Z' } }
             }?.let { "$text\t$it\t$weight" }
@@ -522,40 +526,40 @@ val prepareChineseDictionaries by tasks.registering {
         check(sentenceMixedWords.any { it.startsWith("B站\tBzhan\t") } && sentenceMixedWords.size > 150) {
             "Mixed words for sentences missing"
         }
-        File(root, "cyime_mixed.dict.yaml").writeText(
+        File(root, "cayboard_mixed.dict.yaml").writeText(
             "# Generated from bundled rime-ice en_dicts/cn_en.txt; licenses retained alongside sources.\n" +
-            "---\nname: cyime_mixed\nversion: \"1\"\nsort: by_weight\n...\n" +
+            "---\nname: cayboard_mixed\nversion: \"1\"\nsort: by_weight\n...\n" +
             sentenceMixedWords.joinToString("\n", postfix = "\n"))
-        File(root, "cyime_cn_en.dict.yaml").writeText(
+        File(root, "cayboard_cn_en.dict.yaml").writeText(
             "# Generated from bundled rime-ice en_dicts/cn_en.txt; licenses retained alongside sources.\n" +
-            "---\nname: cyime_cn_en\nversion: \"1\"\nsort: by_weight\n...\n" +
+            "---\nname: cayboard_cn_en\nversion: \"1\"\nsort: by_weight\n...\n" +
             cnEnWords.joinToString("\n", postfix = "\n"))
-        File(root, "cyime_cn_en.schema.yaml").writeText(
+        File(root, "cayboard_cn_en.schema.yaml").writeText(
             "# Internal compilation dependency, not a user-visible input mode.\n" +
-            "schema:\n  schema_id: cyime_cn_en\n  name: 中英混合词依赖\n  version: \"1\"\n" +
+            "schema:\n  schema_id: cayboard_cn_en\n  name: 中英混合词依赖\n  version: \"1\"\n" +
             "engine:\n  processors: [speller, selector, express_editor]\n  segmentors: [abc_segmentor]\n" +
             "  translators: [table_translator]\n" +
             "speller:\n  alphabet: \"zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA\"\n  algebra: []\n" +
-            "translator:\n  dictionary: cyime_cn_en\n  enable_completion: true\n  enable_sentence: false\n")
-        File(root, "cyime_t9_english.dict.yaml").writeText(
+            "translator:\n  dictionary: cayboard_cn_en\n  enable_completion: true\n  enable_sentence: false\n")
+        File(root, "cayboard_t9_english.dict.yaml").writeText(
             "# Generated from bundled rime-ice en_dicts; licenses retained alongside sources.\n" +
-            "---\nname: cyime_t9_english\nversion: \"1\"\nsort: by_weight\n...\n" +
+            "---\nname: cayboard_t9_english\nversion: \"1\"\nsort: by_weight\n...\n" +
             english.values.joinToString("\n", postfix = "\n"))
-        File(root, "cyime_k14_english.dict.yaml").writeText(
+        File(root, "cayboard_k14_english.dict.yaml").writeText(
             "# Generated from bundled rime-ice en_dicts; licenses retained alongside sources.\n" +
-            "---\nname: cyime_k14_english\nversion: \"1\"\nsort: by_weight\n...\n" +
+            "---\nname: cayboard_k14_english\nversion: \"1\"\nsort: by_weight\n...\n" +
             english14.values.joinToString("\n", postfix = "\n"))
-        // English words scheme (assets/rime_chinese/cyime_english.schema.yaml): letters compose first and the
+        // English words scheme (assets/cayboard_chinese/cayboard_english.schema.yaml): letters compose first and the
         // word is chosen from candidates, like pinyin. The bundled frequency-ordered english.txt gives the common
         // words their order (rank 1 weighs 10000), spelled the way rime-ice spells them where it only has a
         // capitalised form (i -> I, january -> January); every other literal rime-ice word (letters and
         // apostrophes only, no abbreviation aliases) follows at weight 1. Codes are lowercase; contractions
         // also get their code without the apostrophe (dont -> don't). Capitals are derived in the schema.
-        File(root, "cyime_english.dict.yaml").writeText(cyimeEnglishWords(
+        File(root, "cayboard_english.dict.yaml").writeText(cayboardEnglishWords(
             file("src/main/assets/english.txt").readLines(),
             listOf("en_ext", "en").flatMap { File(root, "en_dicts/$it.dict.yaml").readLines() },
             file("src/main/assets/english_contractions.txt").readLines()))
-        val english26File = File(root, "cyime_english.dict.yaml")
+        val english26File = File(root, "cayboard_english.dict.yaml")
         val existing26 = english26File.readLines().map { it.substringBeforeLast('\t') }.toMutableSet()
         val extra26 = fixedEnglishRows.mapNotNull { row ->
             val fields = row.split('\t')
@@ -576,28 +580,28 @@ val prepareChineseDictionaries by tasks.registering {
         val particles = (finalParticles.readLines() + measureWords.readLines()).map { it.trim() }
             .filter { it.isNotEmpty() && !it.startsWith("#") }
         check(particles.isNotEmpty()) { "No sentence-final particles in ${finalParticles.name}" }
-        // 简/繁 converts to Taiwan everyday forms (台灣, 計畫, 了解): assets/rime_chinese/opencc/cyime_s2tw.json,
-        // built by tools/opencc/build_cyime_opencc.py. Upstream's s2t.json gives 臺灣 and was never bundled.
+        // 简/繁 converts to Taiwan everyday forms (台灣, 計畫, 了解): assets/cayboard_chinese/opencc/cayboard_s2tw.json,
+        // built by tools/opencc/build_cayboard_opencc.py. Upstream's s2t.json gives 臺灣 and was never bundled.
         // 时间, 日期 and 星期 are followed by the current time or date (librime-t9 datetime_filter.h), the same
         // filter as the nine-key and 14-key schemas; before traditionalize so 周六 converts with the rest.
         fun withDatetimeHints(schema: String) = schema.replace("\n    - simplifier@traditionalize",
-            "\n    - cyime_datetime\n    - simplifier@traditionalize")
-            .also { check(it.split("\n    - cyime_datetime\n").size == 2) { "Upstream traditionalize filter changed" } }
-        // 打符号名出符号 (default off, Rime option cyime_symbol_names): 加号 is followed by +, 问号 by ？ and ?.
-        // Table assets/rime_chinese/opencc/cyime_symbols.json, shared with the nine-key and 14-key schemas; after
+            "\n    - cayboard_datetime\n    - simplifier@traditionalize")
+            .also { check(it.split("\n    - cayboard_datetime\n").size == 2) { "Upstream traditionalize filter changed" } }
+        // 打符号名出符号 (default off, Rime option cayboard_symbol_names): 加号 is followed by +, 问号 by ？ and ?.
+        // Table assets/cayboard_chinese/opencc/cayboard_symbols.json, shared with the nine-key and 14-key schemas; after
         // the emoji filter so the symbols come right after the word, before traditionalize like datetime.
         fun withSymbolNames(schema: String) = schema.replace("\n    - simplifier@traditionalize",
-            "\n    - simplifier@cyime_symbols\n    - simplifier@traditionalize")
-            .also { check(it.split("\n    - simplifier@cyime_symbols\n").size == 2) { "Upstream traditionalize filter changed" } } +
-            "\ncyime_symbols:\n  option_name: cyime_symbol_names\n  opencc_config: cyime_symbols.json\n  inherit_comment: false\n"
-        // 打希腊字母名出希腊字母 (default off, Rime option cyime_greek_letters): xita, pi, alpha put θ Θ, π Π, α Α third,
+            "\n    - simplifier@cayboard_symbols\n    - simplifier@traditionalize")
+            .also { check(it.split("\n    - simplifier@cayboard_symbols\n").size == 2) { "Upstream traditionalize filter changed" } } +
+            "\ncayboard_symbols:\n  option_name: cayboard_symbol_names\n  opencc_config: cayboard_symbols.json\n  inherit_comment: false\n"
+        // 打希腊字母名出希腊字母 (default off, Rime option cayboard_greek_letters): xita, pi, alpha put θ Θ, π Π, α Α third,
         // after every reordering filter (acronym, single syllable) so the first two candidates stay; skipped while off.
         fun withGreekLetters(schema: String) = schema.replace("\n    - simplifier@traditionalize",
-            "\n    - lua_filter@*cyime_greek_letters\n    - simplifier@traditionalize")
-            .also { check(it.split("\n    - lua_filter@*cyime_greek_letters\n").size == 2) { "Upstream traditionalize filter changed" } }
+            "\n    - lua_filter@*cayboard_greek_letters\n    - simplifier@traditionalize")
+            .also { check(it.split("\n    - lua_filter@*cayboard_greek_letters\n").size == 2) { "Upstream traditionalize filter changed" } }
         // 我的短语（user_table）里写的「余」照写的出（余宛如，用户 11-12）：traditionalize 跳过短语，
-        // traditionalize_user 用 cyime_s2tw_user.json 转它们（没有词组管着的「余」不改）；别的候选照旧只转一次。
-        // Same block in the nine-key and 14-key schemas (assets/rime_chinese); after the other filters wrap traditionalize.
+        // traditionalize_user 用 cayboard_s2tw_user.json 转它们（没有词组管着的「余」不改）；别的候选照旧只转一次。
+        // Same block in the nine-key and 14-key schemas (assets/cayboard_chinese); after the other filters wrap traditionalize.
         fun withUserPhraseForms(schema: String): String {
             val block = Regex("(?m)^traditionalize:\\n((?:  .*\\n)+)").find(schema)
                 ?: error("Upstream traditionalize block changed")
@@ -609,50 +613,50 @@ val prepareChineseDictionaries by tasks.registering {
             val tags = block.groupValues[1].lineSequence().firstOrNull { it.startsWith("  tags:") }
             return schema.replace(filter) { it.value + "    - simplifier@traditionalize_user\n" }
                 .replace("\ntraditionalize:\n", "\ntraditionalize:\n  excluded_types: [user_table]\n") +
-                "\ntraditionalize_user:\n  option_name: traditionalization\n  opencc_config: cyime_s2tw_user.json\n" +
+                "\ntraditionalize_user:\n  option_name: traditionalization\n  opencc_config: cayboard_s2tw_user.json\n" +
                 "  tips: none\n  excluded_types: [simplified]\n" + (tags?.let { "$it\n" } ?: "")
         }
-        fun taiwanForms(schema: String) = schema.replace("  opencc_config: s2t.json ", "  opencc_config: cyime_s2tw.json ")
-            .also { check(it.contains("  opencc_config: cyime_s2tw.json ")) { "Upstream traditionalize config changed" } }
+        fun taiwanForms(schema: String) = schema.replace("  opencc_config: s2t.json ", "  opencc_config: cayboard_s2tw.json ")
+            .also { check(it.contains("  opencc_config: cayboard_s2tw.json ")) { "Upstream traditionalize config changed" } }
         val vuRule = "    - derive/^([jqxy])v/\$1u/\n"
         val cnEnStable = "\ncn_en:\n  dictionary: \"\"\n  user_dict: en_dicts/cn_en\n  db_class: stabledb\n"
-        val baseSchema = taiwanForms(File(root, "rime_ice.schema.yaml").readText())
+        val baseSchema = taiwanForms(File(root, "cayboard_pinyin.schema.yaml").readText())
             .also { check(it.split(cnEnStable).size == 2) { "Upstream cn_en translator changed" } }
-            .replace(cnEnStable, "\ncn_en:\n  dictionary: cyime_cn_en\n  enable_user_dict: false\n")
+            .replace(cnEnStable, "\ncn_en:\n  dictionary: cayboard_cn_en\n  enable_user_dict: false\n")
             // Same footing as a fully typed pinyin word (script translator: initial_quality 1.2 + full coverage 1.0;
             // a table candidate gets neither), so the weight decides between B站 and 霸占 for bzhan (2026-11-11).
             .let { val q = "\n  initial_quality: 0.5\n  comment_format:\n    - xform/^.+\$//\n"
                 check(it.split(q).size == 2) { "Upstream cn_en quality changed" }
                 it.replace(q, "\n  initial_quality: 2.2\n  comment_format:\n    - xform/^.+\$//\n") }
             .replace("\ntranslator:\n",
-            "\ntranslator:\n  enable_correction: true\n  cyime_neighbor_correction: true\n" +
+            "\ntranslator:\n  enable_correction: true\n  cayboard_neighbor_correction: true\n" +
             // chen can also end a phrase as che + abbreviated ne (他在等车呢).
             "  preserve_final_ne: true\n" +
             // A doubled letter typed once where syllables meet (chengong → 成功 second, after the typed 陈宫), shown
             // only when the corrected word is 20 times as common as the typed reading (docs/development/typo-correction-20261021.md).
-            "  cyime_doubled_letter_correction: true\n" +
+            "  cayboard_doubled_letter_correction: true\n" +
             // Two neighbouring letters typed swapped (lnu → 论) read as one edit; full pinyin only, not double pinyin.
-            "  cyime_transposition_correction: true\n" +
+            "  cayboard_transposition_correction: true\n" +
             // One letter typed too many inside a syllable (zhonng → 中, shhi → 是), only as an extra key press
             // (same key twice or a neighbour); same 20x gate, never first (docs/development/typo-correction-20261021.md).
-            "  cyime_extra_letter_correction: true\n" +
+            "  cayboard_extra_letter_correction: true\n" +
             // Typed letters that read only with an initial standing alone before the last syllable (zhe'b'zhe'b'g), when
             // neighbour corrections read them in full (zhen'zheng): such an initial weighs as a slip and the corrected
             // sentence comes first; long input is corrected from its start (docs/development/typo-correction-20261021.md).
-            "  cyime_stray_initial_correction: true\n" +
+            "  cayboard_stray_initial_correction: true\n" +
             // The final g left off (yianzhuan 已安装, xiwan 希望; 600 of the 1500 most common words end in ng): the
             // letters that end the input on -n are also read as the -ng syllable, as a correction. Such a word is
             // listed among the typed words by weight (0.01 like any correction: yijin 一斤 一进 已经) and leads a typed
             // word only when 2000 times as common, as other corrections do; against a typed sentence see
             // t9/final_g_word_margin below. 2026-11-12 cloud engine, the 600 words with the g left off: first 112 -> 306,
             // first three 115 -> 533, first five 116 -> 580; 3000 correctly typed words ending in -n all kept first.
-            "  cyime_final_g_correction: true\n" +
+            "  cayboard_final_g_correction: true\n" +
             "  sentence_char_homophones: 4\n  sentence_position_penalty: -2.0\n" +
             "  sentence_position_final_only: [${particles.joinToString(", ")}]\n" +
             // 把/被 open a verb phrase and never end a sentence: shuoshuobei is 说说呗, not 说说被.
             "  sentence_position_initial_only: [把, 被]\n" +
             // Four sentences for t9/sentence_rescore to choose from (the menu still shows one); the cutoff
-            // keeps Rime from dropping alternatives whose weight is a word penalty away.
+        // keeps the decoder from dropping alternatives whose weight is a word penalty away.
             "  max_sentences: 4\n  sentence_cutoff_threshold: 100\n" +
             // Sentences of short input (four syllables at most) choose from two words per span, not one: liangkuaile
             // could only be 两块 + 了, 凉快 never reached a sentence. And after the four n-best, four more whose words
@@ -669,41 +673,41 @@ val prepareChineseDictionaries by tasks.registering {
             // eight 2%; for all lengths eight cost 5% on long input (cloud engine, rough).
             "  sentence_short_max_sentences: 8\n")
             .lineSequence().filterNot { it.contains("- lua_filter@*long_word_filter") }
-            .flatMap { if (it.contains("- lua_filter@*autocap_filter")) sequenceOf(it, "    - lua_filter@*cyime_shortcut_order", "    - lua_filter@*cyime_acronym_filter",
-                "    - lua_filter@*cyime_single_syllable")
-                else if (it == "    - script_translator") sequenceOf(it, "    - lua_translator@*cyime_mixed_input",
-                    "    - lua_translator@*cyime_rare_chars") else sequenceOf(it) }
+            .flatMap { if (it.contains("- lua_filter@*autocap_filter")) sequenceOf(it, "    - lua_filter@*cayboard_shortcut_order", "    - lua_filter@*cayboard_acronym_filter",
+                "    - lua_filter@*cayboard_single_syllable")
+                else if (it == "    - script_translator") sequenceOf(it, "    - lua_translator@*cayboard_mixed_input",
+                    "    - lua_translator@*cayboard_rare_chars") else sequenceOf(it) }
             .joinToString("\n")
-            .replace("  filters:\n", "  filters:\n    - cyime_candidate_policy\n")
+            .replace("  filters:\n", "  filters:\n    - cayboard_candidate_policy\n")
             // ü typed as u (nusheng 女生, luxing 旅行, meinu 美女): nü and lü also read nu and lu as a fuzzy spelling
             // at half weight, so 路 努 keep lu and nu where they make the word (lushang 路上, nuli 努力). nu alone now
             // shows 女 first (was 怒). 2026-11-01 host bench: ü-as-u 1/12 -> 11/12, nothing else changed.
             .replace(vuRule, vuRule + "    - fuzz/^([nl])v\$/\$1u/\n" +
-                // A mixed word's syllable (B站 = Bzhan, cyime_mixed above) is typed in lowercase.
+                // A mixed word's syllable (B站 = Bzhan, cayboard_mixed above) is typed in lowercase.
                 "    - abbrev/^(.*[A-Z].*)\$/\\L\$1/\n")
             .also { check(it.split(vuRule).size == 2) { "Upstream v/u spelling rules changed" } }
             .let { withUserPhraseForms(withGreekLetters(withSymbolNames(withDatetimeHints(it)))) } +
-            "\ncyime:\n  candidate_policy: true\n" +
+            "\ncayboard:\n  candidate_policy: true\n" +
             // 26-key ranking by the nine-key word n-gram model (docs/development/pinyin26-word-model-20261018.md):
             // same decoder and model file; initials are not penalized (a letter names its initial, unlike a
             // keypad digit), a neighbour-corrected word pays t9/correction_penalty, the dictionary beam is
             // wider for all-initials input and whole-input dictionary words always compete. Learned words
             // keep their user entry and weigh more (one or two picks bring zdky's 这都可以 back to first).
-            // Without t9_ngram.lm the ordinary Rime path is kept.
+            // Without t9_ngram.lm the ordinary decoder path is kept.
             // 1.14.11 used the nine-key budgets (source 128 / pool 64 / sentence beam 24) and raised tablet
             // per-key p95 from ~18 to ~55 ms; 16/16/8 is about 7x faster on the computer at nearly the same
             // accuracy (pinyin26-word-model-20261018.md). Keep only if the tablet p95 stays at the baseline.
             // Off in 1.14.14 until the tablet p95 has been measured with these budgets.
-            // Since 2026-10-20 the word model only reorders Rime's four sentences (sentence_rescore): the
+            // Since 2026-10-20 the word model only reorders the decoder's four sentences (sentence_rescore): the
             // joint decoder above cost +40% per key, the rescoring +5% for most of the sentence gain. 26-key
             // never passes the committed text, so the first word is not scored as a sentence start.
             "\nt9:\n  sentence_rescore: true\n  joint_decoder: false\n  joint_requires_ngram: true\n  source_budget: 16\n  pool_budget: 16\n" +
             "  dictionary_beam: 64\n  sentence_beam: 8\n  result_budget: 12\n  display_sentences: 1\n" +
             "  spelling_penalty: 0\n  word_penalty: 8.0\n  correction_penalty: -9.2\n  whole_input_phrases: 16\n" +
             "  prefer_user_entries: false\n" +
-            // rescore_rime_weight: share of Rime's own sentence weight added to the word model's score (0 = model alone).
+            // rescore_decoder_weight: share of the decoder's sentence weight added to the word model's score (0 = model alone).
             // 0.3: 11-10 sweep fixed 又发现一个问题; B站 and SMS together +3, homophone set +37, 26-key must-pass none lost.
-            "  ngram_sentence_start: false\n  rescore_rime_weight: 0.3\n  ngram_eos_weight: 0\n  ngram_user_weight: 0\n  ngram_user_input_weight: 0\n" +
+            "  ngram_sentence_start: false\n  rescore_decoder_weight: 0.3\n  ngram_eos_weight: 0\n  ngram_user_weight: 0\n  ngram_user_input_weight: 0\n" +
             // tail_correction_margin: a slip in the last syllable (nihso 你好, jintisn 今天, xiexir 谢谢) leads the typed
             // abbreviations when the corrected sentence beats them by this margin (ln units; ln 20 like the other typo gates).
             // 11-11 tablet: the typed readings 你受 / 近体是你 / 歇息人 came first. To be swept on the computer (0 = off).
@@ -719,7 +723,7 @@ val prepareChineseDictionaries by tasks.registering {
             "  slip_correction_margin: 9.2\n" +
             // initials_choices: input typed as initials only (wmjs, xydj) kept the dictionary's order and made no sentence
             // when a dictionary word had those initials. With a count above 0 the leading whole words and the sentences
-            // made of words are ordered by the same score as full input (word model + rescore_rime_weight of Rime's
+            // made of words are ordered by the same score as full input (word model + rescore_decoder_weight of decoder
             // weight) and that many lead the menu; 0 keeps the dictionary order.
             // initials_lead_margin: the dictionary's first word with these initials keeps the first place unless another
             // candidate's score is higher by this much (ln 7.4). 2026-11-13 cloud engine, 1250 codes of 2-4 letters whose
@@ -728,43 +732,43 @@ val prepareChineseDictionaries by tasks.registering {
             // the reported zdky 这都可以 to 真的可以 (1.71). With 2.0: 1007 -> 1068, none of them moves.
             "  initials_choices: 5\n" +
             "  initials_lead_margin: 2.0\n" +
-            // final_g_word_margin: a dictionary word read with the final g added (cyime_final_g_correction) leads the
+            // final_g_word_margin: a dictionary word read with the final g added (cayboard_final_g_correction) leads the
             // sentence of the typed letters when the word model finds it more likely by this margin (ln 100, the
             // weight of a correction): 已安装 -14.8 against 一按转 -22.2. Of 68843 correctly typed short phrases 12
             // changed (很聪敏 -> 很聪明, 灭完 -> 灭亡); at ln 20 it was 23. 0 = off.
             "  final_g_word_margin: 4.6\n" +
             "  ngram_dictionary_prior: 0.02\n  ngram_merge_segmentations: false\n" +
-            // CyLM (Cayboard-Windows tools/cylm) puts its best sentence first when its files are in the Rime user
-            // directory. Only the 装到我的设备 package carries them; without them the open fails once and Rime's
-            // sentence stays (cyime_rime/t9_cylm_sentence.cc). Same files and settings as t9_pinyin.schema.yaml.
-            // The lexicon is not named *.bin: Rime's deploy (CleanupTrash) moves every *.bin in the user directory to trash/.
+            // CyLM (Cayboard-Windows tools/cylm) puts its best sentence first when its files are in the input data
+            // directory. Only the 装到我的设备 package carries them; without them the open fails once and the decoder's
+            // sentence stays (cayboard_decoder/t9_cylm_sentence.cc). Same files and settings as t9_pinyin.schema.yaml.
+            // The lexicon is not named *.bin: engine deployment moves every *.bin in the user directory to trash/.
             // Phone-fast tier "D" (cy1-p1e-7, no reranker, beam 8) with the trimmed 45 MB lexicon. On the tablet the
             // light tier with its reranker missed the 12 ms budget on 97% of keys, the half-size full model on all
             // of them, and D/E with the 114 MB lexicon added ~5 ms per key and ~280 MB over CyLM off (2026-10-26).
             // cylm_adapt.tsv is the user's own trigram layer (only in 装到我的设备 packages); nbest 16 and the typo
-            // readings let the replacement rule in t9_cylm_sentence.cc compare Rime's sentence with CyLM's.
+            // readings let the replacement rule in t9_cylm_sentence.cc compare the decoder's sentence with CyLM's.
             "\ncylm:\n  lexicon: cylm_lexicon.cylx\n  model: cylm_model.lm\n  adapt: cylm_adapt.tsv\n" +
             "  params: \"mu=0.04;eos=0.6;abbrev_full=-4;incremental=1;beam=8;per_span=8;per_span_abbrev=16;per_span1=24;" +
             "nbest=4;t9_beam=6;t9_per_span=6;skip_inner=1;hit_cap=5000;word_cap=50000;id_cap=50000;dec_cap=25000;" +
             "nbest=16;typo=-3;typo_first=8.4;adapt_add=1.0\"\n" +
-            // With CyLM started while Rime builds its sentence most keys find it done; a key waits at most 6 ms.
+            // With CyLM started while the decoder builds its sentence most keys find it done; a key waits at most 6 ms.
             "  budget_ms: 6\n"
-        check(baseSchema.contains("cyime_neighbor_correction: true"))
-        check(baseSchema.contains("    - lua_translator@*cyime_mixed_input\n    - lua_translator@*cyime_rare_chars\n")) {
-            "Upstream rime_ice translator list changed"
+        check(baseSchema.contains("cayboard_neighbor_correction: true"))
+        check(baseSchema.contains("    - lua_translator@*cayboard_mixed_input\n    - lua_translator@*cayboard_rare_chars\n")) {
+            "Upstream cayboard_pinyin translator list changed"
         }
-        // The 14-key and 注音 schemas (assets/rime_chinese) repeat these sentence rules; keep them the same list.
-        for (schema in listOf("pinyin_14jian", "cyime_zhuyin")) check(file("src/main/assets/rime_chinese/$schema.schema.yaml").readText()
+        // The 14-key and 注音 schemas (assets/cayboard_chinese) repeat these sentence rules; keep them the same list.
+        for (schema in listOf("pinyin_14jian", "cayboard_zhuyin")) check(file("src/main/assets/cayboard_chinese/$schema.schema.yaml").readText()
             .contains("  sentence_position_final_only: [${particles.joinToString(", ")}]\n")) {
             "$schema.schema.yaml sentence_position_final_only differs from app/data particle lists"
         }
         // The nine-key decoder's sentence-final particles (t9/final_particles) are the same list without measure words.
         val finalOnly = finalParticles.readLines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
-        check(file("src/main/assets/rime_chinese/t9_pinyin.schema.yaml").readText()
+        check(file("src/main/assets/cayboard_chinese/t9_pinyin.schema.yaml").readText()
             .contains("  final_particles: [${finalOnly.joinToString(", ")}]\n")) {
             "t9_pinyin.schema.yaml final_particles differs from ${finalParticles.name}"
         }
-        val omissionId = "cyime_omission"
+        val omissionId = "cayboard_omission"
         val syllables = File(root, "cn_dicts/8105.dict.yaml").useLines { lines ->
             lines.filterNot { it.startsWith("#") }.mapNotNull { it.split('\t').getOrNull(1) }
                 .filter { it.isNotEmpty() && it.all { c -> c in 'a'..'z' } }.toSortedSet()
@@ -774,8 +778,8 @@ val prepareChineseDictionaries by tasks.registering {
         check(algebra.contains("derive/"))
         File(root, "$omissionId.schema.yaml").writeText(buildString {
             append("schema:\n  schema_id: $omissionId\n  name: 全拼漏键候选\n  version: '1'\n")
-            append("translator:\n  dictionary: rime_ice\n  prism: $omissionId\n  enable_user_dict: false\n")
-            append("  enable_correction: true\n  cyime_neighbor_correction: true\n")
+            append("translator:\n  dictionary: cayboard_pinyin\n  prism: $omissionId\n  enable_user_dict: false\n")
+            append("  enable_correction: true\n  cayboard_neighbor_correction: true\n")
             append("speller:\n  algebra:\n").append(algebra.trimEnd()).append('\n')
             for (syllable in syllables.filter { it.length >= 3 }) {
                 for (shorter in syllable.indices.map { syllable.removeRange(it, it + 1) }.distinct()) {
@@ -797,17 +801,17 @@ val prepareChineseDictionaries by tasks.registering {
                 kotlin.math.abs(cell / 3 - next / 3) + kotlin.math.abs(cell % 3 - next % 3) == 1
             }.joinToString("")
         }
-        for (id in listOf("cyime_letter_swap", "cyime_digit_edit", "cyime_digit_tap")) {
-            val numeric = id != "cyime_letter_swap"
-            val taps = id == "cyime_digit_tap"
+        for (id in listOf("cayboard_letter_swap", "cayboard_digit_edit", "cayboard_digit_tap")) {
+            val numeric = id != "cayboard_letter_swap"
+            val taps = id == "cayboard_digit_tap"
             File(root, "$id.schema.yaml").writeText(buildString {
                 append("schema:\n  schema_id: $id\n  name: 拼音纠错索引\n  version: '1'\n")
-                append("translator:\n  dictionary: rime_ice\n  prism: $id\n  enable_user_dict: false\n")
+                append("translator:\n  dictionary: cayboard_pinyin\n  prism: $id\n  enable_user_dict: false\n")
                 append("  enable_completion: false\n  max_homophones: 8\n  max_sentences: 4\n")
                 append("  sentence_cutoff_threshold: 100\n  spelling_hints: 100\n  always_show_comments: true\n")
-                if (id == "cyime_digit_edit") append("cyime_tap_schema: cyime_digit_tap\n")
+                if (id == "cayboard_digit_edit") append("cayboard_tap_schema: cayboard_digit_tap\n")
                 if (taps) {
-                    append("cyime_tap_neighbors:\n")
+                    append("cayboard_tap_neighbors:\n")
                     tapNeighbors.forEach { (digit, neighbors) -> append("  '$digit': '$neighbors'\n") }
                 }
                 append("speller:\n  alphabet: '").append(if (numeric) "23456789" else letters).append("'\n  algebra:\n")
@@ -832,10 +836,10 @@ val prepareChineseDictionaries by tasks.registering {
                 append("    - xform/^~//\n")
             })
         }
-        val fullPinyinSchema = baseSchema.replace("  dependencies:\n", "  dependencies:\n    - $omissionId\n    - cyime_letter_swap\n    - cyime_cn_en\n") +
-            "\ncyime_omission_schema: $omissionId\ncyime_edit_schema: cyime_letter_swap\n" +
-            "\ncyime_particle_shortcuts:\n  __include: cyime_particle_shortcuts:/common\n  alphabet: abcdefghijklmnopqrstuvwxyz\n  selected_tail: true\n"
-        File(root, "rime_ice.schema.yaml").writeText(fullPinyinSchema)
+        val fullPinyinSchema = baseSchema.replace("  dependencies:\n", "  dependencies:\n    - $omissionId\n    - cayboard_letter_swap\n    - cayboard_cn_en\n") +
+            "\ncayboard_omission_schema: $omissionId\ncayboard_edit_schema: cayboard_letter_swap\n" +
+            "\ncayboard_particle_shortcuts:\n  __include: cayboard_particle_shortcuts:/common\n  alphabet: abcdefghijklmnopqrstuvwxyz\n  selected_tail: true\n"
+        File(root, "cayboard_pinyin.schema.yaml").writeText(fullPinyinSchema)
         val doublePinyin = File(root, "double_pinyin_flypy.schema.yaml")
         // Manual syllable split ' (Shift/comma split keys): a' o' e' are 啊 哦 额, any other single key + ' is the
         // syllables that key starts (v'vs 这种). Spellings carry the ', so input without it is unchanged; same rules
@@ -850,42 +854,42 @@ val prepareChineseDictionaries by tasks.registering {
         // sends it marked "~;" so only a pair that spells nothing is corrected (wp for wo had no candidate at all).
         check(!doublePinyin.readText().contains("enable_correction")) { "Upstream double_pinyin_flypy now sets enable_correction" }
         // Sentences as in full pinyin (the same position rules, four single-character homophones per syllable, four
-        // n-best) and the same word model choosing among them (t9/sentence_rescore): with Rime's one sentence by
+        // n-best) and the same word model choosing among them (t9/sentence_rescore): with the decoder's one sentence by
         // character weights alone, 挺感谢 (tkgjxp) came out 听感谢 and 挺 + word could not be typed at all. Double
         // pinyin keys carry no vowels, so the rescoring counts a syllable per two keys (rescore_keys_per_syllable).
         // Without t9_ngram.lm the first sentence stays, as before. Generated double pinyin schemes copy all of it.
         doublePinyin.writeText(taiwanForms(doublePinyin.readText()).replace("\ntranslator:\n",
-            "\ntranslator:\n  enable_correction: true\n  cyime_neighbor_correction: true\n" +
+            "\ntranslator:\n  enable_correction: true\n  cayboard_neighbor_correction: true\n" +
             "  sentence_char_homophones: 4\n  sentence_position_penalty: -2.0\n" +
             "  sentence_position_final_only: [${particles.joinToString(", ")}]\n" +
             "  sentence_position_initial_only: [把, 被]\n" +
             "  max_sentences: 4\n  sentence_cutoff_threshold: 100\n")
-            .replace("  filters:\n", "  filters:\n    - cyime_candidate_policy\n")
+            .replace("  filters:\n", "  filters:\n    - cayboard_candidate_policy\n")
             .let { withUserPhraseForms(withGreekLetters(withSymbolNames(withDatetimeHints(it)))) }
             // 生僻字 also for double pinyin (GitHub #72, same default-off switch): the Lua translator maps the two keys
             // through this scheme's preedit_format; DoublePinyinScheme copies both lines into every generated scheme.
             .let { schema ->
                 check(schema.split("    - script_translator\n").size == 2) { "Upstream double_pinyin_flypy translator list changed" }
-                schema.replace("    - script_translator\n", "    - script_translator\n    - lua_translator@*cyime_rare_chars\n") +
-                    "\ncyime_rare_double_pinyin: true\n" +
+                schema.replace("    - script_translator\n", "    - script_translator\n    - lua_translator@*cayboard_rare_chars\n") +
+                    "\ncayboard_rare_double_pinyin: true\n" +
                     "\nt9:\n  sentence_rescore: true\n  rescore_keys_per_syllable: 2\n" +
-                    "  ngram_sentence_start: false\n  rescore_rime_weight: 0\n"
+                    "  ngram_sentence_start: false\n  rescore_decoder_weight: 0\n"
             })
         // Built-in letter arrangements (settings/BuiltinLetterLayouts.kt): same schema, own ID and name.
         for ((id, name) in listOf("pinyin_qwjrtk" to "QWJRTK（双拇指）", "pinyin_cyletix10" to "Cyletix10（实验）",
                 "pinyin_colemak" to "Colemak", "pinyin_typewise" to "Typewise")) {
             File(root, "$id.schema.yaml").writeText(fullPinyinSchema
-                .replace("schema_id: rime_ice", "schema_id: $id")
+                .replace("schema_id: cayboard_pinyin", "schema_id: $id")
                 .replace("name: 雾凇拼音", "name: $name"))
         }
 
         // 用户 11-11（B 站）说打不出的字：8105 里没有，原来只在默认关着的生僻字开关里（读音取 rime-ice 41448）。
         // 直接进主词库，单字权重 1 排在同音字最后，不抢常用字；生僻字表不再重复带它们。雫 8105 只有 xia，补上 na。
         val directRareChars = linkedMapOf("吔" to "ye", "蚵" to "ke", "槻" to "gui", "榎" to "jia", "塁" to "lei")
-        // Same IME vocabulary as Cayboard-Windows data/rime/cyime_terms.dict.yaml; imported after upstream
+        // Same IME vocabulary as Cayboard-Windows data/rime/cayboard_terms.dict.yaml; imported after upstream
         // tables so upstream weights win on duplicates.
-        File(root, "cyime_terms.dict.yaml").writeText(
-            "# Cayboard vocabulary shared with Cayboard-Windows.\n---\nname: cyime_terms\nversion: \"2026-10-01\"\nsort: by_weight\n...\n" +
+        File(root, "cayboard_terms.dict.yaml").writeText(
+            "# Cayboard vocabulary shared with Cayboard-Windows.\n---\nname: cayboard_terms\nversion: \"2026-10-01\"\nsort: by_weight\n...\n" +
             listOf("浮窗\tfu chuang\t10000", "悬浮工具栏\txuan fu gong ju lan\t5000", "语音上屏\tyu yin shang ping\t5000",
                 "自动互联\tzi dong hu lian\t5000", "候选窗\thou xuan chuang\t5000", "候选框\thou xuan kuang\t5000",
                 "流式识别\tliu shi shi bie\t5000", "语音转写\tyu yin zhuan xie\t5000", "九宫格输入\tjiu gong ge shu ru\t5000",
@@ -914,14 +918,14 @@ val prepareChineseDictionaries by tasks.registering {
                     fields[0] + "\t" + fields[1].dropLast(2) + "di\t" + fields[2] else null
             }
         }.distinct()
-        check(diVariants.size > 500) { "Adverbial 地 entries not found in rime_ice base/ext" }
-        File(root, "cyime_di.dict.yaml").writeText(
-            "# Adverbial 地 typed as di (generated from rime_ice base/ext).\n---\nname: cyime_di\nversion: \"2026-10-19\"\nsort: by_weight\n...\n" +
+        check(diVariants.size > 500) { "Adverbial 地 entries not found in cayboard_pinyin base/ext" }
+        File(root, "cayboard_di.dict.yaml").writeText(
+            "# Adverbial 地 typed as di (generated from cayboard_pinyin base/ext).\n---\nname: cayboard_di\nversion: \"2026-10-19\"\nsort: by_weight\n...\n" +
             diVariants.joinToString("\n", postfix = "\n"))
         // Rare characters (user 2026-10-30: 瀺 chan had no candidate). 8105.dict.yaml is only the 通用规范汉字表;
         // upstream's large table 41448.dict.yaml (Unihan kMandarin + zdic readings) ships disabled. Importing all of
         // it cost the nine-key replay +140% dictionary entries per key at the same first candidates, so the
-        // characters 8105 lacks go to cyime_rare.txt instead, read by lua/cyime_rare_chars.lua for full-pinyin 26 keys,
+        // characters 8105 lacks go to cayboard_rare.txt instead, read by lua/cayboard_rare_chars.lua for full-pinyin 26 keys,
         // nine keys (t9_pinyin.schema.yaml), double pinyin and 14 keys (2026-11-02) only while its switch is on (default off; 槻 gui 2026-10-31 too). Only the BMP (URO and Ext A, about 18,000): most Android fonts
         // have no glyphs for Ext B and beyond, which would show as empty boxes. Only readings 8105 already has (drops
         // 黁 nun). The large table itself is no longer bundled: the generated list is about half its size.
@@ -946,13 +950,13 @@ val prepareChineseDictionaries by tasks.registering {
         }
         check(rare.any { it == "瀺\tchan" } && rare.size > 15000) { "Upstream 41448.dict.yaml changed" }
         // Within a reading the large table goes by code point, Ext A (㙴) first; the URO ones (瀺) are the likelier.
-        File(root, "cyime_rare.txt").writeText(rare.sortedBy { if (it.codePointAt(0) < 0x4E00) 1 else 0 }
+        File(root, "cayboard_rare.txt").writeText(rare.sortedBy { if (it.codePointAt(0) < 0x4E00) 1 else 0 }
             .joinToString("\n", postfix = "\n"))
         largeTable.delete()
-        val iceDict = File(root, "rime_ice.dict.yaml")
+        val iceDict = File(root, "cayboard_pinyin.dict.yaml")
         val othersImport = "  - cn_dicts/others   # 一些杂项\n"
-        check(iceDict.readText().split(othersImport).size == 2) { "Upstream rime_ice import list changed" }
-        iceDict.writeText(iceDict.readText().replace(othersImport, othersImport + "  - cyime_terms\n  - cyime_di\n  - cyime_mixed\n  - fixed_cy\n  - fixed_ice\n  - fixed_zhwiki\n  - fixed_baidu\n"))
+        check(iceDict.readText().split(othersImport).size == 2) { "Upstream cayboard_pinyin import list changed" }
+        iceDict.writeText(iceDict.readText().replace(othersImport, othersImport + "  - cayboard_terms\n  - cayboard_di\n  - cayboard_mixed\n  - cayboard_corpus\n  - fixed_ice\n  - fixed_zhwiki\n  - fixed_baidu\n"))
         // Minority readings for the joint decoder (t9/reading_table), same rule as tools/ime_lab/reading_table.py:
         // ln(count / count of the text's main reading) when below -1. The word model scores words, not readings,
         // so 的 (also di, as in 目的) took momodi from 默默地. The first imported table wins, as in Rime;
@@ -960,7 +964,7 @@ val prepareChineseDictionaries by tasks.registering {
         val firstWeight = HashMap<String, HashMap<String, Double>>()
         val spelled = Regex("[a-z]+( [a-z]+)*")
         Regex("(?m)^  - ([^\\s#]+)").findAll(iceDict.readText().substringAfter("import_tables:").substringBefore("\n..."))
-            .map { it.groupValues[1] }.filter { it !in setOf("cn_dicts/tencent", "fixed_cy", "fixed_ice", "fixed_zhwiki", "fixed_baidu") }.forEach { name ->
+            .map { it.groupValues[1] }.filter { it !in setOf("cn_dicts/tencent", "cayboard_corpus", "fixed_ice", "fixed_zhwiki", "fixed_baidu") }.forEach { name ->
                 var body = false
                 File(root, "$name.dict.yaml").forEachLine { line ->
                     if (!body) { body = line.trimEnd() == "..."; return@forEachLine }
@@ -978,7 +982,7 @@ val prepareChineseDictionaries by tasks.registering {
             }
         }.sorted()
         check(readings.any { it.startsWith("的\tdi\t") }) { "Minority reading 的 di not found" }
-        File(root, "cyime_readings.txt").writeText(readings.joinToString("\n", postfix = "\n"))
+        File(root, "cayboard_readings.txt").writeText(readings.joinToString("\n", postfix = "\n"))
     }
 }
 tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(prepareChineseDictionaries) }

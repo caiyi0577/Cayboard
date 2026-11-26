@@ -1,8 +1,8 @@
 package com.cayboard.settings
 
 /**
- * 不经 Rime 组字的语言：字母像英文一样逐字上屏（韩语按两벌식拼成音节，见 [com.cayboard.service.HangulComposer]）。
- * 每种语言一个只标语言的入口方案（assets/rime_letters/<schemaId>.schema.yaml）和一个键盘（xime.yaml 的 [keyboard]）。
+ * 不经候选引擎组字的语言：字母像英文一样逐字上屏（韩语按两벌식拼成音节，见 [com.cayboard.service.HangulComposer]）。
+ * 每种语言一个只标语言的入口方案（assets/cayboard_letters/<schemaId>.schema.yaml）和一个键盘（cayboard.yaml 的 [keyboard]）。
  * 补全词表是商店里的可选下载（[wordsModel]），开启语言时自动下载；没下载时照样能打字，只是没有补全。
  * 都默认不启用：在「语言与方案」打开时才加入方案列表并部署。
  */
@@ -28,7 +28,7 @@ enum class LetterLanguage(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅛㅜㅠㅡㅣ", null);
 
     /** 词表文件名带版本；换新版时改这里和商店目录。 */
-    val wordsFile: String? get() = wordsModel?.let { "cyime-$it-v1.txt" }
+    val wordsFile: String? get() = wordsModel?.let { "cayboard-$it-v1.txt" }
 
     companion object {
         /** 所有语言键盘上的非 a–z 字母，键帽随 Shift 改大小写时用。 */

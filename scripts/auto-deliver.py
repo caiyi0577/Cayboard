@@ -18,10 +18,10 @@ import sys
 import tempfile
 
 PACKAGE = "com.cayboard"
-POLICY = "cyime-auto-delivery-v2"
+POLICY = "cayboard-auto-delivery-v2"
 # Match the existing scripts, including native-only changes. Never use file mtimes.
 SOURCE_PATHS = ["app/src/main", "app/build.gradle.kts", "app/build-logic",
-                "app/proguard-rules.pro", "plugin-core", "plugins", "patches",
+                "app/proguard-rules.pro", "patches",
                 "gradle", "gradle.properties", "build.gradle.kts", "settings.gradle.kts",
                 "gradlew", "gradlew.bat", ".gitmodules", ".gitattributes", "scripts", "tools"]
 HELPERS = {"scripts/auto-deliver.py", "scripts/test_auto_deliver.py"}
@@ -50,7 +50,9 @@ def source_input(name: str) -> bool:
 
 def integration_root(entry: Path) -> Path:
     runner = Runner(entry)
-    configured = runner.run(["git", "config", "--local", "--get", "cyime.integrationRoot"], check=False)
+    configured = runner.run(["git", "config", "--local", "--get", "cayboard.integrationRoot"], check=False)
+    if not configured:
+        configured = runner.run(["git", "config", "--local", "--get", "cyime.integrationRoot"], check=False)
     if not configured:
         return entry.resolve()
     target = Path(configured).resolve()
@@ -328,7 +330,7 @@ class Delivery:
             ' "-Dorg.gradle.java.installations.paths=' + java.as_posix() + '"')
         if os.name == "nt" and "-Djdk.net.unixdomain.tmpdir=" not in self.r.env["JAVA_TOOL_OPTIONS"]:
             # Java's Unix-domain IPC fails on this Windows Gradle setup; use its TCP fallback.
-            ipc = Path.home()/".gradle/cyime-unixdomain-disabled"
+            ipc = Path.home()/".gradle/cayboard-unixdomain-disabled"
             self.r.env["JAVA_TOOL_OPTIONS"] += " -Djdk.net.unixdomain.tmpdir=" + str(ipc).replace('\\', '/')
         if not getattr(self.o, "build_only", False):
             check_adb_compatibility(self.r, self.adb)
@@ -356,7 +358,7 @@ class Delivery:
     def check_publication(self):
         # Existing native source already bounds Ninja; do not pretend Gradle workers also bound C++.
         cmake = (self.root / "app/src/main/jni/CMakeLists.txt").read_text(encoding="utf-8-sig")
-        if "cyime_compile=2 cyime_link=1" not in cmake:
+        if "cayboard_compile=2 cayboard_link=1" not in cmake:
             raise DeliveryError("Native compiler/linker job limits differ from the audited project; refusing an unbounded build.")
         if self.o.publish:
             if not shutil.which("gh"):
@@ -595,7 +597,7 @@ class Delivery:
         if match:
             return match[1].lower()
         # Toybox may be unavailable on unusual OEM firmware. Verify via a read-only pull.
-        with tempfile.TemporaryDirectory(prefix="cyime-installed-") as directory:
+        with tempfile.TemporaryDirectory(prefix="cayboard-installed-") as directory:
             local = Path(directory) / "base.apk"
             self.r.run([self.adb, "-s", self.serial, "pull", base, str(local)], timeout=300)
             return digest(local)
@@ -645,16 +647,16 @@ class Delivery:
         remote_digest = item.get("digest") or ""
         if remote_digest.startswith("sha256:"):
             return remote_digest[7:].lower() == artifact["sha256"]
-        with tempfile.TemporaryDirectory(prefix="cyime-release-") as directory:
+        with tempfile.TemporaryDirectory(prefix="cayboard-release-") as directory:
             self.r.run(["gh", "release", "download", self.version, "--repo", self.repo,
                         "--pattern", Path(artifact["path"]).name, "--dir", directory], timeout=600)
             return digest(Path(directory) / Path(artifact["path"]).name) == artifact["sha256"]
 
     def publication_gate(self, editions):
         self.require_committed_sources()
-        for subdir, patch in (("app/src/main/jni/librime", "cyime-librime.patch"),
-                              ("app/src/main/jni/librime-lua-deps", "cyime-lua-android.patch"),
-                              ("app/src/main/assets/rime", "cyime-rime-schema.patch")):
+        for subdir, patch in (("app/src/main/jni/librime", "cayboard-librime.patch"),
+                              ("app/src/main/jni/librime-lua-deps", "cayboard-lua-android.patch"),
+                              ("app/src/main/assets/cayboard_base", "cayboard-base-schema.patch")):
             self.r.run(["git", "-C", str(self.root / subdir), "apply", "--reverse", "--check",
                         str(self.root / "patches" / patch)])
         for edition in editions:
@@ -802,7 +804,7 @@ def main():
         common = Path(runner.run(["git", "rev-parse", "--git-common-dir"]))
         if not common.is_absolute():
             common = root / common
-        with delivery_lock(common / "cyime-auto-delivery.lock"):
+        with delivery_lock(common / "cayboard-auto-delivery.lock"):
             delivery = Delivery(root, o, runner)
             try:
                 delivery.execute()

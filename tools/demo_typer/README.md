@@ -1,6 +1,6 @@
 # 演示视频自动打字
 
-在平板的 Obsidian 演示笔记里，经过 CyIME 键盘逐键打出 `demo.yaml` 里的文稿，配合录屏做演示视频。所有输入都是在键盘上的真实点按、拂动、滑行和手写笔画（monkey 脚本注入，和 `tools/ime_lab/key_latency_drive.py` 同一方式），不是 `adb input text`。语音用电脑 TTS 合成后从音箱放给平板麦克风；手写是用户本人在手写板上写一遍，用 getevent 记下原始笔迹后按原坐标和时间重放（重放是手指触摸，不带 S Pen 笔型）。
+在平板的 Obsidian 演示笔记里，通过 Cayboard 键盘逐键打出 `demo.yaml` 里的文稿，配合录屏制作演示视频。点按、拂动和手写笔画使用 monkey 脚本注入，与 `tools/ime_lab/key_latency_drive.py` 相同。语音由电脑合成后通过音箱播放给平板麦克风。手写使用 getevent 记录用户笔迹，按原坐标和时间以触摸事件重放。
 
 不改应用代码，不需要 Gradle。用 adb 前先看 `<notes>/Project/Agent状态同步.md` 并登记平板占用。
 

@@ -1,6 +1,6 @@
-package com.cyime.audit;
+package com.cayboard.audit;
 
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -19,7 +19,7 @@ import java.nio.file.Paths;
  * Usage: ChunkReplay LIB_DIR USER_DIR OUTPUT.jsonl CASES.json
  */
 public final class ChunkReplay {
-    private static int rank(RimeEngine engine, String keys, String target) {
+    private static int rank(InputEngine engine, String keys, String target) {
         engine.nativeSetInput(keys);
         String[][] candidates = engine.nativeInspectCandidates(20);
         engine.nativeSetInput("");
@@ -28,9 +28,9 @@ public final class ChunkReplay {
     }
 
     public static void main(String[] args) throws Exception {
-        System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+        System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
         String user = new File(args[1]).getCanonicalPath();
-        RimeEngine engine = new RimeEngine();
+        InputEngine engine = new InputEngine();
         engine.nativeInitialize(user, user);
         if (engine.nativeStartMaintenance(true)) {
             while (engine.nativeIsMaintaining()) Thread.sleep(200);

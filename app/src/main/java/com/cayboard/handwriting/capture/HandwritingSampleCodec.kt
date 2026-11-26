@@ -11,7 +11,7 @@ import java.nio.charset.Charset
  * JSON 结构（训练侧契约）：
  * ```
  * {
- *   "format": "xime-handwriting-capture",
+ *   "format": "cayboard-handwriting-capture",
  *   "version": 1,
  *   "normalization": "per-stroke-set bounding box: (x-minX)/rangeX, (y-minY)/rangeY",
  *   "meta": { "app_version", "device", "android", "exported_at_ms", "sample_count" },
@@ -32,7 +32,8 @@ import java.nio.charset.Charset
  */
 object HandwritingSampleCodec {
 
-    const val FORMAT = "xime-handwriting-capture"
+    const val FORMAT = "cayboard-handwriting-capture"
+    private const val LEGACY_FORMAT = com.cayboard.engine.compat.LegacyNames.OLD_HANDWRITING_FORMAT
     const val VERSION = 1
 
     fun samplesToJsonArray(samples: List<HandwritingSample>): JSONArray {
@@ -96,7 +97,7 @@ object HandwritingSampleCodec {
 
     fun parseFromJson(text: String): List<HandwritingSample> {
         val root = JSONObject(text)
-        if (root.optString("format") != FORMAT) return emptyList()
+        if (root.optString("format") != FORMAT && root.optString("format") != LEGACY_FORMAT) return emptyList()
         val arr = root.optJSONArray("samples") ?: return emptyList()
         val out = mutableListOf<HandwritingSample>()
         for (i in 0 until arr.length()) {

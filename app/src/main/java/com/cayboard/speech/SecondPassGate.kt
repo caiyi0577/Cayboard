@@ -94,9 +94,9 @@ internal class SecondPassGate(private val model: WordLanguageModel) {
 
         @Volatile private var cached: Pair<String, SecondPassGate>? = null
 
-        /** rime/t9_ngram.lm（九键词组模型，完整或精简版）；没装或读不了时为 null，二次校正照旧。 */
+        /** 输入数据目录中的 t9_ngram.lm（九键词组模型，完整或精简版）；没装或读不了时为 null，二次校正照旧。 */
         fun forFiles(filesDir: File): SecondPassGate? {
-            val file = File(filesDir, "rime/t9_ngram.lm")
+            val file = File(filesDir, "cayboard_input/t9_ngram.lm")
             if (!file.isFile) return null
             val key = "${file.absolutePath}:${file.length()}:${file.lastModified()}"
             cached?.let { if (it.first == key) return it.second }

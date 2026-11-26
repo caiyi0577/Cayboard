@@ -1,6 +1,6 @@
 # 输入质量离线工具
 
-候选注释回归：`host_replay/CandidateCommentProbe.java` 使用同源 JNI，依次检查 26 键拼音、14 键拼音、两种小鹤双拼布局和五笔编码。与 `android_replay/RimeEngine.java` 一起编译；运行参数依次为主机构建的 `.so` 目录、**隔离测试资源目录**。资源必须先经当前 `prepareChineseDictionaries` 生成，使用副本，并在副本的 schema_list 启用上述五种方案；测试会部署该目录，禁止指向个人词库。验证的是最终经过过滤器的候选注释，不以 UI 开关或生成配置代替结果。本轮复现和证据见 [设置接线复查](../../docs/development/settings-connection-audit-20261004.md)。
+候选注释回归：`host_replay/CandidateCommentProbe.java` 使用同源 JNI，依次检查 26 键拼音、14 键拼音、两种小鹤双拼布局和五笔编码。与 `android_replay/InputEngine.java` 一起编译；运行参数依次为主机构建的 `.so` 目录、**隔离测试资源目录**。资源必须先经当前 `prepareChineseDictionaries` 生成，使用副本，并在副本的 schema_list 启用上述五种方案；测试会部署该目录，禁止指向个人词库。验证的是最终经过过滤器的候选注释，不以 UI 开关或生成配置代替结果。本轮复现和证据见 [设置接线复查](../../docs/development/settings-connection-audit-20261004.md)。
 
 
 - `ime_lab.py evaluate cases.json samples.jsonl output.json`：精确输入校验、TopK、类型验证和缺失项；延迟按用例与设备/构建/场景元数据分组。first-query 不等于进程冷启动。不能将引擎+Top100耗时称为端到端延迟。
@@ -39,9 +39,9 @@ $lexiconPython = 'D:/CyIME-Data/lexicon-generation/.venv/Scripts/python.exe'
 
 - `lexicon.sqlite3`：`runs` 保存模型、主题、时间、状态及提示/回复哈希；`entries` 按词语＋带调拼音去重；`memberships` 保存集合归属；`observations` 保留每批原条目、错误与模型声称的误写/误读；`reviews` 记录显式审校原因。
 - `runs/<批次>/`：完整提示、Cline NDJSON 事件、错误日志、完整回复与入库计数。只提取成功完成事件的最终回复，不拼接流式增量或中间推理，不把超时半截 JSON“修复”成词库。失败批次保留，不伪装成已获取数据。
-- `exports/<集合>/`：开放格式 `*.cyime-dict.json`、Rime `*.dict.yaml`、`manifest.json`（来源、批次、条目 ID 和文件哈希）及 `needs-review.json`。
+- `exports/<集合>/`：开放格式 `*.cayboard-dict.json`、引擎 `*.dict.yaml`、`manifest.json`（来源、批次、条目 ID 和文件哈希）及 `needs-review.json`。
 
-回复协议见 [lexicon-reply.schema.json](lexicon-reply.schema.json)。生成器必须输出 `cyime.lexicon.v1` 的完整 JSON，每项包含正确词语、数字声调拼音、类型、释义、例句和独立的误写/误读列表。脚本另检查合法音节、每字一个音节、例句包含原词、长度及控制字符。原始模型回复不能直接导入 App。
+回复协议见 [lexicon-reply.schema.json](lexicon-reply.schema.json)。生成器必须输出 `cayboard.lexicon.v1` 的完整 JSON，每项包含正确词语、数字声调拼音、类型、释义、例句和独立的误写/误读列表。脚本另检查合法音节、每字一个音节、例句包含原词、长度及控制字符。原始模型回复不能直接导入 App。
 
 词组存在于固定版本的 [pypinyin](https://github.com/mozillazg/python-pinyin) 词组库、且完整带调读音与首选读法一致，才标为 `reference_match`；不会因为每个字分别有某个读音，就把组合当成正确词音。未知词、异读或不一致的读音进入 `needs_review`，不导出。这个检查是独立读音参考，并非权威正字审校；释义和“易错”关系仍属于模型提议。默认补充权重为 100，不自动安装或启用。
 
@@ -54,7 +54,7 @@ $lexiconPython = 'D:/CyIME-Data/lexicon-generation/.venv/Scripts/python.exe'
 
 重新采集不会推翻已有审校；审校后重新导出更新文件。若已无合格条目，导出会移除该集合上一次的 JSON/YAML 产物，只留下审校清单与零条目记录，避免误用旧文件。误写和误读仅存为独立研究数据，永远不会随候选词典导出，也未接入自动纠错。正常导出仅包含 `reference_match` 或明确 `approved` 的正确词码，保留 `v` 表示 ü、去声调后按词码再次去重。
 
-把导出的 `*.cyime-dict.json` 传到手机，在“设置 → 词库管理 → 分类词库 → 导入词库（SCEL / JSON）”导入，选用后应用。App 校验格式版本、中文/拼音声明、词码及文件大小，仍使用现有词库独立开关，不自动改语言、布局或个人学习。新内容再次导出后作为新的本地词库导入，可关闭旧集合；当前不自动推送或替换手机上已启用的旧版本。
+把导出的 `*.cayboard-dict.json` 传到手机，在“设置 → 词库管理 → 分类词库 → 导入词库（SCEL / JSON）”导入，选用后应用。App 校验格式版本、中文/拼音声明、词码及文件大小，仍使用现有词库独立开关，不自动改语言、布局或个人学习。新内容再次导出后作为新的本地词库导入，可关闭旧集合；当前不自动推送或替换手机上已启用的旧版本。
 
 离线处理已经保存的模型回复：
 
@@ -76,11 +76,11 @@ $lexiconPython = 'D:/CyIME-Data/lexicon-generation/.venv/Scripts/python.exe'
 
 例如“银行 / 行走”“长大 / 长短”“音乐 / 快乐”保留各自词组读音；“川流不息”“迫不及待”等导出规范词形。33 条待审校中，32 条在当前词组参考库中缺少完整记录，另 1 条“馄饨”的轻声与参考不一致；待审校不等于判错。专业新词自动通过率受参考覆盖限制，需要补充可追溯读音参考或逐项审校，不能单凭模型自评批量放行。
 
-13 项 Python 测试通过（包括实际 pypinyin 参考检查）；第一轮 17 项 Android 词库 JVM 测试及设备测试代码编译通过，新增真实导出用例后 4 项 JSON 导入测试全部通过（零跳过），三份文件的全部 31 个词码经生产导入器转换后与 Python 导出的 Rime 词典一致。回执 `.codex-artifacts/generated-lexicon-validation.json`。仅验证采集、转换和导入处理，未打包、未安装；手机上候选排序、界面和 T9 性能未验收。
+13 项 Python 测试通过（包括实际 pypinyin 参考检查）；第一轮 17 项 Android 词库 JVM 测试及设备测试代码编译通过，新增真实导出用例后 4 项 JSON 导入测试全部通过（零跳过），三份文件的全部 31 个词码经生产导入器转换后与 Python 导出的词典一致。回执 `.codex-artifacts/generated-lexicon-validation.json`。仅验证采集、转换和导入处理，未打包、未安装；手机上候选排序、界面和 T9 性能未验收。
 
 ## 九键本机算法回归
 
-后续九键选词测试统一使用 `python tools/ime_lab/t9_replay.py run --output <新结果目录>`。默认直接在电脑本地编译／复用现有 Rime、T9、候选策略和模型，不连接平板或手机，不打包安装。支持 `prepare` 从文本与拼音建立夹具，`--baseline` / `compare` 比较每键首选、目标名次和已审定异常；详细口径、退出码和复现条件见 [固定回归流程](../../docs/development/t9-algorithm-regression.md)。
+后续九键选词测试统一使用 `python tools/ime_lab/t9_replay.py run --output <新结果目录>`。默认直接在电脑本地编译／复用现有输入引擎、T9、候选策略和模型，不连接平板或手机，不打包安装。支持 `prepare` 从文本与拼音建立夹具，`--baseline` / `compare` 比较每键首选、目标名次和已审定异常；详细口径、退出码和复现条件见 [固定回归流程](../../docs/development/t9-algorithm-regression.md)。
 
 调权与评分位置研究见[异常首选修复分析](../../docs/development/t9-weight-repair-study-2026-10-03.md)。`analyze_t9_weights.py` 对已保存候选做权重敏感性扫描；`probe_t9_scoring.py prepare/analyze` 配合 `host_replay/ScoreProbe.cc` 比较同一模型的四字评分位置；`host_replay/WeightExperiment.java` 用真实引擎检查独立配置副本的段末候选。这些诊断不替代完整逐键回归，也不自动修改生产配置。
 
@@ -88,10 +88,10 @@ $lexiconPython = 'D:/CyIME-Data/lexicon-generation/.venv/Scripts/python.exe'
 
 `host_replay/PinyinCorrectionProbe.java` 使用同一生产 JNI，检查 `nawentishi` 等准确输入不会被邻键纠错挤走，同时检查正常学习词及 `nihso` 的纠错候选仍存在。每个按键都核对实际引擎输入，记录逐键候选，失败返回非零。
 
-在 Linux/WSL 中，与 `android_replay/RimeEngine.java` 一起用 javac 编译，运行：
+在 Linux/WSL 中，与 `android_replay/InputEngine.java` 一起用 javac 编译，运行：
 
 ```text
 LD_LIBRARY_PATH=<同源引擎库目录> java -cp <class目录> PinyinCorrectionProbe <同源引擎库目录> <隔离用户目录> [learn或check] [已部署的共享资源目录]
 ```
 
-资源目录须包含同源 `rime_ice` 及生成资源，可复用本机测试准备的隔离目录，**不能指向个人实际使用的词库**。未指定共享目录时从用户目录读取资源；指定共享目录后可用空白用户目录检查全新学习状态。`learn` 会模拟提交 30 次 `bawentishi`，以重现个人学习与纠错的竞争；`check` 或省略时只回放/取消，不提交学习。应先在空白学习状态运行，再在合成学习状态运行；比较旧/新引擎时须使用相同的合成学习快照，不能把重新学习产生的权重变化混进算法对照。扩展句子检查只约束开启纠错不能破坏这些准确拼音的首选，不证明任意句子的语言质量合格。
+资源目录须包含同源 `cayboard_pinyin` 及生成资源，可复用本机测试准备的隔离目录，**不能指向个人实际使用的词库**。未指定共享目录时从用户目录读取资源；指定共享目录后可用空白用户目录检查全新学习状态。`learn` 会模拟提交 30 次 `bawentishi`，以重现个人学习与纠错的竞争；`check` 或省略时只回放/取消，不提交学习。应先在空白学习状态运行，再在合成学习状态运行；比较旧/新引擎时须使用相同的合成学习快照，不能把重新学习产生的权重变化混进算法对照。扩展句子检查只约束开启纠错不能破坏这些准确拼音的首选，不证明任意句子的语言质量合格。

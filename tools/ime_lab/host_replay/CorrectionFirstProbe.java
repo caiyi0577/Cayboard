@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -6,17 +6,17 @@ import java.util.List;
 /**
  * 常用纠错词排第一（2026-11-05，11-08 改 2000 倍）：纠错得到的整串词比所打字母读出的词常用 2000 倍以上时排第一；
  * 不到 2000 倍、或所打字母读出的是整句时，所打的读法照旧第一。
- * Arguments: LIB USER NEIGHBORS. USER: a deployed rime_ice user directory (nothing is committed).
+ * Arguments: LIB USER NEIGHBORS. USER: a deployed cayboard_pinyin user directory (nothing is committed).
  * Each row: input, the expected first candidate, and why. Typed after the pause, as the keyboard shows them.
  */
 public class CorrectionFirstProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     List<String> failures = new ArrayList<>();
     try {
-      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("rime_ice")) throw new Exception("schema unavailable");
+      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("schema unavailable");
       engine.nativeSetOption("ascii_mode", false);
       engine.nativeSetNeighborMap(args[2]);
       String[][] cases = {

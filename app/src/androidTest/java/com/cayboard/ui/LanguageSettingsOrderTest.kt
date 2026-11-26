@@ -92,9 +92,9 @@ class LanguageSettingsOrderTest {
         assertEquals(setOf(InputLanguage.ENGLISH), LanguagePreferences.enabled(context))
         assertEquals(listOf(InputLanguage.ENGLISH), InputModes.languageOrder(context))
         val choices = InputModes.languageChoices(listOf(
-            SchemaInfo("rime_ice", "中文26键", "", "", ""),
+            SchemaInfo("cayboard_pinyin", "中文26键", "", "", ""),
             SchemaInfo("japanese", "日语", "", "", "")),
-            "rime_ice", emptyMap(), InputModes.languageOrder(context))
+            "cayboard_pinyin", emptyMap(), InputModes.languageOrder(context))
         assertEquals(listOf(InputModes.ENGLISH), choices.map { it.schemaId })
     }
 
@@ -118,14 +118,14 @@ class LanguageSettingsOrderTest {
             .putStringSet(LanguagePreferences.KEY, setOf("zh", "ja", "en")).commit()
         InputModes.saveLanguageOrder(context, listOf("en", "ja", "zh"))
         val showSettings = mutableStateOf(true)
-        val schemas = listOf(SchemaInfo("rime_ice", "中文26键", "", "", ""))
+        val schemas = listOf(SchemaInfo("cayboard_pinyin", "中文26键", "", "", ""))
         rule.setContent {
             CompositionLocalProvider(LocalContext provides context) {
                 MaterialTheme {
                     if (showSettings.value) {
                         Box(Modifier.requiredSize(360.dp, 720.dp)) { LanguageSettingsContent {} }
                     } else {
-                        SchemaListView(schemas, "rime_ice", Color.White, Color.Blue, Color.Black,
+                        SchemaListView(schemas, "cayboard_pinyin", Color.White, Color.Blue, Color.Black,
                             Color.LightGray, {}, modifier = Modifier.requiredSize(360.dp, 260.dp))
                     }
                 }
@@ -144,7 +144,7 @@ class LanguageSettingsOrderTest {
 
         rule.runOnIdle { showSettings.value = false }
         rule.onAllNodesWithTag("profile-language").assertCountEquals(0)
-        rule.onNodeWithTag("panel-scheme:rime_ice").assertIsSelected()
+        rule.onNodeWithTag("panel-scheme:cayboard_pinyin").assertIsSelected()
         assertEquals(listOf("en", "zh", "ja"), InputModes.languageOrder(context).map { it.id })
         rule.runOnIdle { showSettings.value = true }
         assertManagementOrder(listOf("en", "zh", "ja"))

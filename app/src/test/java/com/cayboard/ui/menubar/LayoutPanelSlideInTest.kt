@@ -37,8 +37,8 @@ import org.robolectric.annotation.Config
 class LayoutPanelSlideInTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
-    private val schemas = listOf("rime_ice", "t9_pinyin", "pinyin_14jian").map { SchemaInfo(it, it, "", "", "") }
-    private var current by mutableStateOf("rime_ice")
+    private val schemas = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian").map { SchemaInfo(it, it, "", "", "") }
+    private var current by mutableStateOf("cayboard_pinyin")
 
     private val layoutCard = SemanticsMatcher("layout card") {
         it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("panel-layout:") == true
@@ -65,7 +65,7 @@ class LayoutPanelSlideInTest {
                 }
             }
         }
-        for (schema in listOf("rime_ice", "t9_pinyin", "pinyin_14jian")) {
+        for (schema in listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian")) {
             rule.runOnUiThread { current = schema }
             rule.mainClock.advanceTimeByFrame()
             rule.mainClock.advanceTimeByFrame()

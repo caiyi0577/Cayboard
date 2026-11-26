@@ -53,7 +53,7 @@ internal fun spacePunctuationKeys(comma: Boolean, period: Boolean, fullWidth: Bo
     return Pair(commaKey, periodKey)
 }
 
-/** 拼音的音节分隔符，Rime 方案的 delimiter 里就是它（xi'an）。 */
+/** 拼音的音节分隔符，方案 delimiter 使用这个字符（xi'an）。 */
 internal const val SYLLABLE_SEPARATOR = "'"
 
 /**

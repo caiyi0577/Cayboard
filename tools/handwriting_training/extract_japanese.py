@@ -1,8 +1,8 @@
 """从日语语法笔记表格（xlsx）生成训练模式的“日语句子”题库。
 
 用法：
-    python tools/handwriting_training/extract_japanese.py D:/CyIME-Data/handwriting_training/日语语法_修订版.xlsx \
-        D:/CyIME-Data/handwriting_training/banks/japanese.tsv
+    python tools/handwriting_training/extract_japanese.py D:/Cayboard-Data/handwriting_training/日语语法_修订版.xlsx \
+        D:/Cayboard-Data/handwriting_training/banks/japanese.tsv
 
 取 N1/N2/N3 的语法点和例句、基本文的句子、单词表的单词。题目下方显示语法点和意思方便顺便学习。
 输出 TSV 每行：`类别\t长句(0/1)\t题目\t提示\t来源`。短题（≤20 字）为主，长句标 1，App 里偶尔穿插。

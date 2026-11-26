@@ -7,7 +7,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** xime.custom.yaml keyboard.<section>.geometry：第二行缩进、删除键份数、Shift 开关和份数。 */
+/** cayboard.custom.yaml keyboard.<section>.geometry：第二行缩进、删除键份数、Shift 开关和份数。 */
 class LetterGeometryOverrideTest {
     @After fun clear() {
         KeysConfigHelper.setSectionGeometryForTest(emptyMap())
@@ -145,13 +145,13 @@ class LetterGeometryOverrideTest {
         assertNotNull(KeysConfigHelper.letterLayout("double_pinyin_flypy", false))
         assertEquals(zh, KeysConfigHelper.letterGeometryOverride("double_pinyin_flypy", false))
         LetterLayouts.setForTest(InputLanguage.ENGLISH, Cyletix10Layout.ID)
-        assertNotNull(KeysConfigHelper.letterLayout("rime_ice", true))
-        assertEquals(en, KeysConfigHelper.letterGeometryOverride("rime_ice", true))
+        assertNotNull(KeysConfigHelper.letterLayout("cayboard_pinyin", true))
+        assertEquals(en, KeysConfigHelper.letterGeometryOverride("cayboard_pinyin", true))
     }
 
     @Test fun `没写参数时一律为空`() {
         KeysConfigHelper.setSectionGeometryForTest(emptyMap())
-        assertNull(KeysConfigHelper.letterGeometryOverride("rime_ice", false))
-        assertNull(KeysConfigHelper.letterGeometryOverride("rime_ice", true))
+        assertNull(KeysConfigHelper.letterGeometryOverride("cayboard_pinyin", false))
+        assertNull(KeysConfigHelper.letterGeometryOverride("cayboard_pinyin", true))
     }
 }

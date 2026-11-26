@@ -11,18 +11,18 @@ import java.io.File
 object PersonalDictManager {
     private const val CUSTOM_PHRASE_FILE = "custom_phrase.txt"
 
-    private fun packName(rimeDir: File, schemaId: String): String {
+    private fun packName(inputDataDir: File, schemaId: String): String {
         // 方案自带 translator.packs 声明（如 pinyin_simp 自带 [user_simp]）时，
-        // 个人词库沿用方案声明的名字，否则 librime 编译时找不到对应的 pack 源文件。
-        val own = readSchemaPacks(rimeDir, schemaId)
+        // 个人词库沿用方案声明的名字，否则引擎编译时找不到对应的 pack 源文件。
+        val own = readSchemaPacks(inputDataDir, schemaId)
         if (own.isNotEmpty()) return own.first()
-        val dictName = schemaDictionaryName(rimeDir, schemaId)
+        val dictName = schemaDictionaryName(inputDataDir, schemaId)
         return "user_$dictName"
     }
 
     /** 从 schema 文件读取 translator.packs 中声明的 user_* 个人词库名，没有则返回空。 */
-    internal fun readSchemaPacks(rimeDir: java.io.File, schemaId: String): List<String> {
-        val schemaFile = java.io.File(rimeDir, "${schemaId}.schema.yaml")
+    internal fun readSchemaPacks(inputDataDir: java.io.File, schemaId: String): List<String> {
+        val schemaFile = java.io.File(inputDataDir, "${schemaId}.schema.yaml")
         if (!schemaFile.exists()) return emptyList()
         val text = try { schemaFile.readText(Charsets.UTF_8).trimStart('\uFEFF') } catch (_: Exception) { return emptyList() }
         // kaml 解析（schema.yaml 是 YAML，避免脆弱的正则）；
@@ -58,10 +58,10 @@ object PersonalDictManager {
     }
 
     fun getCustomPhraseFile(context: Context, schemaId: String? = null): File {
-        val rimeDir = SchemaManager.getRimeDir(context)
-        val dictName = if (schemaId != null) getCustomPhraseDictName(rimeDir, schemaId)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
+        val dictName = if (schemaId != null) getCustomPhraseDictName(inputDataDir, schemaId)
                        else CUSTOM_PHRASE_FILE.removeSuffix(".txt")
-        return File(rimeDir, "$dictName.txt")
+        return File(inputDataDir, "$dictName.txt")
     }
 
     /**
@@ -69,15 +69,15 @@ object PersonalDictManager {
      * 例如 `user_dict: custom_phrase_double` → 对应 `custom_phrase_double.txt`。
      * 若无声明则返回默认的 `custom_phrase`。
      */
-    internal fun getCustomPhraseDictName(rimeDir: File, schemaId: String): String {
-        val customText = File(rimeDir, "${schemaId}.custom.yaml")
+    internal fun getCustomPhraseDictName(inputDataDir: File, schemaId: String): String {
+        val customText = File(inputDataDir, "${schemaId}.custom.yaml")
             .takeIf { it.exists() }
             ?.readText(Charsets.UTF_8)
         if (customText != null) {
             val fromCustom = parseCustomPhraseDictName(customText)
             if (fromCustom != null) return fromCustom
         }
-        val schemaText = File(rimeDir, "${schemaId}.schema.yaml")
+        val schemaText = File(inputDataDir, "${schemaId}.schema.yaml")
             .takeIf { it.exists() }
             ?.readText(Charsets.UTF_8)
         if (schemaText != null) {
@@ -90,7 +90,7 @@ object PersonalDictManager {
     /** 从文本中解析 `custom_phrase.user_dict` 声明的文件名，没有则返回 null。 */
     private fun parseCustomPhraseDictName(text: String): String? {
         // Third-party schemas can contain YAML tags unsupported by our parser.
-        // Only read this translator's own block (or its Rime slash-path override).
+        // Only read this translator's own block (or its slash-path override).
         val path = Regex("""(?m)^\s*["']?custom_phrase/user_dict["']?\s*:\s*([^#\r\n]+)""")
         val block = Regex("""(?m)^([ ]*)["']?custom_phrase["']?:[ \t]*(?:#.*)?\r?$""").find(text)
         val value = path.find(text)?.groupValues?.get(1) ?: block?.let {
@@ -141,16 +141,16 @@ object PersonalDictManager {
         context: Context,
         schemaId: String?,
         deploy: () -> Unit = {
-            if (com.cayboard.rime.RimeEngine.isInitialized()) com.cayboard.rime.RimeConfigHelper.ensureDeployment(context)
+            if (com.cayboard.engine.InputEngine.isInitialized()) com.cayboard.engine.EngineConfig.ensureDeployment(context)
         },
         notifyKeyboard: () -> Unit = {
             val prefs = SettingsPreferences.getPrefsPublic(context)
             prefs.edit().putLong(CUSTOM_PHRASE_REVISION, prefs.getLong(CUSTOM_PHRASE_REVISION, 0L) + 1L).apply()
         },
     ) {
-        val rimeDir = SchemaManager.getRimeDir(context)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
         val schemas = schemaId?.let(::listOf) ?: SchemaManager.getEnabledSchemas(context)
-        fun patches() = schemas.map { File(rimeDir, "$it.custom.yaml").takeIf(File::exists)?.readText(Charsets.UTF_8) }
+        fun patches() = schemas.map { File(inputDataDir, "$it.custom.yaml").takeIf(File::exists)?.readText(Charsets.UTF_8) }
         val before = patches()
         if (schemaId != null) ensureSchemaPack(context, schemaId) else ensureSchemaPacks(context)
         if (patches() != before) deploy()
@@ -171,50 +171,50 @@ object PersonalDictManager {
 
     suspend fun ensureSchemaPacks(context: Context) {
         schemaPacksMutex.withLock {
-            val rimeDir = SchemaManager.getRimeDir(context)
+            val inputDataDir = SchemaManager.getInputDataDir(context)
             val enabledSchemas = SchemaManager.getEnabledSchemas(context)
             for (schemaId in enabledSchemas) {
-                ensureSchemaPackInner(rimeDir, context, schemaId)
+                ensureSchemaPackInner(inputDataDir, context, schemaId)
             }
         }
     }
 
     suspend fun ensureSchemaPack(context: Context, schemaId: String) {
         schemaPacksMutex.withLock {
-            val rimeDir = SchemaManager.getRimeDir(context)
-            ensureSchemaPackInner(rimeDir, context, schemaId)
+            val inputDataDir = SchemaManager.getInputDataDir(context)
+            ensureSchemaPackInner(inputDataDir, context, schemaId)
         }
     }
 
-    private suspend fun ensureSchemaPackInner(rimeDir: java.io.File, context: Context, schemaId: String) {
-        val schemaFile = java.io.File(rimeDir, "${schemaId}.schema.yaml")
+    private suspend fun ensureSchemaPackInner(inputDataDir: java.io.File, context: Context, schemaId: String) {
+        val schemaFile = java.io.File(inputDataDir, "${schemaId}.schema.yaml")
         if (!schemaFile.exists()) return
-        val customFile = File(rimeDir, "${schemaId}.custom.yaml")
+        val customFile = File(inputDataDir, "${schemaId}.custom.yaml")
         if (!optionalPhrasePatch(customFile) { repairTranslatorFile(customFile) }) return
-        // 手写方案（schemas 绑定声明）不经过 librime 词典输入，跳过补丁。
+        // 手写方案（schemas 绑定声明）不经过解码词典输入，跳过补丁。
         if (isHandwritingSchema(schemaId)) return
         // 注音的编码是大千键码，短语的拼音字母码在注音里是另一串注音（ji 是 ㄨㄛ），不挂短语。
         // 仓颉同理：短语的拼音码在仓颉里是别的字的码（nh 是 弓竹），会抢在码表前面。
         if (InputProfiles.describe(schemaId).scheme in setOf(InputScheme.ZHUYIN, InputScheme.CANGJIE)) return
-        // 西班牙、德、法、俄、韩语的字母不进 Rime，中文短语挂上去也用不到。
+        // 西班牙、德、法、俄、韩语的字母不进候选引擎，中文短语挂上去也用不到。
         if (LetterLanguage.ofSchema(schemaId) != null) return
         // 个人词库合并规则已移除：清理旧版本写入的 merged 词典引用，
-        // 让 librime 按 schema 原声明编译原始词典名（如 pinyin_simp.table.bin），
+        // 让引擎按 schema 原声明编译原始词典名（如 pinyin_simp.table.bin），
         // 恢复 wubi86_pinyin 等方案的 reverse_lookup 拼音反查。
-        cleanupStaleMergedPatch(rimeDir, schemaId)
+        cleanupStaleMergedPatch(inputDataDir, schemaId)
         // 九键打出来的是数字、14 键是合并键的大写码、双拼是双拼码：短语换成这个键盘实际打出的编码另存一份，方案挂这一份。
         val doublePinyin = DoublePinyinSchemes.find(schemaId) ?: if (DoublePinyinSchemes.isGenerated(schemaId))
             DoublePinyinSchemes.load(context).let { DoublePinyinSchemes.find(schemaId) } else null
         val keys = keyedPhrases(schemaId, doublePinyin)
         val sharedName = keys?.dictName ?: "custom_phrase"
-        val configured = getCustomPhraseDictName(rimeDir, schemaId)
+        val configured = getCustomPhraseDictName(inputDataDir, schemaId)
         val dictName = if (isGeneratedPhraseDict(configured)) sharedName else configured
         // 方案自己的 custom_phrase 带着词典（万象：dictionary: custom_phrase，它的 Lua 置顶词靠这一块），
         // 整块换成我们的会让它的置顶词失效：不动这一块，「我的短语」另挂一份。
         val ownTable = hasOwnPhraseDictionary(schemaFile.readText(Charsets.UTF_8))
         if (ownTable) dropGeneratedMainPhrase(customFile)
-        if (keys != null) writeKeyedPhrases(rimeDir, keys)
-        val phraseFile = File(rimeDir, "$dictName.txt")
+        if (keys != null) writeKeyedPhrases(inputDataDir, keys)
+        val phraseFile = File(inputDataDir, "$dictName.txt")
         if (!phraseFile.exists()) {
             phraseFile.parentFile?.mkdirs()
             phraseFile.writeText("""# Rime table
@@ -224,19 +224,19 @@ object PersonalDictManager {
 #
 """, Charsets.UTF_8)
         }
-        // 有实际条目时才注入翻译器，避免 Rime 因空 .table.bin 报错
+        // 有实际条目时才注入翻译器，避免引擎因空 .table.bin 报错
         if (!ownTable && phraseFile.readText(Charsets.UTF_8).lineSequence().count { it.isNotBlank() && !it.startsWith('#') } > 0) {
-            optionalPhrasePatch(customFile) { applyCustomPhraseTranslator(rimeDir, schemaId, dictName) }
+            optionalPhrasePatch(customFile) { applyCustomPhraseTranslator(inputDataDir, schemaId, dictName) }
         }
         // Some letter schemes (e.g. Xiaohe) have a private phrase table. Keep it
         // and its entries; add the table the user actually edits in 我的短语.
         if ((dictName != sharedName || ownTable) &&
-            File(rimeDir, "$sharedName.txt").takeIf { it.isFile }?.useLines { rows ->
+            File(inputDataDir, "$sharedName.txt").takeIf { it.isFile }?.useLines { rows ->
                 rows.any { it.isNotBlank() && !it.startsWith('#') }
             } == true) {
             optionalPhrasePatch(customFile) {
-                applyCustomPhraseTranslator(rimeDir, schemaId, sharedName, "cyime_shared_phrase")
-                retargetCustomPhraseDict(customFile, sharedName, "cyime_shared_phrase")
+                applyCustomPhraseTranslator(inputDataDir, schemaId, sharedName, "cayboard_shared_phrase")
+                retargetCustomPhraseDict(customFile, sharedName, "cayboard_shared_phrase")
             }
         }
         // Migrate our old table binding, never retarget a user's private table.
@@ -280,7 +280,7 @@ object PersonalDictManager {
     /** 双拼方案的短语副本名，后面接方案 id（含九键、14 键、自建布局版本的后缀）。 */
     private const val DOUBLE_PINYIN_PHRASE_PREFIX = "custom_phrase_sp_"
 
-    /** 方案顶层 custom_phrase 块自带非空 dictionary：不是 Rime 常见的「dictionary: ""＋user_dict」用户短语表。 */
+    /** 方案顶层 custom_phrase 块自带非空 dictionary：不是常见的「dictionary: ""＋user_dict」用户短语表。 */
     internal fun hasOwnPhraseDictionary(schemaText: String): Boolean {
         val block = Regex("""(?m)^custom_phrase:[ \t]*(?:#.*)?\r?$""").find(schemaText) ?: return false
         val value = schemaText.substring(block.range.last + 1).lineSequence()
@@ -325,7 +325,7 @@ object PersonalDictManager {
     }
 
     /**
-     * 我的短语「固定在第几位」按编码存（cyime_pins.txt）：一条短语编码在每个开着的键盘上实际打出的编码，
+     * 我的短语「固定在第几位」按编码存（cayboard_pins.txt）：一条短语编码在每个开着的键盘上实际打出的编码，
      * 和各键盘短语副本用同一套换算（九键数字、14 键合并码、双拼码），再加上原编码本身。
      */
     internal fun phraseTypedCodes(context: Context, code: String): List<String> {
@@ -385,8 +385,8 @@ object PersonalDictManager {
         return best[letters.length]?.second.orEmpty()
     }
 
-    internal fun t9PhraseReadings(rimeDir: File): Map<Pair<String, String>, String> {
-        val source = File(rimeDir, CUSTOM_PHRASE_FILE)
+    internal fun t9PhraseReadings(inputDataDir: File): Map<Pair<String, String>, String> {
+        val source = File(inputDataDir, CUSTOM_PHRASE_FILE)
         if (!source.isFile) return emptyMap()
         val content = try { source.readText(Charsets.UTF_8) } catch (_: java.io.IOException) { return emptyMap() }
         return buildMap {
@@ -397,15 +397,15 @@ object PersonalDictManager {
         }
     }
 
-    internal fun writeKeyedPhrases(rimeDir: File, keys: PhraseKeys) =
-        writeKeyedPhrases(rimeDir, KeyedPhrases(keys.dictName, keys::codes))
+    internal fun writeKeyedPhrases(inputDataDir: File, keys: PhraseKeys) =
+        writeKeyedPhrases(inputDataDir, KeyedPhrases(keys.dictName, keys::codes))
 
     /** Rewrites the keyed copy only when its content changes, so an unchanged list costs no reload. */
-    internal fun writeKeyedPhrases(rimeDir: File, keys: KeyedPhrases) {
-        val source = File(rimeDir, CUSTOM_PHRASE_FILE).takeIf { it.isFile }?.readText(Charsets.UTF_8).orEmpty()
+    internal fun writeKeyedPhrases(inputDataDir: File, keys: KeyedPhrases) {
+        val source = File(inputDataDir, CUSTOM_PHRASE_FILE).takeIf { it.isFile }?.readText(Charsets.UTF_8).orEmpty()
         val entries = parseStableDbEntries(source).flatMap { entry -> keys.codes(entry.code).map { entry.copy(code = it) } }
         val text = buildStableDbText(STABLEDB_HEADER.replace("db_name\tcustom_phrase", "db_name\t${keys.dictName}"), entries)
-        val target = File(rimeDir, "${keys.dictName}.txt")
+        val target = File(inputDataDir, "${keys.dictName}.txt")
         CellDictionaryStore.writeAtomic(target, text)
     }
 
@@ -426,15 +426,15 @@ object PersonalDictManager {
     /**
      * 清理旧版本个人词库合并规则遗留的产物：
      * 1. 移除 `${schemaId}.custom.yaml` 中的 `translator/dictionary: <schemaId>_merged` 引用，
-     *    让 librime 按 schema 原声明编译原始词典名（如 pinyin_simp.table.bin）；
+     *    让引擎按 schema 原声明编译原始词典名（如 pinyin_simp.table.bin）；
      * 2. 删除 `${schemaId}_merged.dict.yaml` 合并表转发文件。
      */
-    internal fun cleanupStaleMergedPatch(rimeDir: java.io.File, schemaId: String) {
-        val mergedDict = java.io.File(rimeDir, "${schemaId}_merged.dict.yaml")
+    internal fun cleanupStaleMergedPatch(inputDataDir: java.io.File, schemaId: String) {
+        val mergedDict = java.io.File(inputDataDir, "${schemaId}_merged.dict.yaml")
         if (mergedDict.exists()) {
             mergedDict.delete()
         }
-        val customFile = java.io.File(rimeDir, "${schemaId}.custom.yaml")
+        val customFile = java.io.File(inputDataDir, "${schemaId}.custom.yaml")
         if (!customFile.exists()) return
         val text = customFile.readText(Charsets.UTF_8)
         val mergedRef = "\"translator/dictionary\": ${schemaId}_merged"
@@ -473,8 +473,8 @@ object PersonalDictManager {
     }
 
     // 为方案添加 custom_phrase 翻译器（独立于主词典音节表）
-    internal fun applyCustomPhraseTranslator(rimeDir: java.io.File, schemaId: String, dictName: String, namespace: String = "custom_phrase") {
-        val customFile = java.io.File(rimeDir, "${schemaId}.custom.yaml")
+    internal fun applyCustomPhraseTranslator(inputDataDir: java.io.File, schemaId: String, dictName: String, namespace: String = "custom_phrase") {
+        val customFile = java.io.File(inputDataDir, "${schemaId}.custom.yaml")
         val text = customFile.takeIf { it.isFile }?.readText().orEmpty()
         val patch = (SchemaManager.yaml.parseToYamlNode(text.ifBlank { "patch: {}" }) as? YamlMap)?.get("patch") as? YamlMap
         val phrase = "table_translator@$namespace"
@@ -493,7 +493,7 @@ object PersonalDictManager {
         }.joinToString("") { (key, value) -> "  \"$namespace/$key\": $value\n" }
         if (atFront && options.isEmpty()) return
         val occupied = patch?.entries?.keys.orEmpty().map { it.content }
-        // Rime elects a translator by comparing it with its neighbour. Appending
+        // The engine elects a translator by comparing it with its neighbour. Appending
         // can starve an exact match behind the Pinyin/English translators.
         val frontKey = generateSequence(beforeFirst) { it + "0" }.first { it !in occupied }
         val front = if (atFront) "" else "  \"$frontKey\": $phrase\n"
@@ -524,8 +524,8 @@ object PersonalDictManager {
     }
 
     /** 从 schema 文件中读取 translator.dictionary 名称，没有则用 schemaId 兜底。 */
-    private fun schemaDictionaryName(rimeDir: File, schemaId: String): String {
-        val schemaFile = File(rimeDir, "${schemaId}.schema.yaml")
+    private fun schemaDictionaryName(inputDataDir: File, schemaId: String): String {
+        val schemaFile = File(inputDataDir, "${schemaId}.schema.yaml")
         if (!schemaFile.exists()) return schemaId
         val regex = Regex("""translator:.*?dictionary:\s*(\S+)""", setOf(RegexOption.DOT_MATCHES_ALL))
         return regex.find(schemaFile.readText(Charsets.UTF_8))?.groupValues?.get(1) ?: schemaId
@@ -537,55 +537,55 @@ object PersonalDictManager {
      * 解析方案实际引用的个人词库文件名。
      * 优先级：方案自带 translator.packs → custom.yaml 中的 translator/packs → translator/dictionary（一路追溯到 user_*） → 默认 packName。
      */
-    fun resolvePersonalDictFile(rimeDir: File, schemaId: String): File {
+    fun resolvePersonalDictFile(inputDataDir: File, schemaId: String): File {
         // 方案自带 translator.packs 声明（开源方案仓库常见，如 pinyin_simp 的 [user_simp]）：
         // 个人词库以方案声明为准，不适用我们自造的 user_${dictionary} 命名。
-        val own = readSchemaPacks(rimeDir, schemaId)
-        if (own.isNotEmpty()) return File(rimeDir, "${own.first()}.dict.yaml")
-        val customFile = File(rimeDir, "${schemaId}.custom.yaml")
+        val own = readSchemaPacks(inputDataDir, schemaId)
+        if (own.isNotEmpty()) return File(inputDataDir, "${own.first()}.dict.yaml")
+        val customFile = File(inputDataDir, "${schemaId}.custom.yaml")
         if (customFile.exists()) {
             val text = customFile.readText(Charsets.UTF_8)
             // 1) translator/packs 中最前面的 user_* 或显式声明的名字
             val packs = Regex(""""?translator/packs"?\s*:\s*\[(.+?)]""", RegexOption.DOT_MATCHES_ALL)
                 .find(text)?.groupValues?.get(1)?.split(',')?.firstOrNull { it.trim().removeSurrounding("\"").startsWith("user_") }
-            if (packs != null) return File(rimeDir, "${packs.trim().removeSurrounding("\"")}.dict.yaml")
+            if (packs != null) return File(inputDataDir, "${packs.trim().removeSurrounding("\"")}.dict.yaml")
             // 2) translator/dictionary → 如果是 *_merged 则去合并文件中找 import_tables
             val dict = Regex(""""?translator/dictionary"?\s*:\s*"?(\w+)"?""").find(text)?.groupValues?.get(1)
             if (dict != null) {
                 if (dict.endsWith("_merged")) {
-                    val mergedFile = File(rimeDir, "$dict.dict.yaml")
+                    val mergedFile = File(inputDataDir, "$dict.dict.yaml")
                     if (mergedFile.exists()) {
                         val pk = Regex("""^[ \t]+-\s+(user_\S+)""", RegexOption.MULTILINE).findAll(mergedFile.readText(Charsets.UTF_8))
                             .map { it.groupValues[1] }.firstOrNull()
-                        if (pk != null) return File(rimeDir, "$pk.dict.yaml")
+                        if (pk != null) return File(inputDataDir, "$pk.dict.yaml")
                     }
                 }
-                return File(rimeDir, "$dict.dict.yaml")
+                return File(inputDataDir, "$dict.dict.yaml")
             }
         }
-        return getPackFile(rimeDir, schemaId)
+        return getPackFile(inputDataDir, schemaId)
     }
 
-    /** 从 Context 获取 rime 目录下的个人词库文件。 */
-    private fun getPackFile(rimeDir: File, schemaId: String): File =
-        File(rimeDir, "${packName(rimeDir, schemaId)}.dict.yaml")
+    /** 从 Context 获取输入数据目录下的个人词库文件。 */
+    private fun getPackFile(inputDataDir: File, schemaId: String): File =
+        File(inputDataDir, "${packName(inputDataDir, schemaId)}.dict.yaml")
 
     /** 旧版文件名映射（兼容性），新文件不存在时用于兜底读取。 */
-    private fun legacyPackFile(rimeDir: File, schemaId: String): File? {
+    private fun legacyPackFile(inputDataDir: File, schemaId: String): File? {
         val oldName = when (schemaId) {
             "pinyin_simp", "t9_pinyin", "pinyin_14jian", "pinyin_17jian", "pinyin_18jian" -> "user_simp_pinyin"
             "wubi86", "wubi86_pinyin" -> "user_simp_wubi"
             else -> return null
         }
-        val file = File(rimeDir, "$oldName.dict.yaml")
+        val file = File(inputDataDir, "$oldName.dict.yaml")
         return file.takeIf { it.exists() }
     }
 
     fun loadEntries(context: Context, schemaId: String): List<DictEntry> {
-        val rimeDir = SchemaManager.getRimeDir(context)
-        val file = resolvePersonalDictFile(rimeDir, schemaId)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
+        val file = resolvePersonalDictFile(inputDataDir, schemaId)
         if (!file.exists()) {
-            val legacy = legacyPackFile(rimeDir, schemaId)
+            val legacy = legacyPackFile(inputDataDir, schemaId)
             if (legacy != null) return try {
                 parsePersonalDictEntries(legacy.readText(Charsets.UTF_8))
             } catch (_: Exception) { emptyList() }

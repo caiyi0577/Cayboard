@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -8,7 +8,7 @@ import org.junit.Test
 
 /** #294：中文滑行除首选外再给几个编码的备选，插在首选之后；点它换掉这一笔的编码。 */
 class GlideAlternativesTest {
-    private val engine = listOf(RimeCandidate("当", ""), RimeCandidate("党", ""), RimeCandidate("但", ""))
+    private val engine = listOf(EngineCandidate("当", ""), EngineCandidate("党", ""), EngineCandidate("但", ""))
 
     private fun holder() = GlideAlternatives().apply {
         entry = GlideAlternatives.Entry("dh", 2, "double_pinyin_flypy", 7L,
@@ -38,7 +38,7 @@ class GlideAlternativesTest {
         val base = CandidateTransformResult(engine, engine.indices.map(CandidateAction::engine))
         assertSame(base, holder().inject(base, "dh", engine, false, "double_pinyin_flypy", 7L))
         val switched = holder()
-        assertSame(base, switched.inject(base, "dh", engine, true, "rime_ice", 7L))
+        assertSame(base, switched.inject(base, "dh", engine, true, "cayboard_pinyin", 7L))
         assertNull(switched.entry)
         assertSame(base, holder().inject(base, "dh", engine, true, "double_pinyin_flypy", 8L))
     }

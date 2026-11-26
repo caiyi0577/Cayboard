@@ -124,7 +124,7 @@ class SchemaLocalViewModel(application: Application) : AndroidViewModel(applicat
             }
             _uiState.update { it.copy(installingId = null, conflictingFiles = emptyList(), conflictingSchemeIds = emptyList()) }
             // 装好的方案自动编译进去（#340），不用再点「应用方案更改」。
-            if (result.success) com.cayboard.rime.SchemaChangeApplier.request(context)
+            if (result.success) com.cayboard.engine.SchemaChangeApplier.request(context)
             when {
                 result.success -> showToast(buildString {
                     append("已安装「${item.displayName}」，正在应用，稍等就能在键盘上用")
@@ -175,7 +175,7 @@ class SchemaLocalViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val result = SchemaManager.uninstallPackage(context, item.packageId)
             // 卸载的方案从键盘上拿掉、当前方案换走，同样自动应用（#340）。
-            if (result.success) com.cayboard.rime.SchemaChangeApplier.request(context)
+            if (result.success) com.cayboard.engine.SchemaChangeApplier.request(context)
             showToast(result.message)
             loadLocalPackages()
         }

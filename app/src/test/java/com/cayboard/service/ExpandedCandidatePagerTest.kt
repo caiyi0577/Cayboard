@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,7 +14,7 @@ import org.junit.Test
 class ExpandedCandidatePagerTest {
 
     private fun candidate(text: String, comment: String = "") =
-        RimeCandidate(text = text, comment = comment)
+        EngineCandidate(text = text, comment = comment)
 
     // ── filterIndices ──
 

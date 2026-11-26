@@ -28,9 +28,9 @@ def main():
     for key in ("rime-ice", "input", "id", "title", "output-dir"):
         parser.add_argument(f"--{key}", required=True)
     args = parser.parse_args()
-    readings = Readings(args.rime_ice)
+    readings = Readings(args.cayboard_pinyin)
     char_readings = {}
-    for text, code, *_ in read_dict(Path(args.rime_ice) / "cn_dicts" / "8105.dict.yaml"):
+    for text, code, *_ in read_dict(Path(args.cayboard_pinyin) / "cn_dicts" / "8105.dict.yaml"):
         char_readings.setdefault(text, set()).add(code)
     entries, english, fixed, missing, known = {}, [], 0, [], 0
     for raw in Path(args.input).read_text(encoding="utf-8").splitlines():
@@ -73,14 +73,14 @@ def main():
             f.write(f"{text}\t{code}\t{WEIGHT}\n")
     # 不停在固定 600：按同码竞争词排到日常首选后面（rank_cell_dict.py，2 字词第 2 位，3 字以上 ≥1200）。
     from rank_cell_dict import load_competitors, rank
-    rank(out / f"{name}.dict.yaml", load_competitors(args.rime_ice))
+    rank(out / f"{name}.dict.yaml", load_competitors(args.cayboard_pinyin))
     english_file = out / f"{name}.en.txt"
     if english:
         english_file.write_text("\n".join(english) + "\n", encoding="utf-8", newline="\n")
     elif english_file.exists():
         english_file.unlink()
     print(f"{args.id}: chinese={len(entries)} english={len(english)} reading_fixed={fixed} "
-          f"already_in_rime_ice={known} missing={len(missing)} {missing[:10]}")
+          f"already_in_cayboard_pinyin={known} missing={len(missing)} {missing[:10]}")
 
 
 if __name__ == "__main__":

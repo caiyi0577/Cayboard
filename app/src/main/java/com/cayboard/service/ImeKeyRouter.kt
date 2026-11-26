@@ -4,8 +4,8 @@ import android.util.Log
 import android.view.KeyEvent
 import com.cayboard.association.AssociationManager
 import com.cayboard.keyboard.OverlayRoute
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.resolveRimeCandidateIndex
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.resolveEngineCandidateIndex
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.ui.keyboard.KeyboardLayoutState
 import com.cayboard.ui.keyboard.isT9Schema
@@ -22,17 +22,17 @@ import kotlinx.coroutines.asContextElement
  * 承载按键派发（handleKeyPress）、长按退格合并、候选选择/翻页、计算器候选等逻辑。
  * 所有共享状态通过 service 引用访问（同模块 internal 成员）。
  */
-/** 26-key schemas whose speller alphabet has A–Z, so a capital joins the composition (rime-ice family):
- *  rime_ice and the layouts made from its schema (QWJRTK, Cyletix10 and the user's own custom_pinyin_*). */
-private fun isRimeIceCapitalSchema(id: String) =
-    id == "rime_ice" || com.cayboard.settings.CustomKeyboardLayouts.isCustom(id)
+/** 26-key schemas whose speller alphabet has A–Z, so a capital joins the composition (bundled Chinese family):
+ *  cayboard_pinyin and the layouts made from its schema (QWJRTK, Cyletix10 and the user's own custom_pinyin_*). */
+private fun isCayboardPinyinCapitalSchema(id: String) =
+    id == "cayboard_pinyin" || com.cayboard.settings.CustomKeyboardLayouts.isCustom(id)
 
 /**
- * 大写字母进 Rime 组字：
+ * 大写字母进入输入引擎组合：
  * 雾凇系 26 键，以及英文单词方案（打 Hello 出 Hello）。雾凇的 Unicode 码（U2603）只在雾凇系，不在这里。
  */
 private fun typesEnglishCapitals(id: String) =
-    isRimeIceCapitalSchema(id) || id == com.cayboard.settings.InputModes.ENGLISH_WORDS
+    isCayboardPinyinCapitalSchema(id) || id == com.cayboard.settings.InputModes.ENGLISH_WORDS
 
 /** 雾凇的 Unicode 码（recognizer `^U[a-f0-9]+`，U2603 → ☃）：大写 U 起头，后面只有数字和小写 a–f。 */
 internal fun isUnicodeCodeInput(input: String) =
@@ -51,16 +51,16 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         com.cayboard.ui.keyboard.KeyboardInputPreferences.DELETE_CHINESE_GLIDE_CHARACTER_KEY, false)
 
     private fun chineseGlideState(): ChineseGlideDeleteHistory.State? {
-        val snapshot = service.rimeEngine.readPinyinEditSnapshot()
+        val snapshot = service.inputEngine.readPinyinEditSnapshot()
         if (snapshot.size < 4) return null
         val caret = snapshot[1].toIntOrNull() ?: return null
         val confirmed = snapshot[2].toIntOrNull() ?: return null
         val ui = service.uiState.value
         return ChineseGlideDeleteHistory.State(snapshot[0], caret, confirmed, snapshot[3],
-            ui.currentSchemaId, ui.inputSessionId, ui.inputTarget, service.rimeEngine.currentCandidateRevision())
+            ui.currentSchemaId, ui.inputSessionId, ui.inputTarget, service.inputEngine.currentCandidateRevision())
     }
 
-    private fun chineseCodeSyllables(code: String, result: com.cayboard.rime.RimeProcessResult?,
+    private fun chineseCodeSyllables(code: String, result: com.cayboard.engine.EngineProcessResult?,
         allowIncomplete: Boolean = false): List<String>? {
         val isDouble = service.uiState.value.inputProfile.scheme == com.cayboard.settings.InputScheme.DOUBLE_PINYIN
         return runCatching {
@@ -439,13 +439,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             KeyEvent.KEYCODE_DPAD_DOWN -> HardwareCandidateKey.DOWN
             else -> return
         }
-        postRimeJob { hardwareNavigation.releasePress(key) }
+        postEngineJob { hardwareNavigation.releasePress(key) }
     }
 
     /** Touch arrow buttons navigate candidates; physical arrows always edit the text. */
     internal fun moveHardwareCandidate(direction: Int) {
         val code = if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
-        postRimeJob {
+        postEngineJob {
             if (!hasPendingCandidateCommit) {
                 processHardwareCandidateKey(KeyEvent(KeyEvent.ACTION_DOWN, code), pageAtBoundary = true)
             }
@@ -469,7 +469,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     internal fun resetHardwareCandidateSelection() {
-        postRimeJob {
+        postEngineJob {
             hardwareNavigation.clear()
             withEditor { publishHardwareCandidateSelection() }
         }
@@ -515,7 +515,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             return
         }
         pending.owner.runInline {
-            postRimeJob {
+            postEngineJob {
                 if (pendingCandidateCommit === pending) deliverCandidateCommit(pending)
             }
         }
@@ -529,8 +529,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             return
         }
         pending.owner.runInline {
-            postRimeJob {
-                if (pendingCandidateCommit !== pending) return@postRimeJob
+            postEngineJob {
+                if (pendingCandidateCommit !== pending) return@postEngineJob
                 clearInputStateForKeys()
                 withEditor { discardPendingCandidateCommit() }
             }
@@ -579,21 +579,21 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
      * 超时/失败/插件不干预（null）均回退原始候选（actions 为空 = 纯引擎语义）。
      */
     private fun sendTransformedResult(
-        result: com.cayboard.rime.RimeProcessResult,
+        result: com.cayboard.engine.EngineProcessResult,
         clearPreviousAssociation: Boolean = false,
         afterUpdate: (suspend () -> Unit)? = null,
     ) {
         if (glideBatch.get() == true) return
-        val rankedResult = rerankT9UserChoices(result)
+        val rankedResult = service.personalizeCandidates(result)
         // 日语罗马音的显示归一化收口在 updateUIWithResult（刷新路径同样生效），此处不再单独加工
         val transformed = service.candidateTransform.transformFor(rankedResult)
         val state = service.uiState.value
         val caretSnapshot = if (!result.isAsciiMode && result.inputText.isNotEmpty() &&
-            service.hasInlinePinyinCaretInside() && com.cayboard.rime.PinyinEditBuffer.supports(state.currentSchemaId))
-            service.rimeEngine.readPinyinEditSnapshot() else null
+            service.hasInlinePinyinCaretInside() && com.cayboard.engine.PinyinEditBuffer.supports(state.currentSchemaId))
+            service.inputEngine.readPinyinEditSnapshot() else null
         KeyLatencyProbe.posted(result.inputText.length)
         publishUi {
-            if (!service.rimeEngine.isCandidateRevisionCurrent(result.engineRevision)) return@publishUi
+            if (!service.inputEngine.isCandidateRevisionCurrent(result.engineRevision)) return@publishUi
             if (clearPreviousAssociation) service.candidateState.value = service.candidateState.value.copy(associationCandidates = emptyList())
             service.sessionController.updateUIWithResult(
                 transformed?.let { rankedResult.copy(candidates = it.candidates.toTypedArray()) } ?: rankedResult,
@@ -602,16 +602,6 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             if (caretSnapshot != null) service.showInlinePinyinCaret(caretSnapshot, state.inputSessionId, state.currentSchemaId)
             if (afterUpdate != null) afterUpdate()
         }
-    }
-
-    private fun rerankT9UserChoices(result: com.cayboard.rime.RimeProcessResult): com.cayboard.rime.RimeProcessResult {
-        if (result.inputText.isBlank() || result.candidates.size < 2 ||
-            !isT9Schema(service.uiState.value.currentSchemaId) ||
-            com.cayboard.settings.SensitiveInputState.active || service.isSecretEditor() ||
-            service.uiState.value.inputTarget.isInternal) return result
-        val durable = service.rimeEngine.t9Lookup(result.inputText)
-        val ranked = service.t9UserHabitMemory.rerank(result.inputText, result.candidates, durable)
-        return if (ranked.contentEquals(result.candidates)) result else result.copy(candidates = ranked)
     }
 
     /** 英文选词后自动补的空格（默认关），只管紧接着的一个键，见 [EnglishAutoSpace]。 */
@@ -713,7 +703,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
      */
     internal fun commitGlideWord(candidates: List<com.cayboard.glide.GlideCandidate>, case: (String) -> String) {
         if (candidates.isEmpty() || hasPendingCandidateCommit) return
-        postRimeJob {
+        postEngineJob {
             withEditor {
                 if (!service.uiState.value.isAsciiMode) return@withEditor
                 service.predictionManager.invalidatePendingPredictions()
@@ -777,7 +767,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * 中文滑行：一个词的编码按点按同一路径逐键送进 Rime，已打的拼音、分段选词、邻键纠错和候选刷新都不变。
+     * 中文滑行：一个词的编码按点按同一路径逐键送进输入引擎，已打的拼音、分段选词、邻键纠错和候选刷新都不变。
      * 接在未上屏的编码后面时先补音节分隔符（xi 后面划 an 是 xi'an，不会并成 xian）。
      */
     internal fun typeGlideCode(code: String, alternatives: List<String>, previewToken: Long?) {
@@ -792,10 +782,10 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         var beforeGlide: ChineseGlideDeleteHistory.State? = null
         var typedTail: ChineseGlideDeleteHistory.TypedTail? = null
         var typedSyllables: List<String>? = null
-        if (trackGlide) postRimeJob("glide_delete_start") {
+        if (trackGlide) postEngineJob("glide_delete_start") {
             beforeGlide = chineseGlideState()
             typedTail = beforeGlide?.let { chineseGlideDeletes.typedTail(it) }
-            typedSyllables = typedTail?.let { chineseCodeSyllables(it.code, service.rimeEngine.readQueuedResult(), allowIncomplete = true) }
+            typedSyllables = typedTail?.let { chineseCodeSyllables(it.code, service.inputEngine.readQueuedResult(), allowIncomplete = true) }
         }
         val input = service.candidateState.value.inputText
         submittingGlide = previewToken != null
@@ -808,9 +798,9 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         // The FIFO barrier reads the final engine state after all of the glide's normal key events.
         val glideSession = service.uiState.value.inputSessionId
         val glideSchema = service.uiState.value.currentSchemaId
-        postRimeJob("glide_finish") {
-            val result = service.rimeEngine.readQueuedResult()
-            val caretSnapshot = service.rimeEngine.readPinyinEditSnapshot()
+        postEngineJob("glide_finish") {
+            val result = service.inputEngine.readQueuedResult()
+            val caretSnapshot = service.inputEngine.readPinyinEditSnapshot()
             if (trackGlide) {
                 typedTail?.takeIf { typedSyllables != null }?.let {
                     chineseGlideDeletes.record(it.before, beforeGlide, it.code, typedSyllables)
@@ -819,15 +809,15 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             }
             if (previewToken == null) {
                 withEditor {
-                    if (result != null && service.rimeEngine.isCandidateRevisionCurrent(result.engineRevision))
+                    if (result != null && service.inputEngine.isCandidateRevisionCurrent(result.engineRevision))
                         service.showInlinePinyinCaret(caretSnapshot, glideSession, glideSchema)
                 }
-                return@postRimeJob
+                return@postEngineJob
             }
             try {
                 val transformed = result?.let { service.candidateTransform.transformFor(it) }
                 withEditor {
-                    if (result != null && service.rimeEngine.isCandidateRevisionCurrent(result.engineRevision)) {
+                    if (result != null && service.inputEngine.isCandidateRevisionCurrent(result.engineRevision)) {
                         // 这一笔的键是成批送的，不经 sendTransformedResult：双拼打第一个键时留到出结果才清的
                         // 上一次联想（deferAssociationClear）要在这里清，否则上屏后接着划，旧联想词还挂在候选栏。
                         service.candidateState.value = service.candidateState.value.copy(associationCandidates = emptyList())
@@ -856,21 +846,21 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         if (codes.isEmpty()) { holder.clear(); return }
         val schema = service.uiState.value.currentSchemaId
         val session = service.uiState.value.inputSessionId
-        postRimeJob("glide_alternatives") {
+        postEngineJob("glide_alternatives") {
             holder.clear()
-            val snapshot = service.rimeEngine.readPinyinEditSnapshot()
+            val snapshot = service.inputEngine.readPinyinEditSnapshot()
             val input = snapshot.getOrNull(0).orEmpty()
             val caret = snapshot.getOrNull(1)?.toIntOrNull() ?: input.length
-            if ((snapshot.getOrNull(2)?.toIntOrNull() ?: 0) > 0) return@postRimeJob
-            val revision = service.rimeEngine.glidePreviewRevision()
+            if ((snapshot.getOrNull(2)?.toIntOrNull() ?: 0) > 0) return@postEngineJob
+            val revision = service.inputEngine.glidePreviewRevision()
             val choices = codes.mapNotNull { alternative ->
-                val preview = runCatching { service.rimeEngine.glidePreview(alternative, revision) }.getOrNull() ?: return@mapNotNull null
+                val preview = runCatching { service.inputEngine.glidePreview(alternative, revision) }.getOrNull() ?: return@mapNotNull null
                 val text = preview.candidates.firstOrNull()?.text?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
                 val (next, nextCaret) = GlideAlternatives.inserted(input, caret, alternative)
                 if (preview.inputText != next) return@mapNotNull null
                 GlideAlternatives.Choice(text, next, nextCaret)
             }
-            if (choices.isEmpty()) return@postRimeJob
+            if (choices.isEmpty()) return@postEngineJob
             val (typed, typedCaret) = GlideAlternatives.inserted(input, caret, code)
             holder.entry = GlideAlternatives.Entry(typed, typedCaret, schema, session, choices)
         }
@@ -883,16 +873,16 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         val state = service.uiState.value
         if (before.schema != state.currentSchemaId || before.session != state.inputSessionId) return
         val choice = holder.choose(input, snapshot.candidates.firstOrNull()) ?: return
-        if (!service.rimeEngine.applyPinyinEdit(before.input, choice.input, choice.caret, expectedSchema = before.schema)) {
+        if (!service.inputEngine.applyPinyinEdit(before.input, choice.input, choice.caret, expectedSchema = before.schema)) {
             holder.entry = before
             return
         }
-        service.rimeEngine.readQueuedResult()?.let { sendTransformedResult(it) }
+        service.inputEngine.readQueuedResult()?.let { sendTransformedResult(it) }
     }
 
     /**
      * 分号是编码键的方案没在打字时点分号键：按全角／半角设置出标点（全角是「；」）。
-     * 键面也跟着写（semicolonKeyLabel）；实体键盘的分号空闲时本来就由 Rime 出「；」。
+     * 键面也跟着写（semicolonKeyLabel）；实体键盘的分号空闲时本来就由引擎输出「；」。
      */
     private fun semicolonPunctuation(): String = punctuationWidth(";", service.textCommit.isFullWidthPunctuation())
 
@@ -902,11 +892,11 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * 导入的第三方方案（声笔等）把 ; ' , . / 这类符号写进 speller/alphabet 当编码键（#87）：这些键改成把半角字符交给 Rime，
+     * 导入的第三方方案（声笔等）把 ; ' , . / 这类符号写进 speller/alphabet 当编码键（#87）：这些键改成把半角字符交给输入引擎，
      * 由方案决定是编码、顶屏还是出标点；空格两侧逗号、句号键打出的「，」「。」也按 , . 算。
      * 只管自定义编码方案（[com.cayboard.settings.InputScheme.EXTERNAL]）；内置方案、字母表里没有的符号返回 null，照旧按标点上屏。
      * 字母表里的数字（声笔 sbxm 末尾带 1234567890，#106）也一样，但只在打字中：方案用数字编码还是选词（sbxm 的
-     * alternative_select_keys）由 Rime 定；没在打字时数字照旧直接上屏。九键等数字本来就是编码的键盘不经过这里。
+     * alternative_select_keys）由方案决定；没在打字时数字照旧直接上屏。九键等数字本来就是编码的键盘不经过这里。
      */
     internal fun schemeCodeKey(text: String): String? {
         val state = service.uiState.value
@@ -916,12 +906,12 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         if (c.code !in 0x21..0x7E || c.isLetter()) return null
         if (c.isDigit() && (!service.candidateState.value.isComposing || state.inputProfile.layout.kind !in
                 setOf(com.cayboard.settings.LayoutKind.ALPHABETIC, com.cayboard.settings.LayoutKind.MERGED))) return null
-        return c.toString().takeIf { service.rimeEngine.spellerAlphabetHas(state.currentSchemaId, c) || schemeLeadKey(c) }
+        return c.toString().takeIf { service.inputEngine.spellerAlphabetHas(state.currentSchemaId, c) || schemeLeadKey(c) }
     }
 
     /**
-     * 导入方案自己的 recognizer 规则以这个字符开头（`` ^` `` 部件组字、`^V` 计算，#118），且还没在打字：交给 Rime 起头，
-     * 和桌面 Rime 一样；打字中照旧。内置方案不经过这里。
+     * 导入方案自己的 recognizer 规则以这个字符开头（`` ^` `` 部件组字、`^V` 计算，#118），且还没在打字：交给输入引擎起头，
+     * 行为与桌面版一致；打字中照旧。内置方案不经过这里。
      */
     private fun schemeLeadKey(c: Char): Boolean {
         val state = service.uiState.value
@@ -931,21 +921,21 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * 雾凇 26 键打着 Unicode 码（大写 U 加十六进制）时，角标、长按打的数字接进编码交给 Rime，
-     * 不再把 U 连同数字原样上屏。数字行的数字本来就进 Rime；九键、双拼、英文和数字面板不经过这里。
+     * 雾凇 26 键打着 Unicode 码（大写 U 加十六进制）时，角标、长按打的数字接进编码交给输入引擎，
+     * 不再把 U 连同数字原样上屏。数字行的数字本来就进入编码；九键、双拼、英文和数字面板不经过这里。
      */
     internal fun unicodeCodeDigit(text: String): Boolean {
         val state = service.uiState.value
         return text.length == 1 && text[0] in '0'..'9' && !state.isAsciiMode &&
-            isRimeIceCapitalSchema(state.currentSchemaId) && isUnicodeCodeInput(service.candidateState.value.inputText)
+            isCayboardPinyinCapitalSchema(state.currentSchemaId) && isUnicodeCodeInput(service.candidateState.value.inputText)
     }
 
-    /** 导入方案的大写字母交给 Rime（#118）：字母表里有这个大写，或方案的 recognizer 规则以它起头（没在打字时）。 */
-    private fun externalCapitalInRime(letter: Char): Boolean {
+    /** 导入方案的大写字母交给输入引擎（#118）：字母表里有这个大写，或方案的 recognizer 规则以它起头（没在打字时）。 */
+    private fun externalCapitalInEngine(letter: Char): Boolean {
         val state = service.uiState.value
         if (state.inputProfile.scheme != com.cayboard.settings.InputScheme.EXTERNAL) return false
         val upper = letter.uppercaseChar()
-        return service.rimeEngine.spellerAlphabetHas(state.currentSchemaId, upper) || schemeLeadKey(upper)
+        return service.inputEngine.spellerAlphabetHas(state.currentSchemaId, upper) || schemeLeadKey(upper)
     }
 
     internal fun handleKeyPress(key: String, isShifted: Boolean, hardwarePageDirection: Int = 0,
@@ -972,7 +962,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
 
     private fun routeKeyPress(key: String, isShifted: Boolean, hardwarePageDirection: Int,
         languageSwitchMode: com.cayboard.settings.LanguageSwitchMode?, hardwareEvent: KeyEvent?, mergedKey: Boolean) {
-        // 空键无任何按键语义，且下游 Rime 路由按 key[0] 取码（key.lowercase()[0]），
+        // 空键无任何按键语义，且下游输入路由按 key[0] 取码（key.lowercase()[0]），
         // 空串会越界崩溃（2026-09-14 真机实证：滑动手势 commit 值为空时触发）。
         if (key.isEmpty()) return
         val admission = service.inputReadiness.ticket() ?: return
@@ -1008,7 +998,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                                 et.text?.replace(start, et.selectionEnd.coerceAtLeast(start), input)
                                 try { et.setSelection(start + input.length) } catch (_: Exception) {}
                             }
-                            service.rimeEngine.endComposition(isT9Schema(service.uiState.value.currentSchemaId))
+                            service.inputEngine.endComposition(isT9Schema(service.uiState.value.currentSchemaId))
                             service.candidateState.value = service.candidateState.value.copy(
                                 inputText = "",
                                 preeditText = "",
@@ -1030,8 +1020,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
                 "delete" -> {
                     if (hasComposing) {
-                        // 组合态：退格走 Rime，更新候选栏。删空时清掉组合后再读结果，旧结果过期会被丢掉，最后一个字母删不掉（11-03）。
-                        sendTransformedResult(service.rimeEngine.tryDeleteCompositionAndGetResult())
+                        // 组合态：退格交给输入引擎，更新候选栏。删空时清掉组合后再读结果，旧结果过期会被丢掉，最后一个字母删不掉（11-03）。
+                        sendTransformedResult(service.inputEngine.tryDeleteCompositionAndGetResult())
                     } else {
                         deleteInToolPanelField()
                     }
@@ -1042,7 +1032,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         if (hasComposing && candState.candidates.isNotEmpty()) {
                             val snapshot = spaceSnapshot ?: candState
                             val index = snapshot.spaceCandidateIndex(service.uiState.value.inputProfile)
-                            postRimeJob { selectCandidateAsync(index, snapshot = snapshot) }
+                            postEngineJob { selectCandidateAsync(index, snapshot = snapshot) }
                         } else {
                             ToolPanelEditTextHolder.editText?.let { et ->
                                 val start = et.selectionStart.coerceAtLeast(0)
@@ -1060,16 +1050,16 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                     if (key.length == 1) {
                         val isLetter = key.matches(Regex("[a-zA-Z]"))
                         val isChineseMode = !service.uiState.value.isAsciiMode
-                        // 微软双拼的分号：打字中和字母一样进 Rime（ing），没在打字时照旧按标点上屏。
+                        // 微软双拼的分号：打字中和字母一样进输入引擎组成 ing，没在打字时照旧按标点上屏。
                         val semicolonCode = key == ";" && semicolonIsCode()
                         if (semicolonCode && !hasComposing && hardwareEvent == null) {
                             service.textCommit.commitLiteralText(semicolonPunctuation(), preserveWidth = true)
                             return
                         }
                         if ((isLetter || semicolonCode && hasComposing) && isChineseMode) {
-                            // 中文模式：字母进 Rime 拼音组合，候选栏选词后经 commitText 重定向进面板输入框
-                            val keyCode = if (mergedKey) service.rimeEngine.mergedLetterKeyCode(key[0]) else key.lowercase()[0].code
-                            val result = service.rimeEngine.processKeyAndGetResult(keyCode, 0)
+                            // 中文模式：字母进入拼音组合，候选栏选词后经 commitText 重定向进面板输入框
+                            val keyCode = if (mergedKey) service.inputEngine.mergedLetterKeyCode(key[0]) else key.lowercase()[0].code
+                            val result = service.inputEngine.processKeyAndGetResult(keyCode, 0)
                             if (result.processed) {
                                 sendTransformedResult(result)
                             }
@@ -1109,13 +1099,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             if (usesDirectFieldInput && routeDirectFieldKey(key, isShifted, hardwareEvent)) return@command
             if (service.uiState.value.inputProfile.scheme == com.cayboard.settings.InputScheme.EXTERNAL &&
                 !service.uiState.value.isAsciiMode &&
-                !service.rimeEngine.spellerAlphabetKnown(service.uiState.value.currentSchemaId)) service.rimeEngine.warmSpellerAlphabet()
+                !service.inputEngine.spellerAlphabetKnown(service.uiState.value.currentSchemaId)) service.inputEngine.warmSpellerAlphabet()
             val panelKeyboard = service.keyboardViewModel.keyboardState.value.let {
                 it is KeyboardLayoutState.Number || it is KeyboardLayoutState.CommonSymbol }
             val schemeCode = if (panelKeyboard) null else schemeCodeKey(key)
-            // 分号是编码键的方案（微软双拼）：没在打字时点屏幕上的分号键仍按标点上屏，和以前一样；打字中往下送进 Rime 组成 ing。
+            // 分号是编码键的方案（微软双拼）：没在打字时点屏幕上的分号键仍按标点上屏，和以前一样；打字中送进输入引擎组成 ing。
             if (hardwareEvent == null && key == ";" && semicolonIsCode() && service.t9PartialSegments.isEmpty() &&
-                service.rimeEngine.readQueuedComposition()?.input.isNullOrEmpty()) {
+                service.inputEngine.readQueuedComposition()?.input.isNullOrEmpty()) {
                 service.textCommit.literalSubmission(semicolonPunctuation(), preserveWidth = true)?.invoke()
                 return@command
             }
@@ -1124,7 +1114,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 // Idle Tab belongs to the editor: single-line fields move focus (Shift+Tab backwards),
                 // multi-line ones insert a tab. Only an unfinished composition keeps Tab in the IME.
                 if (hardwareEvent.keyCode == KeyEvent.KEYCODE_TAB && service.t9PartialSegments.isEmpty() &&
-                    service.rimeEngine.readQueuedComposition()?.input.isNullOrEmpty()) {
+                    service.inputEngine.readQueuedComposition()?.input.isNullOrEmpty()) {
                     withEditor {
                         service.predictionManager.invalidatePendingPredictions()
                         service.candidateState.value = service.candidateState.value.copy(
@@ -1160,18 +1150,18 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
                 // 打拼音时不按 Shift 的 ; / \ 等：先把字母原样上屏（不上屏首选，Gboard 规则，用户 2026-10-24），
                 // 再按空闲时的标点规则出符号。翻页键另有入口，拼音分隔符 ' 照旧。
-                // 分号是编码键的方案（微软双拼）分号照样送进 Rime：打字中是 ing，没在打字时由 Rime 出标点。
+                // 分号是编码键的方案（微软双拼）分号照样送进输入引擎：打字中是 ing，没在打字时由引擎输出标点。
                 if (hardwarePageDirection == 0 && key.length == 1 && key != "'" && !(key == ";" && semicolonIsCode()) &&
                     schemeCode == null && isLiteralPunctuation(key) &&
                     !service.uiState.value.isAsciiMode &&
                     service.uiState.value.inputProfile.language == com.cayboard.settings.InputLanguage.CHINESE &&
-                    (service.rimeEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
+                    (service.inputEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
                         service.t9PartialSegments.isNotEmpty()) && !commitHardwareLiteral("")) return@command
             } else {
                 hardwareNavigation.clear()
             }
             if (hardwarePageDirection != 0 &&
-                (service.rimeEngine.compositionActiveForDeletion() != false || service.t9PartialSegments.isNotEmpty())) {
+                (service.inputEngine.compositionActiveForDeletion() != false || service.t9PartialSegments.isNotEmpty())) {
                 // Consume even at either boundary or when decoding has no candidates yet.
                 // Never turn a reserved paging key into punctuation in an unfinished composition.
                 if (service.keyboardViewModel.candidatePageExpanded.value) {
@@ -1272,15 +1262,15 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             // Literal English input has no decoder work and must not wait for its lock.
             // 邻键纠错只对触屏有意义：物理键盘按键是精确的，不做邻键纠错。
             val geometry = letterNeighbors
-            service.rimeEngine.setNeighborMap(
+            service.inputEngine.setNeighborMap(
                 if (hardwareEvent == null && geometry.first == service.uiState.value.currentSchemaId) geometry.second else "")
             // 设置页的候选开关（中英混输、繁体输出、时间日期、表情、符号名、希腊字母、生僻字）：设置一变已由
-            // CayboardInputMethodService 的设置监听立刻写进引擎；Rime 选项随会话重建而清零，按键前再补一次。
+            // CayboardInputMethodService 的设置监听立刻写进引擎；引擎选项随会话重建而清零，按键前再补一次。
             // 只在变了时写，免得每键触发选项通知；九键数字键也走这里。
             if (key.length == 1 && key[0].isLetterOrDigit()) service.sessionController.applyCandidateOptions()
             if (schemeCode != null) {
-                // 第三方方案的符号编码键（#87）：先交给 Rime；方案没处理再按空闲时的标点规则上屏。
-                val result = service.rimeEngine.processQueuedKeyAndGetResult(schemeCode[0].code, 0)
+                // 第三方方案的符号编码键（#87）：先交给输入引擎；方案没处理再按空闲时的标点规则上屏。
+                val result = service.inputEngine.processQueuedKeyAndGetResult(schemeCode[0].code, 0)
                 if (result.processed) {
                     if (result.committedText.isNotEmpty()) withEditor { service.commitText(result.committedText) }
                     sendTransformedResult(result)
@@ -1292,7 +1282,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             val state = service.uiState.value
             val candState = service.candidateState.value
             var needsUIUpdate = false
-            var pendingResult: com.cayboard.rime.RimeProcessResult? = null
+            var pendingResult: com.cayboard.engine.EngineProcessResult? = null
             var committedText: String? = null
 
             if (!state.isAsciiMode && state.inputProfile.scheme == com.cayboard.settings.InputScheme.ZHUYIN &&
@@ -1308,7 +1298,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 "clear_all" -> {
                     // 上滑清空 = 多次退格快捷方式（对标主流输入法）：输入态只清输入态，空闲态清空全部已上屏。
                     // 引擎繁忙时不把未知状态当成空闲，更不能清正文。
-                    if (service.rimeEngine.compositionActiveForDeletion() == null) return@command
+                    if (service.inputEngine.compositionActiveForDeletion() == null) return@command
                     // 「打字中清空整个输入框」（默认关）：打字中也直接清整个输入框，没上屏的拼音丢掉，撤回只放回输入框原来的字。
                     val clearPrefs = com.cayboard.settings.SettingsPreferences.getPrefsPublic(service)
                     val wholeField = clearPrefs.getBoolean(
@@ -1414,7 +1404,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
                 "enter" -> {
                     service.calculatorEngine.clear()
-                    val japaneseResult = service.rimeEngine.processJapaneseEnterIfComposing()
+                    val japaneseResult = service.inputEngine.processJapaneseEnterIfComposing()
                     if (japaneseResult != null) {
                         // 原生 Return 按日语方案提交假名读音；commit 不能经过可覆盖的 UI channel。
                         if (japaneseResult.committedText.isNotEmpty()) {
@@ -1426,14 +1416,14 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         // 未处理时保留输入；成功时按结果刷新，不能再 clearComposition 或重复取 commit。
                         return@command
                     }
-                    val engineInput = service.rimeEngine.getInput()
+                    val engineInput = service.inputEngine.getInput()
                     // UI publication may lag the FIFO. Enter consumes unfinished input;
                     // only a subsequent, idle Enter may invoke the editor action.
                     // 西班牙语的字母已逐字上屏，没有可提交的输入：回车照常换行或执行动作。
                     if (engineInput.isNotEmpty() || candState.isComposing ||
                         (!state.isAsciiMode && !state.inputProfile.typesLettersDirectly &&
                             candState.pendingEnglishText.isNotEmpty())) {
-                        // T9 和 14 键提交屏上的解码拼音（T9 含 partial commit 累积），其他用 RIME input。
+                        // T9 和 14 键提交屏上的解码拼音（T9 含 partial commit 累积），其他用 引擎输入。
                         val isT9 = isT9Schema(state.currentSchemaId)
                         val input = rawCompositionCommitText(engineInput, candState.shownPreedit(state.inputProfile), isT9,
                             usesMergedLetterKeys(state.inputProfile.layout))
@@ -1441,13 +1431,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                             val accepted = withEditor { service.submitText(input).accepted }
                             if (!accepted) return@command
                         }
-                        // 同步清空，避免异步 postRimeJob 延迟导致后续 backspace 拿到旧状态。
+                        // 同步清空，避免异步 postEngineJob 延迟导致后续 backspace 拿到旧状态。
                         if (isT9) service.t9PartialSegments.clear()
                         endQueuedComposition()
                         withEditor { service.endComposingInputBox() }
                         needsUIUpdate = true
                     } else {
-                        service.rimeEngine.clearComposition()
+                        service.inputEngine.clearComposition()
                         withEditor {
                             performIdleEnter()
                         }
@@ -1559,7 +1549,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
                 "word_separator" -> {
                     if (candState.isComposing || candState.inputText.isNotEmpty()) {
-                        val result = service.rimeEngine.processQueuedKeyAndGetResult(0x27, 0)
+                        val result = service.inputEngine.processQueuedKeyAndGetResult(0x27, 0)
                         if (result.processed) {
                             sendTransformedResult(result)
                         } else {
@@ -1581,7 +1571,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                     if (switchOptions.mode ==
                         com.cayboard.settings.LanguageSwitchMode.CURRENT_ENGLISH) {
                         val state = service.uiState.value
-                        val schemaId = service.rimeEngine.getCurrentSchema()
+                        val schemaId = service.inputEngine.getCurrentSchema()
                         val nativeLanguageEnabled = com.cayboard.settings.InputModes.languageOf(
                             schemaId, state.schemas) in com.cayboard.settings.LanguagePreferences.enabled(service)
                         val optimisticTarget = if (nativeLanguageEnabled) !state.isAsciiMode else true
@@ -1592,7 +1582,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                             )
                         }
                     }
-                    // 在 key-processing 线程上执行切换：toggleAsciiMode 阻塞等待 rimeLock
+                    // 在 key-processing 线程上执行切换：toggleAsciiMode 阻塞等待 engineLock
                     // （部署/维护持锁时排队，完成后自动切换），不在主线程阻塞避免 ANR。
                     val t0 = System.nanoTime()
                     FileLogger.i(CayboardInputMethodService.TAG, "ime_switch dispatched, ui ascii=${service.uiState.value.isAsciiMode}, thread=${Thread.currentThread().name}")
@@ -1600,14 +1590,14 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                             languageSwitchMode = languageSwitchMode)) {
                         // 失败后继续显示引擎的实际状态。
                         withEditor {
-                            val actualAscii = service.rimeEngine.isAsciiMode()
+                            val actualAscii = service.inputEngine.isAsciiMode()
                             service.uiState.value = service.uiState.value.copy(isAsciiMode = actualAscii)
                             service.keyboardViewModel.dispatch(
-                                com.cayboard.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(actualAscii, service.rimeEngine.getCurrentSchema())
+                                com.cayboard.ui.keyboard.KeyboardDispatchAction.AsciiModeChanged(actualAscii, service.inputEngine.getCurrentSchema())
                             )
                         }
                     }
-                    FileLogger.i(CayboardInputMethodService.TAG, "ime_switch handled, total ${(System.nanoTime() - t0) / 1_000_000}ms (queue+rimeLock+main)")
+                    FileLogger.i(CayboardInputMethodService.TAG, "ime_switch handled, total ${(System.nanoTime() - t0) / 1_000_000}ms (queue+engineLock+main)")
                 }
                 "abc" -> {
                     service.calculatorEngine.clear()
@@ -1674,13 +1664,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         updateCalculatorCandidates()
                     }
                     
-                    // 数字选词拦截（插件候选变换存在时）：数字键不进入引擎——rime 会自行选
+                    // 数字选词拦截（插件候选变换存在时）：数字键不进入按键路由——引擎会自行选
                     // 引擎候选并返回 committedText，绕过插件候选；映射为对应位置显示候选的
                     // 点击（selectCandidateAsync 按 candidateActions 分流上屏）。
                     // actions 为空（无变换）时保持原生数字选词行为不变。
                     if (!state.isAsciiMode && candState.isComposing &&
                         key.length == 1 && key[0] in '1'..'9' &&
-                        !(isRimeIceCapitalSchema(state.currentSchemaId) && isUnicodeCodeInput(candState.inputText))
+                        !(isCayboardPinyinCapitalSchema(state.currentSchemaId) && isUnicodeCodeInput(candState.inputText))
                     ) {
                         val actions = service.candidateState.value.candidateActions
                         val digitIndex = key[0] - '1'
@@ -1690,10 +1680,10 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         }
                     }
 
-                    // 所有按键统一经过 Rime 引擎
+                    // 所有按键统一经过输入引擎
                     // 字母键不进入此分支（即使 pendingEnglish 非空），需要继续积累编码
                     // 英文模式（isAsciiMode）下非字母键（QWERTY 上滑的数字/符号、数字/符号面板）
-                    // 直接上屏，不进入 Rime 引擎与 pendingEnglish 累积（上滑字符即输即上）。
+                    // 直接上屏，不进入输入引擎与 pendingEnglish 累积（上滑字符即输即上）。
                     if ((state.isAsciiMode || pendingEnglish.isNotEmpty()) && !key.matches(Regex("[a-zA-Z]"))) {
                         val finalKey = key
                         withEditor {
@@ -1708,13 +1698,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         val isChinese = !state.isAsciiMode
                         val char = key
                         val japaneseCase = JapaneseTyping.usesKanaCase(state.currentSchemaId, state.isAsciiMode)
-                        val keyCode = if (japaneseCase) JapaneseTyping.keyCode(key, isShifted) else if (mergedKey) service.rimeEngine.mergedLetterKeyCode(key[0]) else key.lowercase()[0].code
+                        val keyCode = if (japaneseCase) JapaneseTyping.keyCode(key, isShifted) else if (mergedKey) service.inputEngine.mergedLetterKeyCode(key[0]) else key.lowercase()[0].code
                         val mask = if (isShifted && !japaneseCase) KeyEvent.META_SHIFT_ON else 0
                         val isLetter = key.matches(Regex("[a-zA-Z]"))
                         val isShiftedChinese = isShifted && isChinese && isLetter && !japaneseCase
 
-                        // 非 ASCII 可打印字符（全角符号/中文标点）：直接上屏，不进入 Rime 引擎。
-                        // Rime processKey 只接受标准键码，全角键码（如 U+FF0F）无法识别会被静默
+                        // 非 ASCII 可打印字符（全角符号/中文标点）：直接上屏，不进入输入引擎。
+                        // processKey 只接受标准键码，全角键码（如 U+FF0F）无法识别会被静默
                         // 丢弃，导致中文模式下符号面板点击全角字符无输出（与 Trime onText 行为一致）。
                         if (char.isNotEmpty() && char.any { it.code > 0x7E }) {
                             committedText = char
@@ -1722,9 +1712,9 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         } else if (isShifted && !isLetter) {
                             if (char.length == 1) {
                                 val charCode = char[0].code
-                                val processed = service.rimeEngine.processKey(charCode, 0)
+                                val processed = service.inputEngine.processKey(charCode, 0)
                                 if (processed) {
-                                    val result = service.rimeEngine.getProcessResult(processed)
+                                    val result = service.inputEngine.getProcessResult(processed)
                                     // commitText 不走 CONFLATED channel：channel 会覆盖丢弃未消费事件，
                                     // 快速打字时中间的 commitText 会被吞（吃键）。
                                     if (result.committedText.isNotEmpty()) {
@@ -1745,11 +1735,11 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                             // 大写字母（Shift、Caps Lock 或 Shift 拖线中途在字母区松手）在雾凇系 26 键方案里
                             // 参与组字：字母表含 A–Z，大写串进当前输入（zuogeDNAjiance → 做个DNA检测，
                             // Transformer、KFC 由英文词库和自动大写给出），已打的拼音不被顶上屏。
-                            val capitalsInRime = isShiftedChinese && !mergedKey && service.t9PartialSegments.isEmpty() &&
-                                (typesEnglishCapitals(state.currentSchemaId) || externalCapitalInRime(char[0]))
+                            val capitalsInEngine = isShiftedChinese && !mergedKey && service.t9PartialSegments.isEmpty() &&
+                                (typesEnglishCapitals(state.currentSchemaId) || externalCapitalInEngine(char[0]))
                             // 其他方案（双拼、14 键合并键等）没有大写字母编码：已打的字母按原样连同大写字母上屏，
                             // 不丢弃拼音（与桌面端“整串按原样处理”一致）。
-                            if (isShiftedChinese && !capitalsInRime && (service.rimeEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
+                            if (isShiftedChinese && !capitalsInEngine && (service.inputEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
                                     service.t9PartialSegments.isNotEmpty())) {
                                 commitHardwareLiteral(char)
                                 return@command
@@ -1757,23 +1747,23 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                             // 打着带数字的 Unicode 码（U2、U26）接着打 a–f 以外的字母：不是在打码，先把它原样上屏，
                             // 字母照常起新的编码（U2 kanle → U2看了）。先看屏上的编码，不是 U 起头就不读引擎。
                             if (isChinese && isLetter && !japaneseCase && !mergedKey && char[0] !in 'a'..'f' &&
-                                candState.inputText.firstOrNull() == 'U' && isRimeIceCapitalSchema(state.currentSchemaId) &&
-                                service.rimeEngine.readQueuedComposition()?.input?.let(::isUnicodeCodeWithDigit) == true) {
+                                candState.inputText.firstOrNull() == 'U' && isCayboardPinyinCapitalSchema(state.currentSchemaId) &&
+                                service.inputEngine.readQueuedComposition()?.input?.let(::isUnicodeCodeWithDigit) == true) {
                                 if (!commitHardwareLiteral("")) return@command
                             }
                             // 英文单词方案开着「首字母大写」：句首打的第一个字母按大写进组字区，候选跟着首字母大写（Hello），
                             // 和英文直接输入同一规则（#311）；实体键盘、手动 Shift 不在此列，打到一半不再判断。
                             val wordsFirstLetter = isLetter && !mergedKey && typesEnglishWords(state.inputProfile, state.isAsciiMode) &&
-                                service.rimeEngine.readQueuedComposition()?.input.isNullOrEmpty()
+                                service.inputEngine.readQueuedComposition()?.input.isNullOrEmpty()
                             val wordsSentenceCap = wordsFirstLetter && hardwareEvent == null && !isShifted &&
                                 SettingsPreferences.getPrefsPublic(service).getBoolean(ENGLISH_SENTENCE_CAPS, false) &&
                                 withEditor { capitalizeEnglishHere() }
                             if (wordsFirstLetter) wordsAutoCapped = wordsSentenceCap
-                            val result = if (capitalsInRime || wordsSentenceCap) service.rimeEngine.processQueuedKeyAndGetResult(char.uppercase()[0].code, 0)
-                                else service.rimeEngine.processQueuedKeyAndGetResult(keyCode, mask)
+                            val result = if (capitalsInEngine || wordsSentenceCap) service.inputEngine.processQueuedKeyAndGetResult(char.uppercase()[0].code, 0)
+                                else service.inputEngine.processQueuedKeyAndGetResult(keyCode, mask)
                             if (result.processed) {
-                                if (isShiftedChinese && !capitalsInRime && result.committedText != char) {
-                                    service.rimeEngine.clearComposition()
+                                if (isShiftedChinese && !capitalsInEngine && result.committedText != char) {
+                                    service.inputEngine.clearComposition()
                                     committedText = char
                                     needsUIUpdate = true
                                 } else {
@@ -1782,7 +1772,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                                         val current = candState.pendingEnglishText
                                         val newPending = current + committed
                                         service.candidateState.value = service.candidateState.value.copy(pendingEnglishText = newPending)
-                                        // 直接上屏模式：只提交 Rime 返回的增量字符（如智能引号转换结果），
+                                        // 直接上屏模式：只提交引擎返回的增量字符（如智能引号转换结果），
                                         // 整段 pending 对应的文本已逐字上屏，不可重复提交。
                                         withEditor {
                                             service.commitText(committed)
@@ -1818,8 +1808,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                                         needsUIUpdate = true
                                     }
                                 } else {
-                                    val candidateText = if (service.rimeEngine.selectCandidate(0)) {
-                                        service.rimeEngine.commit()
+                                    val candidateText = if (service.inputEngine.selectCandidate(0)) {
+                                        service.inputEngine.commit()
                                     } else {
                                         ""
                                     }
@@ -1845,12 +1835,12 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         }
                     }
                 } else {
-                    val capturedInputText = service.rimeEngine.getInput()
-                    val capturedCandidates = service.rimeEngine.getCandidatesWithComments()
-                    val capturedIsAscii = service.rimeEngine.isAsciiMode()
-                    val capturedHasNext = service.rimeEngine.hasNextPage()
-                    val capturedHasPrev = service.rimeEngine.hasPrevPage()
-                    // 候选词变换（hotPath 插件能力）：内联刷新路径（无 RimeProcessResult），
+                    val capturedInputText = service.inputEngine.getInput()
+                    val capturedCandidates = service.inputEngine.getCandidatesWithComments()
+                    val capturedIsAscii = service.inputEngine.isAsciiMode()
+                    val capturedHasNext = service.inputEngine.hasNextPage()
+                    val capturedHasPrev = service.inputEngine.hasPrevPage()
+                    // 候选词变换（hotPath 插件能力）：内联刷新路径（无 EngineProcessResult），
                     // key-processing 线程同步调用；ascii 场景不变换（调用点语义与 transformFor 一致）
                     val transformed = if (capturedInputText.isNotEmpty() && !capturedIsAscii) {
                         service.candidateTransform.transform(
@@ -1859,14 +1849,14 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                     } else {
                         null
                     }
-                    val displayCandidates: List<com.cayboard.rime.RimeCandidate> =
+                    val displayCandidates: List<com.cayboard.engine.EngineCandidate> =
                         transformed?.candidates ?: capturedCandidates.toList()
                     // This inline refresh path writes CandidateState directly and therefore
                     // does not pass through ImeSessionController. Keep the engine candidates
                     // raw for selection, but render the configured script in the candidate bar.
                     val renderedCandidates = if (!capturedIsAscii && isT9Schema(service.uiState.value.currentSchemaId) &&
                         service.traditionalChineseOutput()) {
-                        displayCandidates.map { it.copy(text = service.rimeEngine.toTraditional(it.text)) }
+                        displayCandidates.map { it.copy(text = service.inputEngine.toTraditional(it.text)) }
                     } else displayCandidates
                     if (textToCommit != null) {
                         withEditor { service.commitText(textToCommit) }
@@ -1938,10 +1928,10 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
 
         // This read waits for the engine lock and never consumes commit text. In
         // particular, a rapid letter followed by an arrow cannot see an old empty UI.
-        val composition = service.rimeEngine.readQueuedComposition()
+        val composition = service.inputEngine.readQueuedComposition()
         if (composition != null &&
             service.candidateState.value.engineRevision != composition.engineRevision) {
-            val candidates = rerankT9UserChoices(com.cayboard.rime.RimeProcessResult(
+            val candidates = service.personalizeCandidates(com.cayboard.engine.EngineProcessResult(
                 true, "", composition.input, composition.preedit, composition.candidates,
                 composition.isAsciiMode, composition.hasNextPage, composition.hasPrevPage,
                 engineRevision = composition.engineRevision,
@@ -1951,14 +1941,14 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             val transformed = service.candidateTransform.transform(composition.input, composition.preedit,
                 candidates.toList(), composition.isAsciiMode, firstPage = !composition.hasPrevPage)
             val injections = if (isT9Schema(service.uiState.value.currentSchemaId)) {
-                service.candidateTransform.transformForT9(com.cayboard.rime.RimeProcessResult(
+                service.candidateTransform.transformForT9(com.cayboard.engine.EngineProcessResult(
                     true, "", composition.input, composition.preedit, candidates,
                     composition.isAsciiMode, composition.hasNextPage, composition.hasPrevPage,
                     engineRevision = composition.engineRevision,
                 )).orEmpty()
             } else emptyList()
             withEditor {
-                if (service.rimeEngine.isCandidateRevisionCurrent(composition.engineRevision)) {
+                if (service.inputEngine.isCandidateRevisionCurrent(composition.engineRevision)) {
                     service.sessionController.applyComposition(
                         transformed?.let { rankedComposition.copy(candidates = it.candidates.toTypedArray()) } ?: rankedComposition,
                         transformed?.actions ?: emptyList(), injections,
@@ -1973,7 +1963,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 service.predictionManager.hasPendingPrediction)
         }
         val engineHasInput = composition
-            ?.takeIf { service.rimeEngine.isCandidateRevisionCurrent(it.engineRevision) }
+            ?.takeIf { service.inputEngine.isCandidateRevisionCurrent(it.engineRevision) }
             ?.let { it.input.isNotEmpty() || service.t9PartialSegments.isNotEmpty() }
         val digitIndex = hardwareCandidateDigitIndex(event.keyCode, event.isShiftPressed)
         // While pinyin is being composed, physical arrows move through the candidates (as on
@@ -1984,11 +1974,11 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             (engineHasInput == true || snapshot.state.isComposing) && snapshot.words.isNotEmpty()
         if (!pageAtBoundary && composingArrow && (key == HardwareCandidateKey.LEFT || key == HardwareCandidateKey.RIGHT)) {
             if (!isT9Schema(service.uiState.value.currentSchemaId)) {
-                // 逐个字母移动，到两端停住；Rime 自带的左右键按音节跳、到头还会绕回另一端。
-                val result = service.rimeEngine.moveCompositionCaret(if (key == HardwareCandidateKey.LEFT) -1 else 1)
+                // 逐个字母移动，到两端停住；引擎默认的左右键按音节跳、到头还会绕回另一端。
+                val result = service.inputEngine.moveCompositionCaret(if (key == HardwareCandidateKey.LEFT) -1 else 1)
                 if (result != null) {
                     // 拼音条标出光标位置，与屏幕键盘编辑拼音时看到的一致；光标回到末尾时不标。
-                    val snap = service.rimeEngine.readPinyinEditSnapshot()
+                    val snap = service.inputEngine.readPinyinEditSnapshot()
                     val marked = markPreeditCaret(result.preeditText, snap.getOrNull(0).orEmpty(),
                         snap.getOrNull(1)?.toIntOrNull() ?: -1, snap.getOrNull(2)?.toIntOrNull() ?: 0)
                     sendTransformedResult(if (marked != null) result.copy(preeditText = marked) else result)
@@ -2049,7 +2039,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
             }
             HardwareCandidateDecision.Cancel -> {
-                // Japanese conversion is separate from Rime composition. Cancel it
+                // Japanese conversion is separate from the input composition. Cancel it
                 // before clearing input; already committed English text is untouched.
                 service.japaneseInputController.handleKey("clear_composition")
                 clearInputStateForKeys()
@@ -2078,9 +2068,9 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
 
     /** Caps Lock while composing commits the letters as typed; the system still toggles the lock. */
     internal fun commitCompositionAsTyped() {
-        postRimeJob {
-            if (hasPendingCandidateCommit) return@postRimeJob
-            if (service.rimeEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
+        postEngineJob {
+            if (hasPendingCandidateCommit) return@postEngineJob
+            if (service.inputEngine.readQueuedComposition()?.input?.isNotEmpty() == true ||
                 service.t9PartialSegments.isNotEmpty()) commitHardwareLiteral("")
         }
     }
@@ -2088,8 +2078,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     /** On the compact toolbar, page through its windows before turning the engine page. */
     private fun pageHardwareCandidates(shown: CandidateState, direction: Int, stride: Int? = null) {
         if (service.uiState.value.isCompact && hardwareNavigation.moveWindow(shown, direction, stride)) return
-        val paged = if (direction < 0) service.rimeEngine.hasPrevPage() && service.rimeEngine.pageUp()
-            else service.rimeEngine.hasNextPage() && service.rimeEngine.pageDown()
+        val paged = if (direction < 0) service.inputEngine.hasPrevPage() && service.inputEngine.pageUp()
+            else service.inputEngine.hasNextPage() && service.inputEngine.pageDown()
         if (paged) hardwareNavigation.enginePaged(shown, direction)
     }
 
@@ -2130,13 +2120,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * 注音（大千）：键帽上的注音符号换成方案里的大千键码交给 Rime（[ZhuyinKeys]），空格跟在音节后面是第一声。
-     * 声调只跟在音节后面：没打字时照原样上屏这个符号，刚打过声调再按声调不收（Rime 会把它当成上屏键）。
+     * 注音（大千）：键帽上的注音符号换成方案里的大千键码交给输入引擎（[ZhuyinKeys]），空格跟在音节后面是第一声。
+     * 声调只跟在音节后面：没打字时照原样上屏这个符号，刚打过声调再按声调不收（引擎会把它当成上屏键）。
      * 大千里数字和 , . - / ; 也是注音键，屏幕上别处送来的这些符号照符号上屏，不当拼写；实体键盘照大千键位打。
      * 处理了返回 true；音节后已有声调的空格、回车、删除和数字键盘等走原来的路。
      */
     private suspend fun routeZhuyinKey(key: String, hardwareEvent: KeyEvent?): Boolean {
-        val input = service.rimeEngine.readQueuedComposition()?.input.orEmpty()
+        val input = service.inputEngine.readQueuedComposition()?.input.orEmpty()
         val code = when {
             key == "space" -> if (ZhuyinKeys.takesTone(input)) ' ' else return false
             hardwareEvent == null && key.length == 1 && key[0].code in 0x21..0x7E -> {
@@ -2150,7 +2140,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             if (input.isEmpty()) withEditor { service.commitText(key) }
             return true
         }
-        val result = service.rimeEngine.processQueuedKeyAndGetResult(code.code, 0)
+        val result = service.inputEngine.processQueuedKeyAndGetResult(code.code, 0)
         if (result.processed) {
             if (result.committedText.isNotEmpty()) withEditor { service.commitText(result.committedText) }
             sendTransformedResult(result)
@@ -2163,14 +2153,14 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     /** Finish unfinished raw input without choosing a word; clear only after acceptance. */
     private suspend fun commitHardwareLiteral(suffix: String): Boolean {
         val state = service.candidateState.value
-        val composition = service.rimeEngine.readQueuedComposition()
+        val composition = service.inputEngine.readQueuedComposition()
         val hasComposition = composition?.input?.isNotEmpty() == true || state.isComposing ||
             state.inputText.isNotEmpty() || service.t9PartialSegments.isNotEmpty()
         if (hasComposition && composition == null) return false
         val t9 = isT9Schema(service.uiState.value.currentSchemaId)
         // Read the current engine result, not a previous UI frame: rapid typing
         // followed by a shifted symbol must not drop the last letters.
-        val preedit = if (t9) com.cayboard.rime.buildT9DisplayState(
+        val preedit = if (t9) com.cayboard.engine.buildT9DisplayState(
             service.t9PartialSegments.map { it.text }, composition?.preedit.orEmpty(),
             composition?.input.orEmpty(), emptyList(), emptyList()).displayText
         else composition?.preedit.orEmpty()
@@ -2262,7 +2252,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         val hold = com.cayboard.keyboard.RepeatInput.current.get()
         if (hold != null && !hold.acquire()) return
         val queuedAt = if (KeyLatencyProbe.enabled) android.os.SystemClock.uptimeMillis() else 0L
-        postRimeJob("delete") {
+        postEngineJob("delete") {
             val startedAt = if (queuedAt != 0L) android.os.SystemClock.uptimeMillis() else 0L
             try { if (!hasPendingCandidateCommit && hold?.isActive != false) processDeleteKey(hold) }
             finally {
@@ -2310,7 +2300,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         val predictionWasPending = service.predictionManager.invalidatePendingPredictions()
         val candState = service.candidateState.value
         val target = deletionTarget(
-            engineComposing = service.rimeEngine.compositionActiveForDeletion(),
+            engineComposing = service.inputEngine.compositionActiveForDeletion(),
             uiComposing = candState.isComposing || candState.inputText.isNotEmpty() || candState.preeditText.isNotEmpty(),
             partialSegments = service.t9PartialSegments.isNotEmpty(),
             pendingEnglish = candState.pendingEnglishText.isNotEmpty(),
@@ -2325,11 +2315,11 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         if (target == DeletionTarget.COMPOSITION && chineseGlideDeleteEnabled()) {
             val current = chineseGlideState()
             val lastGlide = chineseGlideDeletes.last(current)
-            if (current != null && lastGlide != null && service.rimeEngine.isCandidateRevisionCurrent(current.revision) &&
-                service.rimeEngine.applyPinyinEdit(current.input, lastGlide.remainingInput, lastGlide.removeStart,
+            if (current != null && lastGlide != null && service.inputEngine.isCandidateRevisionCurrent(current.revision) &&
+                service.inputEngine.applyPinyinEdit(current.input, lastGlide.remainingInput, lastGlide.removeStart,
                     current.confirmed, current.confirmedText, expectedSchema = current.schema)) {
                 chineseGlideDeletes.removed(chineseGlideState())
-                service.rimeEngine.readQueuedResult()?.let { sendTransformedResult(it) }
+                service.inputEngine.readQueuedResult()?.let { sendTransformedResult(it) }
                 return
             }
         }
@@ -2340,8 +2330,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         // candidates here momentarily empties the list and collapses its expanded page.
         if (calculatorWasActive) updateCalculatorCandidates()
 
-        // 数字/符号键盘：直接发送系统退格，不经过 Rime
-        // 防止 T9 残留状态被 Rime 退格修改导致 UI 不一致
+        // 数字/符号键盘：直接发送系统退格，不经过输入引擎
+        // 防止 T9 残留状态被退格修改导致 UI 不一致
         val layoutState = service.keyboardViewModel.keyboardState.value
         if ((layoutState is KeyboardLayoutState.Number || layoutState is KeyboardLayoutState.Symbol) &&
             target == DeletionTarget.DOCUMENT) {
@@ -2400,13 +2390,13 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
             }
 
-            // 2. Rime 编码中：让 Rime 处理退格，更新候选
+            // 2. 引擎编码中：让输入引擎处理退格，更新候选
             target == DeletionTarget.COMPOSITION -> {
-                val result = service.rimeEngine.deleteCompositionAndGetResult()
+                val result = service.inputEngine.deleteCompositionAndGetResult()
                 if (owner != service.uiState.value.inputSessionId) return
                 if (result.inputText.isEmpty()) {
                     // T9 部分提交：剩余编码删完后，已上屏/ composing 的部分候选词无法用
-                    // RIME 退格删除，会一直卡在候选栏。这里撤销最近一次部分提交：
+                    // 引擎退格删除后会一直卡在候选栏。这里撤销最近一次部分提交：
                     // 清空自己持有的 composing 区域并从累积列表移除，不删除宿主正文。
                     if (service.t9PartialSegments.isNotEmpty()) {
                         // 已撤销段只存在于输入法状态（候选栏/输入框 composing 的显示），
@@ -2487,10 +2477,10 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * Posts a rime operation to the shared input FIFO for sequential execution.
+     * Posts an engine operation to the shared input FIFO for sequential execution.
      * Ensures no interleaving with key processing.
      */
-    internal fun postRimeJob(kind: String = "job", block: suspend CoroutineScope.() -> Unit) {
+    internal fun postEngineJob(kind: String = "job", block: suspend CoroutineScope.() -> Unit) {
         val owner = InputCommandOwner.current.get() ?: run {
             check(android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
                 "A background input job cannot acquire the current editor"
@@ -2503,7 +2493,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         }
     }
 
-    suspend fun selectCandidateAsync(index: Int, expandedCandidate: RimeCandidate? = null, snapshot: CandidateState = service.candidateState.value) {
+    suspend fun selectCandidateAsync(index: Int, expandedCandidate: EngineCandidate? = null, snapshot: CandidateState = service.candidateState.value) {
         InputCommandOwner.requireOwner().requireCurrent(service.inputReadiness, service.uiState.value.inputSessionId)
         if (usesDirectFieldInput) return
         if (hasPendingCandidateCommit) return
@@ -2514,7 +2504,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             return
         }
         if (service.japaneseInputController.commit(index)) return
-        if (!service.rimeEngine.isCandidateRevisionCurrent(snapshot.engineRevision)) {
+        if (!service.inputEngine.isCandidateRevisionCurrent(snapshot.engineRevision)) {
             FileLogger.w("InputLatency", "candidate tap dropped: revision changed")
             return
         }
@@ -2536,8 +2526,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             // 防御：中英/方案切换后引擎组合已清空但 candidateState 残留旧候选+actions，
             // 此时点选必须回落原生路径（引擎侧 selectCandidate 失败自动防呆，与旧行为一致），
             // 否则残留插件候选会绕过引擎校验直接上屏。
-            val engineHasComposition = service.rimeEngine.getInput().isNotEmpty() ||
-                service.rimeEngine.getCandidates().isNotEmpty()
+            val engineHasComposition = service.inputEngine.getInput().isNotEmpty() ||
+                service.inputEngine.getCandidates().isNotEmpty()
             if (engineHasComposition) {
                 if (pendingAction.isPrivate) commitPrivateText(pendingAction.commitText, isT9Schema(service.uiState.value.currentSchemaId))
                 else commitSelectedText(pendingAction.commitText)
@@ -2545,7 +2535,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             }
         }
 
-        val isT9 = isT9Schema(service.uiState.value.currentSchemaId)
+        val state = service.uiState.value
+        val isT9 = isT9Schema(state.currentSchemaId)
         val selectedCandidate = expandedCandidate?.text
             ?: if (index < snapshot.candidates.size) {
                 snapshot.candidates[index]
@@ -2554,69 +2545,78 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         // still indexes the original simplified candidate, so map it back before
         // matching/learning when Traditional output is enabled.
         val selectedEngineCandidate = if (isT9 && service.traditionalChineseOutput() && selectedCandidate != null)
-            service.rimeEngine.toSimplified(selectedCandidate) else selectedCandidate
+            service.inputEngine.toSimplified(selectedCandidate) else selectedCandidate
 
-        // Remember only a complete T9 candidate choice. Partial selections are
-        // still composing and must not teach a misleading digit-to-word mapping.
-        val habitInput = snapshot.inputText
-
-        val candidatePinyin = if (isT9) {
-            expandedCandidate?.comment
-                ?: if (index < snapshot.candidateComments.size) {
-                    snapshot.candidateComments[index]
-                } else {
-                    null
-                }
-        } else {
-            null
+        val comment = expandedCandidate?.comment ?: snapshot.candidateComments.getOrNull(index)
+        val candidatePinyin = comment.takeIf { isT9 }
+        // Capture the raw code with the candidate revision before selection consumes it.
+        val sourceComposition = if (!state.isAsciiMode && service.t9PartialSegments.isEmpty() &&
+            selectedEngineCandidate != null && service.canPersonalizeCandidates()
+        ) {
+            service.inputEngine.readQueuedComposition()?.takeIf {
+                it.engineRevision == snapshot.engineRevision && it.input.isNotEmpty()
+            }
+        } else null
+        val previous = sourceComposition?.takeIf { expandedCandidate == null && !snapshot.hasPrevPage }?.let {
+            service.candidateChoiceMemory.previous(state.currentSchemaId, it.input)
         }
+        val enginePosition = if (previous != null) sourceComposition?.candidates?.indexOfFirst {
+            it.text == selectedEngineCandidate && it.comment == comment.orEmpty()
+        } else null
+        // The prior full choice belongs to this exact input, including when it is on a later page.
+        val recalledChoice = enginePosition == -1 && previous?.text == selectedEngineCandidate &&
+            previous?.comment == comment.orEmpty()
 
-        // 在 RIME 真正 select/commit 之前，先同步通知 T9 控制器消费数字。
+        // 在引擎真正选词/提交之前，先同步通知 T9 控制器消费数字。
         // 控制器返回 true 表示输入序列已被该候选词完整消费，服务层应视为 full commit。
         // 传入候选文本用于 C++ (comment, text) 双条件精确定位（注释歧义防错码）。
         val candidateTextLength = selectedEngineCandidate?.length ?: 0
-        val fullyConsumed = if (isT9) {
+        val fullyConsumed = if (recalledChoice) {
+            true
+        } else if (isT9) {
             service.keyboardCallbacks?.onT9RightCandidateWillBeSelected?.invoke(candidatePinyin, selectedEngineCandidate, candidateTextLength, snapshot.engineRevision) ?: return
         } else {
             false
         }
 
-        // T9：跳过 service.rimeEngine.selectCandidate，消费已由 T9 处理器（t9_processor）
+        // T9：跳过 service.inputEngine.selectCandidate，消费已由 T9 处理器（t9_processor）
         // 独立完成。selectCandidate 会遗留 [confirmed, phony] 残留 composition 状态，
-        // 导致后续 forceSendToRime 的 setInput 无法正常重建候选项（对齐 main 分支）。
-        // 非 T9 才调用 selectCandidate，并用 resolveRimeCandidateIndex 修正候选 index，
+            // 导致后续 resendInputToEngine 的 setInput 无法正常重建候选项（对齐 main 分支）。
+        // 非 T9 才调用 selectCandidate，并用 resolveEngineCandidateIndex 修正候选 index，
         // 避免 UI 候选被过滤/重排后上屏错词。
-        val selection = if (isT9) {
+        val selection = if (isT9 || recalledChoice) {
             null
         } else {
-            val rimeIndex = if (pendingAction != null && pendingAction.engineIndex >= 0) {
+            val engineIndex = if (enginePosition != null) {
+                enginePosition.takeIf { it >= 0 } ?: return
+            } else if (pendingAction != null && pendingAction.engineIndex >= 0) {
                 // 变换映射记录的引擎候选索引（比按显示文本回查更准）
                 pendingAction.engineIndex
             } else if (selectedCandidate != null) {
-                resolveRimeCandidateIndex(index, selectedCandidate, service.rimeEngine.getCandidates().toList())
+                resolveEngineCandidateIndex(index, selectedCandidate, service.inputEngine.getCandidates().toList())
             } else {
                 index
             }
-            service.rimeEngine.selectCandidateAtRevision(rimeIndex, snapshot.engineRevision) ?: return
+            service.inputEngine.selectCandidateAtRevision(engineIndex, snapshot.engineRevision) ?: return
         }
 
-        // T9：跳过 service.rimeEngine.commit()，用用户点选的 selectedCandidate 作为权威上屏文本。
+        // T9：跳过 service.inputEngine.commit()，用用户点选的 selectedCandidate 作为权威上屏文本。
         val committedText = selection?.committedText.orEmpty()
         // T9 模式下 fullyConsumed 是判断 full/partial commit 的唯一权威：
-        // 当控制器明确 partial commit 时，即使 RIME commit() 返回非空文本
-        // （RIME 内部做了 partial commit），也不应走 full commit 路径。
+        // 当控制器明确 partial commit 时，即使引擎 commit() 返回非空文本
+        // （引擎内部做了 partial commit），也不应走 full commit 路径。
         val isFullCommit = if (isT9) {
             fullyConsumed && selectedCandidate != null
         } else {
-            committedText.isNotEmpty()
+            recalledChoice || committedText.isNotEmpty()
         }
         if (isFullCommit) {
             // T9 full commit：以用户点选的候选词文本为权威上屏文本；
-            // 非 T9 仍用 RIME committedText（可能含简繁转换等处理）。
-            // T9 consumes candidates in its native controller, bypassing Rime's
+            // 非 T9 仍用引擎返回的 committedText（可能含简繁转换等处理）。
+            // T9 consumes candidates in its native controller, bypassing the engine's
             // simplifier, so convert at the final commit boundary.
             val outputText: (String) -> String = if (isT9 && service.traditionalChineseOutput())
-                service.rimeEngine::toTraditional else { text -> text }
+                service.inputEngine::toTraditional else { text -> text }
             val textToMerge = if (isT9 && selectedCandidate != null) {
                 outputText(selectedCandidate)
             } else if (committedText.isNotEmpty()) {
@@ -2627,10 +2627,9 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             // T9 full commit：partial commit 累积文本（未单独上屏，只存在于
             // service.t9PartialSegments 的 composing 区）与本次上屏文本是独立词，必须拼接，
             // 不能去重（mergePartialCommitText 仅用于显示，会吞掉重复的词）。
-            // 但若点击的是 partial 词本身（RIME 无菜单、候选栏显示的就是 partial 词，
+            // 但若点击的是 partial 词本身（引擎无菜单、候选栏显示的就是 partial 词，
             // 无拼音注释 candidatePinyin==null），则只提交累积的 partial 文本，避免重复。
             val partialTexts = service.t9PartialSegments.map { outputText(it.text) }
-            val partialPinyins = service.t9PartialSegments.map { it.pinyin }
             val fullCommitText = if (isT9 && partialTexts.isNotEmpty()) {
                 if (candidatePinyin == null) {
                     partialTexts.joinToString("")
@@ -2642,18 +2641,16 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             }
             // 英文单词方案开着「选词后自动加空格」：点候选或按空格上屏的词后面跟一个空格，接着的键按 [EnglishAutoSpace] 处理（#311）。
             val autoSpace = !isT9 && wordsAutoSpaceAfter(fullCommitText)
+            val learnedChoice = if (sourceComposition != null && selectedEngineCandidate != null &&
+                (isT9 || fullCommitText == selectedCandidate)
+            ) {
+                com.cayboard.engine.LearnedCandidateChoice(state.currentSchemaId, sourceComposition.input,
+                    EngineCandidate(selectedEngineCandidate, comment.orEmpty()), isT9)
+            } else null
             val delivered = deliverCandidateCommit(PendingCandidateCommit(
-                InputCommandOwner.requireOwner(), if (autoSpace) "$fullCommitText " else fullCommitText, isT9
+                InputCommandOwner.requireOwner(), if (autoSpace) "$fullCommitText " else fullCommitText, isT9,
+                learnedChoice = learnedChoice,
             ))
-            if (isT9 && delivered.accepted && selectedEngineCandidate != null &&
-                !com.cayboard.settings.SensitiveInputState.active && !service.isSecretEditor()) {
-                service.t9UserHabitMemory.remember(habitInput, selectedEngineCandidate!!)
-                val learnedPinyin = if (candidatePinyin != null && partialPinyins.isNotEmpty()) {
-                    (partialPinyins + candidatePinyin)
-                        .filter { it.isNotBlank() }.joinToString(" ")
-                } else candidatePinyin.orEmpty()
-                service.t9LearningCoordinator.enqueue(habitInput, learnedPinyin, selectedEngineCandidate!!)
-            }
             if (autoSpace && delivered.accepted) englishAutoSpace.arm(fullCommitText)
         } else {
             withEditor {
@@ -2672,7 +2669,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 }
             }
             // Rebuild remaining code on the worker, within this selection's FIFO slot.
-            if (isT9) service.keyboardCallbacks?.onT9ForceSendToRime?.invoke()
+            if (isT9) service.keyboardCallbacks?.onT9ResendInput?.invoke()
         }
     }
 
@@ -2687,7 +2684,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     /**
-     * 通讯录的人名、号码上屏：不进 Rime 词库（不经引擎选词）、不记联想（不记上下文，下一次上屏也不和它配对）、
+     * 通讯录的人名、号码上屏：不进用户词库（不经引擎选词）、不记联想（不记上下文，下一次上屏也不和它配对）、
      * 不发插件事件，上屏后不出联想。
      */
     internal suspend fun commitPrivateText(text: String, t9: Boolean) {
@@ -2713,7 +2710,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 FileLogger.w("InputLatency", "candidate commit not accepted: retained for retry")
             } },
             accepted = {
-                if (it.t9) service.rimeEngine.clearQueuedT9Composition() else service.rimeEngine.clearQueuedComposition()
+                it.learnedChoice?.let(service::recordCandidateChoice)
+                if (it.t9) service.inputEngine.clearQueuedT9Composition() else service.inputEngine.clearQueuedComposition()
                 withEditor {
                     discardPendingCandidateCommit()
                     service.keyboardViewModel.setCandidatePageExpanded(false)
@@ -2736,11 +2734,11 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     /**
      * 输入态判定（clear_all 与 undo_clear 共用）。
      *
-     * 输入态 = 存在未上屏内容：RIME 组合（candidateState 派生字段）或英文输入
-     *（pendingEnglishText 非空——英文按键不经 RIME，故 inputText/preeditText/isComposing 恒空，
+     * 输入态 = 存在未上屏内容：引擎组合（candidateState 派生字段）或英文输入
+     *（pendingEnglishText 非空——英文按键不经引擎，故 inputText/preeditText/isComposing 恒空，
      * 漏判会让 clear_all 把 composing 区文本与 pendingEnglishText 重复拼接）
      * 或 T9 partial 累积。
-     * 不能用 RIME getInput()——tryLocked 锁竞争时静默返回空，会误判空闲态。
+     * 不能用引擎 getInput()——tryLocked 锁竞争时静默返回空，会误判空闲态。
      */
     private fun hasInputState(candState: CandidateState, includeAssociation: Boolean = true): Boolean =
         candState.isComposing ||
@@ -2748,21 +2746,21 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             candState.preeditText.isNotEmpty() ||
             candState.pendingEnglishText.isNotEmpty() ||
             service.t9PartialSegments.isNotEmpty() ||
-            service.rimeEngine.compositionActiveForDeletion() != false ||
+            service.inputEngine.compositionActiveForDeletion() != false ||
             (includeAssociation && candState.associationCandidates.isNotEmpty() && !candState.isDeletionRecovery && !candState.isDigitPhraseList) ||
             candState.isShowingRecentClipboard ||
             (includeAssociation && service.predictionManager.hasPendingPrediction)
 
-    /** Ends the composition in the input FIFO, T9's own digit state included (see [com.cayboard.rime.RimeEngine.endQueuedComposition]). */
+    /** Ends the composition in the input FIFO, T9's own digit state included (see [com.cayboard.engine.InputEngine.endQueuedComposition]). */
     internal fun endQueuedComposition() =
-        service.rimeEngine.endQueuedComposition(isT9Schema(service.uiState.value.currentSchemaId))
+        service.inputEngine.endQueuedComposition(isT9Schema(service.uiState.value.currentSchemaId))
 
     /**
      * 翻译栏开着时输入从栏换到应用输入框、或反过来：没打完的拼音和联想收掉，
      * 免得候选上屏、编码、删除一部分去旧框一部分去新框。
      */
     internal fun dropCompositionForTargetChange() {
-        postRimeJob("input_target_changed") { clearInputStateForKeys() }
+        postEngineJob("input_target_changed") { clearInputStateForKeys() }
     }
 
     /**
@@ -2772,7 +2770,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
      * 之后的按键作用在新光标处。排进输入队列，和按键保持先后。
      */
     internal fun finishCompositionAfterCaretLeft() {
-        postRimeJob("caret_left_composition") { clearInputStateForKeys(keepInlineText = true) }
+        postEngineJob("caret_left_composition") { clearInputStateForKeys(keepInlineText = true) }
     }
 
     /**
@@ -2880,7 +2878,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         if (service.inputReadiness.ticket() == null || hasPendingCandidateCommit) return
         val current = service.candidateState.value
         if (!snapshot.hasSameSelectionSource(current) || snapshot.associationCandidates != current.associationCandidates ||
-            (snapshot.isComposing && !service.rimeEngine.isCandidateRevisionCurrent(snapshot.engineRevision))) return
+            (snapshot.isComposing && !service.inputEngine.isCandidateRevisionCurrent(snapshot.engineRevision))) return
         val profile = service.uiState.value.inputProfile
         service.candidateState.value = if (forward) current.advanceT9Candidate(profile)
             else current.retreatT9Candidate(profile)
@@ -2931,7 +2929,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         } else {
             val snapshot = service.candidateState.value
             if (commitHeldCandidateEnglish(snapshot, index)) return
-            postRimeJob("select") {
+            postEngineJob("select") {
                 selectCandidateAsync(index, snapshot = snapshot)
             }
         }
@@ -2949,7 +2947,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         val english = snapshot.englishForHeldSelection(index, global) ?: return false
         val expanded = if (global) snapshot.expandedCandidates[index] else null
         val t9 = isT9Schema(service.uiState.value.currentSchemaId)
-        postRimeJob("select") {
+        postEngineJob("select") {
             if (snapshot.stillOffers(service.candidateState.value, index, expanded)) commitPreparedText(english, t9)
         }
         com.cayboard.gloss.CandidateGlossary.t9NextHeld.value = false
@@ -2966,7 +2964,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         if (!takesOverShiftedCandidateKey(keyCode, shiftPressed = true, chinese = chineseKeyboardActive(),
                 glossLoaded = com.cayboard.gloss.CandidateGlossary.isLoaded,
                 composingWithCandidates = before.isComposing && before.candidates.isNotEmpty())) return false
-        postRimeJob("select") {
+        postEngineJob("select") {
             val (state, index) = withEditor {
                 val current = service.candidateState.value
                 current to hardwareWindowStart(current) + shiftedCandidateOffset(keyCode) {
@@ -2974,7 +2972,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                         predictionPending = service.predictionManager.hasPendingPrediction)
                 }!!
             }
-            val word = state.candidates.getOrNull(index) ?: return@postRimeJob
+            val word = state.candidates.getOrNull(index) ?: return@postEngineJob
             val english = shiftSelectionEnglish(word, com.cayboard.gloss.CandidateGlossary::englishFor)
             if (english != null) commitPreparedText(english, isT9Schema(service.uiState.value.currentSchemaId))
             else selectCandidateAsync(index, snapshot = state)
@@ -2983,8 +2981,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
 
     internal fun pageDown() {
-        postRimeJob {
-            service.rimeEngine.pageDown()
+        postEngineJob {
+            service.inputEngine.pageDown()
             withEditor {
                 service.updateUI()
             }
@@ -2992,8 +2990,8 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
     }
     
     internal fun pageUp() {
-        postRimeJob {
-            service.rimeEngine.pageUp()
+        postEngineJob {
+            service.inputEngine.pageUp()
             withEditor {
                 service.updateUI()
             }
@@ -3008,7 +3006,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
         // UI 渲染的同一份列表；入队后再取可能被编码刷新清空/重建而扑空
         val snapshot = service.candidateState.value
         if (commitHeldCandidateEnglish(snapshot, globalIndex, global = true)) return
-        postRimeJob("select") {
+        postEngineJob("select") {
             selectCandidateGlobalAsync(globalIndex, snapshot)
         }
     }
@@ -3018,7 +3016,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
             val expandedCandidate = snapshot.expandedCandidates.getOrNull(globalIndex) ?: return
             if (!snapshot.stillOffers(service.candidateState.value, globalIndex, expandedCandidate)) return
             if (service.japaneseInputController.commit(globalIndex)) return
-            if (!service.rimeEngine.isCandidateRevisionCurrent(snapshot.engineRevision)) return
+            if (!service.inputEngine.isCandidateRevisionCurrent(snapshot.engineRevision)) return
             // T9 方案的选词消费由 t9_processor 独立完成，直接调引擎 select 会
             // 遗留 [confirmed, phony] 残留组合态（见 selectCandidateAsync 注释），
             // 降级走候选栏同款路径；取词/注释必须用展开页同一份全量候选——
@@ -3027,7 +3025,7 @@ internal class ImeKeyRouter(private val service: CayboardInputMethodService) {
                 selectCandidateAsync(globalIndex, expandedCandidate, snapshot)
                 return
             }
-            val selection = service.rimeEngine.selectCandidateAtRevision(globalIndex, snapshot.engineRevision, global = true) ?: return
+            val selection = service.inputEngine.selectCandidateAtRevision(globalIndex, snapshot.engineRevision, global = true) ?: return
             val committedText = selection.committedText
             if (committedText.isNotEmpty()) {
                 val autoSpace = wordsAutoSpaceAfter(committedText)

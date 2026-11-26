@@ -28,10 +28,10 @@ import java.io.File
 @Composable
 internal fun LayoutMenuScene(app: Application, record: (String) -> Unit, mode: String) {
     val catalog = remember {
-        check(app.filesDir.canonicalPath.startsWith("/data/local/tmp/cyime-footer."))
-        val dir = SchemaManager.getRimeDir(app)
+        check(app.filesDir.canonicalPath.startsWith("/data/local/tmp/cayboard-footer."))
+        val dir = SchemaManager.getInputDataDir(app)
         val build = File(dir, "build").apply { mkdirs() }
-        val ids = listOf("rime_ice", "t9_pinyin", "stroke", "custom_pinyin_abcdef0123456789abcdef0123456789")
+        val ids = listOf("cayboard_pinyin", "t9_pinyin", "stroke", "custom_pinyin_abcdef0123456789abcdef0123456789")
         File(app.filesDir, "custom-keyboard-layouts.json").writeText(
             """[{"id":"custom_pinyin_abcdef0123456789abcdef0123456789","name":"双指","rows":"q,w,e,r,t,y,u,i,o,p/a,s,d,f,g,h,j,k,l/z,x,c,v,b,n,m","formatVersion":3}]""")
         for (id in ids) {
@@ -40,7 +40,7 @@ internal fun LayoutMenuScene(app: Application, record: (String) -> Unit, mode: S
             File(build, "$id.schema.yaml").writeText(yaml)
         }
         SchemaManager.setEnabledSchemas(app, ids)
-        SettingsPreferences.setCurrentSchema(app, "rime_ice")
+        SettingsPreferences.setCurrentSchema(app, "cayboard_pinyin")
         KeysConfigHelper.loadConfig(app)
         KeyboardThemes.initFromConfig(app)
         AppFonts.initialize(app)
@@ -71,7 +71,7 @@ internal fun LayoutMenuScene(app: Application, record: (String) -> Unit, mode: S
             else CompositionLocalProvider(LocalContext provides navigation) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                     val color = MaterialTheme.colorScheme
-                    SchemaListView(catalog, "rime_ice", color.surface, color.primary, color.onSurface, color.surfaceVariant,
+                    SchemaListView(catalog, "cayboard_pinyin", color.surface, color.primary, color.onSurface, color.surfaceVariant,
                         onSelectSchema = { record("select:$it") }, modifier = Modifier.fillMaxWidth().height(250.dp))
                 }
             }

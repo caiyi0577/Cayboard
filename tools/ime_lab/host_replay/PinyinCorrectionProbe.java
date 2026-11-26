@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -9,13 +9,13 @@ import java.util.Map;
 /** Run only in an isolated fixture: the optional learn stage writes synthetic personal entries. */
 public class PinyinCorrectionProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args.length > 3 ? args[3] : args[1]);
     try {
       if (!engine.nativeCreateSession()) throw new Exception("session unavailable");
       if (args.length > 2 && args[2].equals("learn")) {
-        engine.nativeSwitchSchema("rime_ice");
+        engine.nativeSwitchSchema("cayboard_pinyin");
         engine.nativeSetOption("ascii_mode", false);
         engine.nativeSetNeighborMap("");
         for (int i = 0; i < 30; ++i) {
@@ -26,7 +26,7 @@ public class PinyinCorrectionProbe {
       }
       List<String> failures = new ArrayList<>();
       for (String neighbors : new String[] {"", "n:bmjh;b:nvgh;m:njk;w:qase;t:rfgy;i:uojk;s:awedh"}) {
-        if (!engine.nativeSwitchSchema("rime_ice")) throw new Exception("schema unavailable");
+        if (!engine.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("schema unavailable");
         engine.nativeSetOption("ascii_mode", false);
         engine.nativeSetNeighborMap(neighbors);
         for (String input : new String[] {"nawentishi", "nawenti", "bawentishi", "nihao", "nihso"}) {

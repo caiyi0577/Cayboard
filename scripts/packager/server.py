@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cayboard 打包器界面：本机网页（Edge 应用窗口）+ 本地服务。只用标准库。
 
-界面只负责选项和显示日志；每个操作都转成 cyime_packager.py 的命令行参数执行，
+界面只负责选项和显示日志；每个操作都转成 cayboard_packager.py 的命令行参数执行，
 所以界面能做的事命令行都能做。服务只监听 127.0.0.1，并要求每次启动随机生成的口令。
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ import webbrowser
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
-CLI = HERE / "cyime_packager.py"
+CLI = HERE / "cayboard_packager.py"
 LAST = ROOT / ".gradle/packager/last-gui.json"
 ICON = HERE / "web/icon.png"  # Cayboard facet launcher icon, same as Cayboard-Windows
 PORT = 47821  # fixed, so the Edge app window keeps one taskbar identity

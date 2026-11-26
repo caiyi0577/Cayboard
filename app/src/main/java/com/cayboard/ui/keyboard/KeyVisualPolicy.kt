@@ -66,7 +66,7 @@ internal data class KeyVisualPolicy(
         /** 悬浮键盘保留的 gutter：不套用手机 8dp 下限，允许整体缩小。 */
         const val FloatingGutter = 4f
 
-        /** `LocalKeyVisualPadding` 里表示“交给布局策略”的哨兵值（历史默认值，见 xime.yaml）。 */
+        /** `LocalKeyVisualPadding` 里表示“交给布局策略”的哨兵值（历史默认值，见 cayboard.yaml）。 */
         const val DeclaredDefaultGap = 2f
 
         /** 「加宽按键」时键区两侧的最小留白（每侧 dp），原来是 [minGutter] 的 8dp。 */

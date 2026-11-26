@@ -15,11 +15,11 @@ Run it under the guarded runner (snapshot + 无痕 before, restore + verify afte
     python tools/ime_lab/perf_cost_bench.py --serial TABLET_SERIAL \
       --layouts tools/demo_typer/layouts/sm-x800.json --layout cn26 \
       --host-cmd "am start -n md.obsidian/.MainActivity" --host-window md.obsidian \
-      --name "Galaxy Tab S8+" --tier high --out D:/CyIME-Data/diagnostics/perf-cost-<date>
+      --name "Galaxy Tab S8+" --tier high --out D:/Cayboard-Data/diagnostics/perf-cost-<date>
 
 九键模糊音（t9_ 开头的项）在九键上另测，并入同一台设备的表（--merge）。键盘先切到九键全拼：
   ... perf_cost_bench.py --serial TABLET_SERIAL --layouts tools/demo_typer/layouts/sm-x800.json --layout t9 \
-      --host-cmd ... --host-window ... --merge --out D:/CyIME-Data/diagnostics/perf-cost-<date>-t9
+      --host-cmd ... --host-window ... --merge --out D:/Cayboard-Data/diagnostics/perf-cost-<date>-t9
 九键布局只标了数字键时，拼音字母按键上的字母落到对应数字键。--merge 时每项另记这次的基线（baselineKeyMs），
 设置页“慢百分之几”按它算。
 
@@ -48,8 +48,8 @@ guarded = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(guarded)
 
 PACKAGE = guarded.PACKAGE
-INJECT_DEX = "/data/local/tmp/cyime-inject.dex"
-REMOTE_SCRIPT = "/data/local/tmp/cyime-perf.txt"
+INJECT_DEX = "/data/local/tmp/cayboard-inject.dex"
+REMOTE_SCRIPT = "/data/local/tmp/cayboard-perf.txt"
 REMOTE_TABLE = f"/sdcard/Android/data/{PACKAGE}/files/perf-costs.json"
 # 2～30 keys, common syllables, touching every fuzzy pair (z/zh c/ch s/sh n/l f/h r/l an/ang en/eng in/ing ian/iang uan/uang).
 # Syllables are space-separated so a double-pinyin scheme can be typed from the same words (--scheme).
@@ -275,7 +275,7 @@ def main():
     parser.add_argument("--interval", type=int, default=110, help="ms from one key down to the next (normal typing)")
     parser.add_argument("--hold", type=int, default=25)
     parser.add_argument("--cool", type=int, default=20, help="seconds between configs so the device does not heat up")
-    parser.add_argument("--dex", default="D:/CyIME-Data/demo-video/cyime-inject.dex")
+    parser.add_argument("--dex", default="D:/Cayboard-Data/demo-video/cayboard-inject.dex")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     os.makedirs(args.out, exist_ok=True)

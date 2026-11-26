@@ -72,7 +72,7 @@ enum class ToolbarButton(
         private val LEGACY_EDITING = setOf("select_all", "copy", "paste", "home", "end")
 
         fun normalizeIds(ids: List<String>): List<String> =
-            ids.map { when (it) { "com.kingzcheung.xime.plugin.translate:open" -> TRANSLATE.id; LEGACY_QUICK_PHRASE -> CLIPBOARD.id; in LEGACY_EDITING -> EDIT.id; else -> it } }.filter { fromId(it) != null }.distinct()
+            ids.map { when (it) { com.cayboard.engine.compat.LegacyNames.OLD_TRANSLATE_ACTION -> TRANSLATE.id; LEGACY_QUICK_PHRASE -> CLIPBOARD.id; in LEGACY_EDITING -> EDIT.id; else -> it } }.filter { fromId(it) != null }.distinct()
 
         fun fromId(id: String): ToolbarButton? =
             entries.find { it.id == id }

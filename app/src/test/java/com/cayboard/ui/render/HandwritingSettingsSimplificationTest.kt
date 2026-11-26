@@ -28,7 +28,7 @@ class HandwritingSettingsSimplificationTest {
         rule.onNodeWithText("改进手写").assertDoesNotExist()
         rule.onNodeWithText("手写训练").assertDoesNotExist()
         rule.onNodeWithText("贡献手写样本").assertDoesNotExist()
-        System.getenv("CYIME_RENDER_OUT")?.let { dir ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { dir ->
             rule.runOnIdle {
                 val root = rule.activity.window.decorView
                 val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)

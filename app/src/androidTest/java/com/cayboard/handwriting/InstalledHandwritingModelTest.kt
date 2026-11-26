@@ -29,7 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** 前置条件：隔离设备已安装原市场 ochwpro；本测试不下载模型，也不部署 Rime。 */
+/** 前置条件：隔离设备已安装原市场 ochwpro；本测试不下载模型，也不部署输入引擎。 */
 @RunWith(AndroidJUnit4::class)
 class InstalledHandwritingModelTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()

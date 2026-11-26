@@ -14,17 +14,17 @@ class ChineseAssetInstallTest {
     private val context = object : ContextWrapper(base) {
         override fun getFilesDir() = directory
     }
-    private val target get() = File(directory, "rime")
+    private val target get() = File(directory, "cayboard_input")
     @Before fun before() { target.mkdirs() }
     @After fun after() { directory.deleteRecursively() }
-    private fun old14() = context.assets.open("rime_chinese/pinyin_14jian.schema.yaml").bufferedReader().use { it.readText() }
-        .replace("dictionary: rime_ice", "dictionary: pinyin_simp")
+    private fun old14() = context.assets.open("cayboard_chinese/pinyin_14jian.schema.yaml").bufferedReader().use { it.readText() }
+        .replace("dictionary: cayboard_pinyin", "dictionary: pinyin_simp")
 
     @Test fun unmodifiedLegacy14MovesToSharedDictionaryWhileMissingResourcesInstall() {
         val schema = File(target, "pinyin_14jian.schema.yaml")
         schema.writeText(old14())
         ChineseSchemas.installAssets(context, target)
-        assertTrue(schema.readText().contains("dictionary: rime_ice"))
+        assertTrue(schema.readText().contains("dictionary: cayboard_pinyin"))
         assertTrue(File(target, "cn_dicts/tencent.dict.yaml").length() > 10_000_000)
     }
 
@@ -53,6 +53,6 @@ class ChineseAssetInstallTest {
         assertTrue(schema.delete())
         ChineseSchemas.installAssets(context, target)
         assertEquals(market, dictionary.readText())
-        assertTrue(schema.readText().contains("dictionary: rime_ice"))
+        assertTrue(schema.readText().contains("dictionary: cayboard_pinyin"))
     }
 }

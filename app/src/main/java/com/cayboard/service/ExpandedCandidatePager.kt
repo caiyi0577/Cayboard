@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 
 /**
  * 展开候选数据过滤与展示分行（纯逻辑，可 JVM 单测）。
@@ -18,7 +18,7 @@ object ExpandedCandidatePager {
     fun charUnits(c: Char): Float = if (c.code > 0x2E80) 1.0f else 0.55f
 
     /** 条目估算宽度：候选词全字宽 + 注释按小字号折算 + 固定开销 */
-    fun estimateItemUnits(candidate: RimeCandidate): Float {
+    fun estimateItemUnits(candidate: EngineCandidate): Float {
         var units = ITEM_FIXED_UNITS
         candidate.text.forEach { units += charUnits(it) }
         candidate.comment.forEach { units += charUnits(it) * COMMENT_SIZE_RATIO }
@@ -35,7 +35,7 @@ object ExpandedCandidatePager {
      */
     fun flowRows(
         filtered: List<Int>,
-        all: List<RimeCandidate>,
+        all: List<EngineCandidate>,
         rowWidthUnits: Float,
     ): List<List<Int>> {
         if (filtered.isEmpty()) return emptyList()
@@ -64,7 +64,7 @@ object ExpandedCandidatePager {
      * @param fromIndex 起始偏移：跳过候选栏已显示的前若干个候选，避免展开页重复
      */
     fun filterIndices(
-        all: List<RimeCandidate>,
+        all: List<EngineCandidate>,
         singleCharOnly: Boolean,
         fromIndex: Int = 0,
     ): List<Int> {

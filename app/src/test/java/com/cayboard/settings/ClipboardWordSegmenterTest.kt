@@ -14,7 +14,7 @@ import kotlin.system.measureNanoTime
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class ClipboardWordSegmenterTest {
-    @Test fun realBundledDictionaryResolvesBoundariesWithoutRime() = runBlocking {
+    @Test fun realBundledDictionaryResolvesBoundariesWithoutStartingInputEngine() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         assertEquals(listOf("今天天气", "不错"), ClipboardWordSegmenter.split(context,"今天天气不错"))
         assertEquals(listOf("研究", "生命", "起源"), ClipboardWordSegmenter.split(context,"研究生命起源"))
@@ -42,7 +42,7 @@ class ClipboardWordSegmenterTest {
         val longNs = measureNanoTime { assertEquals(longText,ClipboardWordSegmenter.split(context,longText).joinToString("")) }
         assertTrue("Warm requests unexpectedly stalled: ${warm/1e6}ms",warm < 2_000_000_000L)
         assertTrue("Long text unexpectedly stalled: ${longNs/1e6}ms",longNs < 2_000_000_000L)
-        System.getenv("CYIME_RENDER_OUT")?.let { out ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { out ->
             File(out).mkdirs()
             File(out,"clipboard-split-timing.json").writeText("""{"environment":"Robolectric/JVM; not handset latency","firstRequestMs":${cold/1e6},"warm100RequestsMs":${warm/1e6},"longTextCharacters":${longText.length},"longRequestMs":${longNs/1e6},"modelLoads":$loads}""")
         }

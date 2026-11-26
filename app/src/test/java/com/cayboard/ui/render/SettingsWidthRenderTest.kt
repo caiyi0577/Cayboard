@@ -28,7 +28,7 @@ import java.io.File
 
 /**
  * 设置首页在手机/平板、横竖屏下的内容宽度（内容最宽 840dp，两侧留空），以及平板横屏在左侧留空处上拖后的样子。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图（平时跳过，不进普通单测）。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "zh-rCN-w1500dp-h1500dp-mdpi")
@@ -39,7 +39,7 @@ class SettingsWidthRenderTest {
     private data class Size(val name: String, val width: Int, val height: Int, val dark: Boolean = false)
 
     @Test fun renderWidths() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

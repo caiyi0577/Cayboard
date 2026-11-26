@@ -1,14 +1,15 @@
 NOTICE for Cayboard
 
-Cayboard is an offline Android input method based on CyIME. Original notices follow.
+Cayboard is an offline Android input method. Upstream and third-party notices follow.
 
-NOTICE for CyIME
+Upstream source and license attribution
 
-CyIME is an Android input method forked from Xime, maintained and developed by Cyletix.
+Cayboard is derived from CyIME, which is maintained by Cyletix and was itself forked from Xime.
 CyIME source: https://github.com/Cyletix/CyIME
-Upstream Xime by Kor1 (kingzcheung) and contributors: https://github.com/ximeiorg/Xime
-The application is licensed under GNU GPL version 3; see licenses/CyIME-GPL-3.0.txt.
-Original copyright and third-party license notices are retained.
+Xime source and attribution: https://github.com/ximeiorg/Xime
+Cayboard is distributed under GNU GPL version 3 as required by its upstream; see licenses/CyIME-GPL-3.0.txt.
+Original copyright and third-party license notices are retained. The upstream project names above identify
+their respective source code and trademarks; Cayboard does not claim ownership of them.
 
 This application uses third-party libraries and code:
 
@@ -51,15 +52,9 @@ Full license text: licenses/sherpa-onnx-Apache-2.0.txt. Used for on-device speec
 recognition, voice activity detection and speaker embeddings (caption mode).
 Silero VAD (snakers4/silero-vad), MIT: licenses/silero-vad-MIT.txt.
 
-Models are downloaded on first use, or bundled in the offline edition only:
-- Paraformer streaming zh-en (Alibaba DAMO / FunASR), Apache-2.0; sherpa-onnx export.
-- SenseVoice Small (FunAudioLLM), released under the FunASR model license
-  (attribution and model-name retention required); sherpa-onnx int8 export.
-  https://github.com/FunAudioLLM/SenseVoice
-- Zipformer streaming zh (k2-fsa), Apache-2.0.
-- 3D-Speaker CAM++ speaker embedding zh-cn 16k-common (Alibaba 3D-Speaker), Apache-2.0;
-  ONNX export published by sherpa-onnx. Used only to tell speakers apart in caption mode;
-  voiceprints stay on the device.
+The application bundles the X-ASR Chinese-English Zipformer transducer model (Apache-2.0),
+exported for sherpa-onnx. Model source: https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models.
+Silero VAD and X-ASR inference run locally. Recorded audio is not uploaded.
 
 ================================================================================
 English glide typing word-pair statistics
@@ -76,8 +71,8 @@ word and word-pair frequencies derived (counts only, no text) by tools/glide_lab
 Spanish, German, French, Italian and Russian word lists
 ================================================================================
 
-cyime-words-es-v1.txt, cyime-words-de-v1.txt, cyime-words-fr-v1.txt, cyime-words-it-v1.txt and
-cyime-words-ru-v1.txt are the completion word lists of the letter-by-letter languages (one word per line,
+cayboard-words-es-v1.txt, cayboard-words-de-v1.txt, cayboard-words-fr-v1.txt, cayboard-words-it-v1.txt and
+cayboard-words-ru-v1.txt are the completion word lists of the letter-by-letter languages (one word per line,
 most frequent first). They are optional market downloads, not part of the APK, built by tools/wordlists/build_words.py:
 - Word frequencies: Hermit Dave, FrequencyWords (content/2018/<es|de|fr|it|ru>/<lang>_50k.txt, from
   OpenSubtitles 2018), commit 525f9b560de45753a5ea01069454e72e9aa541c6. Code MIT; word lists CC-BY-SA-4.0.
@@ -115,7 +110,7 @@ Jieba offline clipboard segmentation (DAG / HMM model and dictionary)
 Copyright (c) 2013 Sun Junyi and Jieba contributors. MIT License.
 Source: https://github.com/fxsjy/jieba
 Pinned commit: 67fa2e36e72f69d9134b8a1037b83fbb070b9775
-CyIME adaptations: immutable packed dictionary and HMM tables, Kotlin DAG/Viterbi decoder,
+Cayboard adaptations: immutable packed dictionary and HMM tables, Kotlin DAG/Viterbi decoder,
 Unicode-preserving tokenizer, local clipboard selection UI. No remote segmentation service.
 Full license: licenses/clipboard-segmentation/Jieba-MIT.txt.
 Asset provenance, sizes and hashes: clipboard-segmentation/source.json.

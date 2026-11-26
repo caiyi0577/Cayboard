@@ -19,8 +19,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -32,7 +32,7 @@ import java.io.File
 class HardwareArrowNavigationImeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun nativePinyinNumbersSelectAndArrowsMoveEditorInBothSurfaces() = withIme("rime_ice") {
+    @Test fun nativePinyinNumbersSelectAndArrowsMoveEditorInBothSurfaces() = withIme("cayboard_pinyin") {
         verifyChineseNavigationInBothSurfaces()
     }
 
@@ -40,7 +40,7 @@ class HardwareArrowNavigationImeTest {
         verifyChineseNavigationInBothSurfaces()
     }
 
-    @Test fun englishSuggestionsNeverStealArrowsSpacesOrDigits() = withIme("rime_ice") {
+    @Test fun englishSuggestionsNeverStealArrowsSpacesOrDigits() = withIme("cayboard_pinyin") {
         key("SHIFT_LEFT")
         rule.waitUntil(10_000) { engine.isAsciiMode() && languageIs("EN") }
         for (full in listOf(false, true)) {
@@ -68,7 +68,7 @@ class HardwareArrowNavigationImeTest {
         }
     }
 
-    @Test fun shiftPunctuationIsLiteralAndDoesNotSwitchLanguage() = withIme("rime_ice") {
+    @Test fun shiftPunctuationIsLiteralAndDoesNotSwitchLanguage() = withIme("cayboard_pinyin") {
         for (english in listOf(false, true)) {
             if (english) {
                 key("SHIFT_LEFT")
@@ -83,7 +83,7 @@ class HardwareArrowNavigationImeTest {
         }
     }
 
-    @Test fun sideDockHiddenEnglishSuggestionsDoNotStealEditorArrows() = withIme("rime_ice") {
+    @Test fun sideDockHiddenEnglishSuggestionsDoNotStealEditorArrows() = withIme("cayboard_pinyin") {
         key("SHIFT_LEFT")
         rule.waitUntil(10_000) { engine.isAsciiMode() && languageIs("EN") }
         resetEditor("before ")
@@ -105,7 +105,7 @@ class HardwareArrowNavigationImeTest {
         rule.waitUntil(10_000) { document() == "before hel " }
     }
 
-    private inner class Fixture(val context: Context, val engine: RimeEngine, val editor: EditText) {
+    private inner class Fixture(val context: Context, val engine: InputEngine, val editor: EditText) {
         fun has(tag: String) = rule.onAllNodesWithTag(tag, true).fetchSemanticsNodes().isNotEmpty()
         fun languageIs(label: String) = rule.onAllNodesWithTag("hardware-toolbar-language", true)
             .fetchSemanticsNodes().any { node ->
@@ -237,14 +237,14 @@ class HardwareArrowNavigationImeTest {
             key == "input_language_order" || key == "input_text_location" || key == "space_commit_association"
         val savedPrefs = prefs.all.filterKeys(::fixtureKey).mapValues { (_, value) -> if (value is Set<*>) value.toSet() else value }
         val oldIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        assertTrue("The real engine must be prepared", RimeConfigHelper.prepareEngine(context))
-        val engine = RimeEngine.getInstance()
+        assertTrue("The real engine must be prepared", EngineConfig.prepareEngine(context))
+        val engine = InputEngine.getInstance()
         val savedSchema = engine.getCurrentSchema()
         val savedOptions = listOf("ascii_mode", "full_shape", "ascii_punct").associateWith(engine::getOption)
         val savedAscii = engine.getUserConfigBool("var/option/ascii_mode")
         val savedPrevious = engine.getUserConfigString("var/previously_selected_schema")
         val schemaFiles = listOf("default.custom.yaml", "default.yaml").associate { name ->
-            val file = File(context.filesDir, "rime/$name")
+            val file = File(context.filesDir, "cayboard_input/$name")
             file to file.takeIf { it.isFile }?.readBytes()
         }
         lateinit var editor: EditText

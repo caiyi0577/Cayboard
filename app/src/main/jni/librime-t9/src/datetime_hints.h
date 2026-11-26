@@ -1,5 +1,5 @@
-#ifndef CYIME_DATETIME_HINTS_H_
-#define CYIME_DATETIME_HINTS_H_
+#ifndef CAYBOARD_DATETIME_HINTS_H_
+#define CAYBOARD_DATETIME_HINTS_H_
 
 #include <ctime>
 #include <string>
@@ -16,4 +16,4 @@ std::vector<std::string> ForWord(const std::string& word, const std::tm& now);
 }  // namespace datetime_hints
 }  // namespace rime
 
-#endif  // CYIME_DATETIME_HINTS_H_
+#endif  // CAYBOARD_DATETIME_HINTS_H_

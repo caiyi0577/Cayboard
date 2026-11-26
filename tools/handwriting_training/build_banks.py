@@ -1,7 +1,7 @@
 """一条命令生成手写训练模式的外置题库，并放到平板上。
 
 用法：
-    python tools/handwriting_training/build_banks.py                 # 只生成到 D:/CyIME-Data/handwriting_training/banks
+    python tools/handwriting_training/build_banks.py                 # 只生成到 D:/Cayboard-Data/handwriting_training/banks
     python tools/handwriting_training/build_banks.py --push          # 生成后推到唯一连接的设备
     python tools/handwriting_training/build_banks.py --push --serial TABLET_SERIAL --skip-build
 
@@ -17,13 +17,13 @@ import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-OUT = pathlib.Path("D:/CyIME-Data/handwriting_training/banks")
+OUT = pathlib.Path("D:/Cayboard-Data/handwriting_training/banks")
 PACKAGE = "com.cayboard"
 DEVICE_DIR = f"/sdcard/Android/data/{PACKAGE}/files/handwriting_training"
 SOURCES = {
     "math_formulas.tsv": ("extract_math_formulas.py", "D:/GitHub/Math"),
     "english.tsv": ("extract_english.py", "<projects>/English"),
-    "japanese.tsv": ("extract_japanese.py", "D:/CyIME-Data/handwriting_training/日语语法_修订版.xlsx"),
+    "japanese.tsv": ("extract_japanese.py", "D:/Cayboard-Data/handwriting_training/日语语法_修订版.xlsx"),
     "chinese_chars.tsv": ("extract_chinese.py", None),  # 用仓库里的拼音词库和手写模型字表，不需要来源文件
 }
 

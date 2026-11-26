@@ -5,7 +5,7 @@ import org.junit.Test
 
 class ChineseGlideDeleteHistoryTest {
     private fun state(input: String, revision: Long, caret: Int = input.length) =
-        ChineseGlideDeleteHistory.State(input, caret, 0, "", "rime_ice", 1, InputTarget.Host, revision)
+        ChineseGlideDeleteHistory.State(input, caret, 0, "", "cayboard_pinyin", 1, InputTarget.Host, revision)
 
     @Test fun consecutiveGlidesDeleteInReverseOrder() {
         val history = ChineseGlideDeleteHistory()

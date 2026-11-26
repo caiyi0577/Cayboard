@@ -15,7 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.AppFonts
@@ -62,7 +62,7 @@ class ExpandedAssociationRowTest {
             onAssociationSelect = { committed += it })
         doReturn(mock<T9InputController>()).whenever(viewModel).bindT9Controller(callbacks)
         rule.setContent {
-            KeyboardView(viewModel, KeyboardUiState(currentSchemaId = "rime_ice", isDarkTheme = true), callbacks,
+            KeyboardView(viewModel, KeyboardUiState(currentSchemaId = "cayboard_pinyin", isDarkTheme = true), callbacks,
                 modifier = Modifier.width(411.dp).height(280.dp).testTag("keyboard"),
                 candidateState = snapshot, inputSessionManagedByHost = true)
         }
@@ -85,7 +85,7 @@ class ExpandedAssociationRowTest {
     }
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

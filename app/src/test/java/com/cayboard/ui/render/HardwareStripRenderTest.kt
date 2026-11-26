@@ -38,7 +38,7 @@ import java.io.File
 
 /**
  * 实体键盘浮条：拼音里的光标颜色，以及点「⌄」展开候选的过渡帧（0/80/160/240ms）。
- * 浅色、深色、纯黑、纯白，玻璃开关。只在设了 CYIME_RENDER_OUT 时出图。
+ * 浅色、深色、纯黑、纯白，玻璃开关。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1400dp-h900dp-hdpi")
@@ -47,7 +47,7 @@ class HardwareStripRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderStrip() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

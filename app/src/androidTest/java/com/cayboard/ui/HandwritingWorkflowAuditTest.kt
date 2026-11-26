@@ -15,8 +15,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.SettingsPreferences
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -39,14 +39,14 @@ class HandwritingWorkflowAuditTest {
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         val ime = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
         val enabledBefore = shell("ime list -s").lineSequence().any { it == ime }
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         var previousSchema = ""
         var previousAscii = false
         var previousSavedAscii = false
         lateinit var editor: EditText
         try {
             SettingsPreferences.setShowCandidateCancelButton(context, true)
-            assertTrue(RimeConfigHelper.prepareEngine(context))
+            assertTrue(EngineConfig.prepareEngine(context))
             assertTrue(engine.ensureSession())
             previousSchema = engine.getCurrentSchema()
             previousAscii = engine.isAsciiMode()

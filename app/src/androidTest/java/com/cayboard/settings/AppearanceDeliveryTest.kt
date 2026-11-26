@@ -17,7 +17,7 @@ class AppearanceDeliveryTest {
         assumeTrue(args.getString("appearanceDelivery") == "backup-and-reset-20261046")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("com.cayboard", context.packageName)
-        val prefs = context.getSharedPreferences("kime_settings", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE)
         val before = prefs.all.toMap()
         val directory = File(context.getExternalFilesDir(null), "delivery-backups/20261046-${System.currentTimeMillis()}")
         assertTrue(directory.mkdirs())
@@ -31,8 +31,8 @@ class AppearanceDeliveryTest {
         val rawPrefs = File(context.filesDir.parentFile, "shared_prefs")
         if (rawPrefs.isDirectory) rawPrefs.copyRecursively(File(directory, "shared_prefs"))
         // Keep any custom layout source as a recovery aid; it is deliberately not edited.
-        val custom = File(context.filesDir, "rime/xime.custom.yaml")
-        if (custom.isFile) custom.copyTo(File(directory, "xime.custom.yaml"))
+        val custom = File(context.filesDir, "cayboard_input/cayboard.custom.yaml")
+        if (custom.isFile) custom.copyTo(File(directory, "cayboard.custom.yaml"))
         val removed = setOf(
             "keyboard_height_dp", "keyboard_height_dp_landscape",
             "fixed_width_dp", "fixed_width_dp_landscape", "fixed_offset_x", "fixed_offset_x_landscape",

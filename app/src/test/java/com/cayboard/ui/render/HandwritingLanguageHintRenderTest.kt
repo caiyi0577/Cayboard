@@ -34,7 +34,7 @@ import java.io.File
 
 /**
  * 手写板左上角“当前语言”提示在各主题、深浅色、玻璃开关下的样子（手机宽 400dp、平板宽 900dp），
- * 用真实的提示组件和键盘背景在电脑上渲染成一张对比图。只在设置了 CYIME_RENDER_OUT=<目录> 时出图。
+ * 用真实的提示组件和键盘背景在电脑上渲染成一张对比图。只在设置了 CAYBOARD_RENDER_OUT=<目录> 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w2400dp-h2400dp-mdpi")
@@ -43,7 +43,7 @@ class HandwritingLanguageHintRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderLanguageHints() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

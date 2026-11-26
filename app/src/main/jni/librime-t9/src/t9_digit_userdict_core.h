@@ -35,8 +35,8 @@ class T9DigitUserDictCore {
     std::string value;
   };
 
-  // 从 RIME input 构建查找键。格式：无左选 "54482"；左选 j "j'4482" → "54482:j"。
-  static std::string BuildLookupKey(const std::string& rime_input);
+  // 从 引擎输入 构建查找键。格式：无左选 "54482"；左选 j "j'4482" → "54482:j"。
+  static std::string BuildLookupKey(const std::string& engine_input);
 
   // 拼音串（如 "ji hu biao"）→ 完整数字码（如 "54482424"），含无法映射的拼音时返回空串。
   static std::string PinyinToFullCode(const std::string& pinyin);
@@ -68,7 +68,7 @@ class T9DigitUserDictCore {
   void Reset();
 
   // 衰减公式：d_new = d_delta + d_old * exp((t_old - t_new) / 200)
-  // 内联实现以免引入 RIME 引擎头依赖。
+  // 内联实现以免引入 引擎头依赖。
   static double FormulaD(double delta, double now, double old_dee, double old_tick);
 
   // 排序权重公式（与 dynamics.h 的 formula_p 一致，内联实现）。

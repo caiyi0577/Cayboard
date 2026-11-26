@@ -6,7 +6,7 @@
 set -u
 REPO=/mnt/d/GitHub/Cayboard
 OUT=$1; MODEL=$2
-TARGET=$REPO/app/build/generated/t9-ngram/rime_chinese/t9_ngram.lm
+TARGET=$REPO/app/build/generated/t9-ngram/cayboard_chinese/t9_ngram.lm
 JAR=/mnt/c/Users/<user>/.gradle/caches/modules-2/files-2.1/org.json/json/20240303/ebb88e8fb5122b7506d5cf1d69f1ccdb790d22a/json-20240303.jar
 SEED=tools/ime_lab/fixtures/user_dict_seed_20261009.userdb.txt
 A=.codex-artifacts/t9-ngram-20261010

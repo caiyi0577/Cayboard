@@ -1,14 +1,14 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
 /** Exercises the deployed prism, including mixed exact letters and ambiguous taps. */
 public final class MergedLetterProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File logs = new File(args[1], "logs");
     if (!logs.isDirectory() && !logs.mkdirs()) throw new Exception("cannot create native log directory");
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(args[1], args[1]);
     try {
       e.nativeStartMaintenance(true);
@@ -55,7 +55,7 @@ public final class MergedLetterProbe {
       selection(e, "pinyin_14jian", "BUGaO", "ni", "bu");
       selection(e, "double_pinyin_flypy_14jian", "BUGJ", "ni", "bu");
       selection(e, "double_pinyin_flypy", "lo", "lo", "luo");
-      selection(e, "rime_ice", "xian", "xian", "xi");
+      selection(e, "cayboard_pinyin", "xian", "xian", "xi");
       exactLetter(e);
       confirmedPrefix(e);
       lockedBoundary(e);
@@ -65,7 +65,7 @@ public final class MergedLetterProbe {
       System.out.println("PASS native syllable selection: real code, reselect, confirmed prefix, stale rejection and invalidation");
     } finally { e.nativeDestroy(); }
   }
-  static void verify(RimeEngine e, String schema, String code, String required, String... excluded) throws Exception {
+  static void verify(InputEngine e, String schema, String code, String required, String... excluded) throws Exception {
     if (!e.nativeSwitchSchema(schema)) throw new Exception("schema unavailable: " + schema);
     e.nativeSetOption("ascii_mode", false);
     for (char c : code.toCharArray()) if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
@@ -82,13 +82,13 @@ public final class MergedLetterProbe {
     e.nativeProcessKey(0xff1b, 0);
   }
 
-  static java.util.List<String> firstWords(RimeEngine e) {
+  static java.util.List<String> firstWords(InputEngine e) {
     java.util.List<String> words = new java.util.ArrayList<>();
     for (String[] row : e.nativeInspectCandidates(16)) words.add(row[0]);
     return words;
   }
 
-  static void reset(RimeEngine e, String schema, String code) throws Exception {
+  static void reset(InputEngine e, String schema, String code) throws Exception {
     e.nativeProcessKey(0xff1b, 0);
     if (!e.nativeSwitchSchema(schema)) throw new Exception("schema unavailable: " + schema);
     e.nativeSetOption("ascii_mode", false);
@@ -99,7 +99,7 @@ public final class MergedLetterProbe {
   /** Readings chosen so far; the rail itself moves on to the next syllable after a choice. */
   static final java.util.Map<String, String[]> chosen = new java.util.HashMap<>();
 
-  static String[] option(RimeEngine e, String reading) throws Exception {
+  static String[] option(InputEngine e, String reading) throws Exception {
     for (String encoded : e.nativePinyinSyllableOptions()) {
       String[] value = encoded.split("\\t", -1);
       if (value.length == 5 && value[1].equals(reading)) return value;
@@ -108,7 +108,7 @@ public final class MergedLetterProbe {
         Arrays.toString(e.nativePinyinSyllableOptions()));
   }
 
-  static void choose(RimeEngine e, String reading) throws Exception {
+  static void choose(InputEngine e, String reading) throws Exception {
     String[] value = option(e, reading);
     String[] before = e.nativePinyinEditSnapshot();
     require(e.nativeSelectPinyinSyllable(before[0], e.nativeGetCurrentSchema(),
@@ -124,7 +124,7 @@ public final class MergedLetterProbe {
         " id=" + value[0] + " raw/caret/confirmed preserved");
   }
 
-  static void assertConstrained(RimeEngine e, String reading) throws Exception {
+  static void assertConstrained(InputEngine e, String reading) throws Exception {
     String[] value = chosen.get(reading);
     require(value != null && e.nativePinyinSyllablesChosen() > 0, "chosen reading not selected: " + reading);
     boolean found = false;
@@ -140,7 +140,7 @@ public final class MergedLetterProbe {
     require(found, "selection produced no inspectable phonetic candidate: " + reading);
   }
 
-  static void selection(RimeEngine e, String schema, String code, String first, String second) throws Exception {
+  static void selection(InputEngine e, String schema, String code, String first, String second) throws Exception {
     reset(e, schema, code);
     // Both readings must actually exist before the constraint; a UI label is not proof.
     String firstId = option(e, first)[0];
@@ -160,14 +160,14 @@ public final class MergedLetterProbe {
     assertConstrained(e, second);
   }
 
-  static void exactLetter(RimeEngine e) throws Exception {
+  static void exactLetter(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "bUGaO");
     for (String encoded : e.nativePinyinSyllableOptions())
       require(!encoded.split("\\t")[1].equals("ni"), "precise lowercase b became ambiguous");
     choose(e, "bu");
   }
 
-  static void confirmedPrefix(RimeEngine e) throws Exception {
+  static void confirmedPrefix(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "niBUGaO");
     int selected = -1;
     for (String[] row : e.nativeInspectCandidates(500)) {
@@ -186,13 +186,13 @@ public final class MergedLetterProbe {
     require(state[2].equals("2") && state[3].equals("你"), "suffix append lost confirmed Chinese text");
   }
 
-  static void noSelection(RimeEngine e, String reason) throws Exception {
+  static void noSelection(InputEngine e, String reason) throws Exception {
     require(e.nativePinyinSyllablesChosen() == 0, reason + ": old selection revived");
     for (String value : e.nativePinyinSyllableOptions())
       require(!value.endsWith("\t1"), reason + ": old selection revived " + value);
   }
 
-  static void lockedBoundary(RimeEngine e) throws Exception {
+  static void lockedBoundary(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "BU");
     choose(e, "ni");
     e.nativeProcessKey('n', 0);
@@ -203,7 +203,7 @@ public final class MergedLetterProbe {
     System.out.println("PASS chosen ni boundary survives competing nin reading in BUn");
   }
 
-  static void delimiterAndIncompletePrefix(RimeEngine e) throws Exception {
+  static void delimiterAndIncompletePrefix(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "BU'GaO");
     choose(e, "ni");
     e.nativeProcessKey('n', 0);
@@ -220,7 +220,7 @@ public final class MergedLetterProbe {
     System.out.println("PASS explicit delimiter/caret preserve selected span; incomplete replacement clears it");
   }
 
-  static void invalidation(RimeEngine e) throws Exception {
+  static void invalidation(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "BUGaO");
     choose(e, "ni");
     e.nativeProcessKey('n', 0);
@@ -258,7 +258,7 @@ public final class MergedLetterProbe {
   }
 
   /** Several syllables are chosen one after another, as on the nine-key rail. */
-  static void chainedChoices(RimeEngine e) throws Exception {
+  static void chainedChoices(InputEngine e) throws Exception {
     reset(e, "pinyin_14jian", "BUGaOdE");
     choose(e, "ni");
     for (String encoded : e.nativePinyinSyllableOptions())

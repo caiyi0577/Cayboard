@@ -53,7 +53,7 @@ import java.io.File
  * 「字母键显示大写」（10-31 反馈：喜欢单纯大写的键，嫌小写加上下角标太杂）。
  * 每张图：列是 默认小写 / 显示大写，行是 中文、英文、英文 Shift（14 键是 中文、中文 Shift）。
  * 每个主题 × 深浅 × 玻璃，角标开 / 两个角标开关都关（干净键盘）各一张。
- * 只在设了 CYIME_RENDER_OUT 时出图；CYIME_RENDER_THEMES 只画其中几个主题。
+ * 只在设了 CAYBOARD_RENDER_OUT 时出图；CAYBOARD_RENDER_THEMES 只画其中几个主题。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h1200dp-mdpi")
@@ -64,7 +64,7 @@ class UppercaseKeyLabelsRenderTest {
     private data class Variant(val label: String, val ascii: Boolean, val shifted: Boolean)
 
     private val passes = linkedMapOf(
-        "26" to ("rime_ice" to listOf(Variant("中文", false, false), Variant("英文", true, false), Variant("英文 Shift", true, true))),
+        "26" to ("cayboard_pinyin" to listOf(Variant("中文", false, false), Variant("英文", true, false), Variant("英文 Shift", true, true))),
         "14" to ("pinyin_14jian" to listOf(Variant("中文", false, false), Variant("中文 Shift", false, true))),
     )
     private val columns = listOf("默认（小写）" to false, "字母键显示大写" to true)
@@ -73,7 +73,7 @@ class UppercaseKeyLabelsRenderTest {
         val app = ApplicationProvider.getApplicationContext<Application>()
         SettingsPreferences.setSwipeUpHintsEnabled(app, true)
         SettingsPreferences.setSwipeDownHintsEnabled(app, true)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     // 一组一个 activity：一次画太多张在 Robolectric 里会卡住（见 KeyShapeRenderTest）。
@@ -81,9 +81,9 @@ class UppercaseKeyLabelsRenderTest {
     @Test fun renderGlass() = render(glass = true)
 
     private fun render(glass: Boolean) {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
-        val only = System.getenv("CYIME_RENDER_THEMES")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val only = System.getenv("CAYBOARD_RENDER_THEMES")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
         KeysConfigHelper.applyLetterLayouts()

@@ -1,12 +1,12 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 
 /**
  * 简/繁 output (2026-10-30). Before this, the APK carried no OpenCC tables, so turning traditionalization on
- * changed nothing. Arguments: the built library directory and a fresh test user directory listing rime_ice,
- * double_pinyin_flypy, t9_pinyin and pinyin_14jian, with assets/rime_chinese/opencc copied in (never an
+ * changed nothing. Arguments: the built library directory and a fresh test user directory listing cayboard_pinyin,
+ * double_pinyin_flypy, t9_pinyin and pinyin_14jian, with assets/cayboard_chinese/opencc copied in (never an
  * installed app's data). For each layout the same word must come out simplified with the option off and in
- * Taiwan everyday forms (台灣, 計畫, 了解 — assets/rime_chinese/opencc/cyime_s2tw.json) with it on.
+ * Taiwan everyday forms (台灣, 計畫, 了解 — assets/cayboard_chinese/opencc/cayboard_s2tw.json) with it on.
  */
 public final class TraditionalOutputProbe {
   static final String T9_DIGITS = "22233344455566677778889999";
@@ -19,15 +19,15 @@ public final class TraditionalOutputProbe {
   static int failures = 0;
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user.getPath(), user.getPath());
     try {
       e.nativeEnsureT9SchemaPatches("t9_pinyin");
       if (!new File(user, "build/t9_pinyin.schema.yaml").isFile()) maintain(e);
       if (!e.nativeCreateSession()) throw new Exception("session unavailable");
-      for (String schema : new String[] {"rime_ice", "double_pinyin_flypy", "t9_pinyin", "pinyin_14jian"}) {
+      for (String schema : new String[] {"cayboard_pinyin", "double_pinyin_flypy", "t9_pinyin", "pinyin_14jian"}) {
         boolean t9 = schema.equals("t9_pinyin");
         for (String[] w : WORDS) {
           String code = switch (schema) {
@@ -43,7 +43,7 @@ public final class TraditionalOutputProbe {
             clear(e, t9);
             for (char c : code.toCharArray()) {
               if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c);
-              if (t9) e.nativeT9FlushRimeInput();
+              if (t9) e.nativeT9FlushInput();
             }
             String[][] rows = e.nativeInspectCandidates(8);
             String want = traditional ? w[3] : w[2];
@@ -69,10 +69,10 @@ public final class TraditionalOutputProbe {
     return out.toString();
   }
 
-  static void clear(RimeEngine e, boolean t9) {
+  static void clear(InputEngine e, boolean t9) {
     if (t9) e.nativeT9ClearComposition(1);
     e.nativeSetInput("");
-    if (t9) e.nativeT9FlushRimeInput();
+    if (t9) e.nativeT9FlushInput();
   }
 
   static void check(String what, boolean ok) {
@@ -80,7 +80,7 @@ public final class TraditionalOutputProbe {
     System.out.println((ok ? "  ok   " : "  FAIL ") + what);
   }
 
-  static void maintain(RimeEngine e) throws Exception {
+  static void maintain(InputEngine e) throws Exception {
     e.nativeStartMaintenance(true);
     long until = System.currentTimeMillis() + 1200000;
     while (e.nativeIsMaintaining()) {

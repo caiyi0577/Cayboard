@@ -19,7 +19,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.*
 import com.cayboard.viewmodel.KeyboardUiState
@@ -37,7 +37,7 @@ class KeySpacingGeometryTest {
     @get:Rule val rule = createComposeRule()
     private val app = ApplicationProvider.getApplicationContext<Application>()
     @Before fun before() { KeysConfigHelper.loadConfig(app) }
-    @After fun after() { KeysConfigHelper.setActiveKeyboardSchema("rime_ice") }
+    @After fun after() { KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin") }
 
     @Test fun paintedInsetsScaleEquallyForLettersTallEnterAndWideSpaceWithoutShrinkingTouchBounds() {
         val factor = mutableFloatStateOf(1f)
@@ -98,8 +98,8 @@ class KeySpacingGeometryTest {
 
     @Test fun realLayoutsUseEqualPaintedGapsAndTheSameKeySizeRatio() {
         data class Mode(val schema: String, val ascii: Boolean = false, val split: Boolean = false)
-        val modes = listOf(Mode("rime_ice", true), Mode("rime_ice"), Mode("pinyin_14jian"),
-            Mode("t9_pinyin"), Mode("jaroomaji"), Mode("japanese_kana"), Mode("rime_ice", true, true))
+        val modes = listOf(Mode("cayboard_pinyin", true), Mode("cayboard_pinyin"), Mode("pinyin_14jian"),
+            Mode("t9_pinyin"), Mode("jaroomaji"), Mode("japanese_kana"), Mode("cayboard_pinyin", true, true))
         val mode = mutableStateOf(modes.first())
         val dimensions = mutableStateOf(420 to 280)
         rule.setContent {
@@ -260,7 +260,7 @@ class KeySpacingGeometryTest {
             width, height, columns = 1f, rows = 1f, verticalInsetDp = 0f, allowShrink = allowShrink)
 
     private fun saveSpacingImage(name: String, bitmap: Bitmap) {
-        val directory = File(app.getExternalFilesDir(null), "cyime").apply { mkdirs() }
+        val directory = File(app.getExternalFilesDir(null), "cayboard").apply { mkdirs() }
         File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 

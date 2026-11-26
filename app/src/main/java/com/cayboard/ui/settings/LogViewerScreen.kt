@@ -420,8 +420,8 @@ private fun LogFileItem(
                     file.name.contains("WARNING") -> "WARNING"
                     file.name.contains("ERROR") -> "ERROR"
                     file.name.contains("FATAL") -> "FATAL"
-                    file.name.startsWith("kime_") -> "APP日志"
-                    file.name.contains("rime.kime") -> "RIME日志"
+                    file.name.startsWith("cayboard_") || file.name.startsWith(com.cayboard.engine.compat.LegacyNames.OLD_APP_LOG_PREFIX) -> "APP日志"
+                    file.name.contains("cayboard.engine") || file.name.contains(com.cayboard.engine.compat.LegacyNames.OLD_ENGINE_LOG_TOKEN) -> "输入引擎日志"
                     else -> "LOG"
                 }
                 
@@ -433,7 +433,7 @@ private fun LogFileItem(
                         "WARNING" -> MaterialTheme.colorScheme.secondary
                         "FATAL" -> MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                         "APP日志" -> MaterialTheme.colorScheme.primary
-                        "RIME日志" -> MaterialTheme.colorScheme.tertiary
+                        "输入引擎日志" -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )

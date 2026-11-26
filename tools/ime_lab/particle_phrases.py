@@ -9,7 +9,7 @@ statistics only) and the most frequent per particle are kept. Expectations follo
     (2026-10-19 user report: manmandi should give 慢慢地).
 
 Usage: python particle_phrases.py RIME_ICE_DIR CORPUS.txt OUTPUT.tsv [--skip 8000000] [--lines 4000000] [--per 150]
-Output: lexicon_regression fixture rows; run with CYIME_EXTRA_CASES=OUTPUT.tsv.
+Output: lexicon_regression fixture rows; run with CAYBOARD_EXTRA_CASES=OUTPUT.tsv.
 """
 import argparse
 from collections import Counter
@@ -36,7 +36,7 @@ def candidates(root):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("rime_ice")
+    parser.add_argument("cayboard_pinyin")
     parser.add_argument("corpus")
     parser.add_argument("output")
     parser.add_argument("--lines", type=int, default=4_000_000)
@@ -44,7 +44,7 @@ def main():
     parser.add_argument("--skip", type=int, default=8_000_000,
                         help="corpus lines to skip; particle_weights.py counts the first 8M, so the test set comes from later lines")
     args = parser.parse_args()
-    phrases = candidates(args.rime_ice)
+    phrases = candidates(args.cayboard_pinyin)
     counts = Counter()
     with open(args.corpus, encoding="utf-8", errors="ignore") as corpus:
         for line in islice(corpus, args.skip, args.skip + args.lines):

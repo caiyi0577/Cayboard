@@ -9,7 +9,7 @@ class EnglishLiteralInputTest {
         val app = mock<android.content.Context>()
         val prefs = mock<android.content.SharedPreferences>()
         val editor = mock<android.view.inputmethod.InputConnection>()
-        whenever(app.getSharedPreferences("kime_settings", 0)).thenReturn(prefs)
+        whenever(app.getSharedPreferences("cayboard_settings", 0)).thenReturn(prefs)
         assertFalse(englishSentenceStart(app, editor))
         verifyNoInteractions(editor)
         whenever(prefs.getBoolean(ENGLISH_SENTENCE_CAPS, false)).thenReturn(true)
@@ -39,7 +39,7 @@ class EnglishLiteralInputTest {
         val app = mock<android.content.Context>()
         val prefs = mock<android.content.SharedPreferences>()
         val editor = mock<android.view.inputmethod.InputConnection>()
-        whenever(app.getSharedPreferences("kime_settings", 0)).thenReturn(prefs)
+        whenever(app.getSharedPreferences("cayboard_settings", 0)).thenReturn(prefs)
         whenever(editor.getTextBeforeCursor(any(), any())).thenReturn("Да. «")
         // 开关关着：俄语、西班牙语键盘也不自动大写，不碰输入框。
         assertFalse(englishSentenceStart(app, editor, wordStart = true))
@@ -154,7 +154,7 @@ class EnglishLiteralInputTest {
         assertFalse(typesEnglishWords(words, asciiMode = true))
         val direct = com.cayboard.settings.InputProfiles.builtin(com.cayboard.settings.InputModes.ENGLISH)
         assertFalse(typesEnglishWords(direct, asciiMode = false))
-        assertFalse(typesEnglishWords(com.cayboard.settings.InputProfiles.builtin("rime_ice"), asciiMode = false))
+        assertFalse(typesEnglishWords(com.cayboard.settings.InputProfiles.builtin("cayboard_pinyin"), asciiMode = false))
     }
 
     @Test fun autoCappedFirstLetterIsNotLearnedAsTyped() {

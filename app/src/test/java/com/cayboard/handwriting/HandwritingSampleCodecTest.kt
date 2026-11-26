@@ -38,7 +38,7 @@ class HandwritingSampleCodecTest {
             androidVersion = "Android 14 (API 34)",
             exportedAtMs = 1000L,
         )
-        assertTrue(json.contains("\"format\": \"xime-handwriting-capture\""))
+        assertTrue(json.contains("\"format\": \"cayboard-handwriting-capture\""))
         assertTrue(json.contains("\"version\": 1"))
         assertTrue(json.contains("bounding box"))
         assertTrue(json.contains("\"target\": \"中\""))
@@ -74,11 +74,18 @@ class HandwritingSampleCodecTest {
     }
 
     @Test
+    fun `旧版 Xime 格式仍可导入`() {
+        val json = HandwritingSampleCodec.buildExportJson(listOf(sample()), "v", "d", "a", 0L)
+            .replace("cayboard-handwriting-capture", "xime-handwriting-capture")
+        assertEquals(1, HandwritingSampleCodec.parseFromJson(json).size)
+    }
+
+    @Test
     fun `无识别结果的样本不含model字段`() {
         val json = HandwritingSampleCodec.sampleToJson(sample(modelTop = null))
         assertTrue(!json.has("model_top"))
         assertTrue(!json.has("model_top_score"))
-        val parsed = HandwritingSampleCodec.parseFromJson("{\"format\":\"xime-handwriting-capture\",\"samples\":[$json]}")
+        val parsed = HandwritingSampleCodec.parseFromJson("{\"format\":\"cayboard-handwriting-capture\",\"samples\":[$json]}")
         assertNull(parsed[0].modelTop)
         assertNull(parsed[0].modelTopScore)
     }
@@ -97,7 +104,7 @@ class HandwritingSampleCodecTest {
                     )
             )
         val parsed = HandwritingSampleCodec.parseFromJson(
-            root.put("format", "xime-handwriting-capture").toString()
+            root.put("format", "cayboard-handwriting-capture").toString()
         )
         assertTrue(parsed.isEmpty())
     }

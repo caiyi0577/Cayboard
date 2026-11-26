@@ -1,6 +1,6 @@
 package com.cayboard.settings
 
-import com.cayboard.rime.flypySyllable
+import com.cayboard.engine.flypySyllable
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -134,7 +134,7 @@ class DoublePinyinSchemeTest {
                 - melt_eng
 
             translator:
-              dictionary: rime_ice
+              dictionary: cayboard_pinyin
               prism: double_pinyin_flypy    # 注释
               preedit_format:               # 注释
                 - xform/(^|[ '])aa/${'$'}1a/
@@ -158,7 +158,7 @@ class DoublePinyinSchemeTest {
         assertTrue(text.contains("  author:\n    - Dvel\n"))
         assertTrue(text.contains("  prism: ${custom.id}\n"))
         assertTrue(text.contains("  user_dict: en_dicts/cn_en_${custom.id}\n"))
-        assertTrue(text.contains("  dictionary: rime_ice\n"))
+        assertTrue(text.contains("  dictionary: cayboard_pinyin\n"))
         assertTrue(text.contains("  # dictionary_exclude: []\n"))
         assertFalse(text.contains("xform/iu${'$'}/Ⓠ/") || text.contains("# - abbrev") || text.contains("(\\w)g"))
         val algebra = text.substringAfter("  algebra:\n").lines().takeWhile { it.startsWith("    - ") }
@@ -507,7 +507,7 @@ class DoublePinyinSchemeTest {
         assertEquals("zhong sh", apply(rules, "vsu"))
     }
 
-    private val base14 = listOf("src/main/assets", "app/src/main/assets").map { java.io.File(it, "rime_chinese/double_pinyin_flypy_14jian.schema.yaml") }
+    private val base14 = listOf("src/main/assets", "app/src/main/assets").map { java.io.File(it, "cayboard_chinese/double_pinyin_flypy_14jian.schema.yaml") }
         .first { it.isFile }.readText()
 
     @Test fun fourteenKeyVersionTypesEachKeyExactlyOrMerged() {
@@ -524,8 +524,8 @@ class DoublePinyinSchemeTest {
             assertTrue(text.contains("  prism: $id\n"))
             assertFalse(text.contains("double_pinyin_flypy_14jian"))
             // 词库、候选规则、符号和编码显示照 14 键小鹤双拼。
-            for (line in listOf("  dictionary: rime_ice\n", "    - cyime_candidate_policy\n", "  alphabet: zyxwvutsrqponmlkjihgfedcbaQETUOADGJZCB\n",
-                "    - xlit/QETUOADGJZCB/qetuoadgjzcb/\n", "  __include: cyime_punctuator:/punctuator\n"))
+            for (line in listOf("  dictionary: cayboard_pinyin\n", "    - cayboard_candidate_policy\n", "  alphabet: zyxwvutsrqponmlkjihgfedcbaQETUOADGJZCB\n",
+                "    - xlit/QETUOADGJZCB/qetuoadgjzcb/\n", "  __include: cayboard_punctuator:/punctuator\n"))
                 assertTrue(line, text.contains(line))
             val rules = text.substringAfter("  algebra:\n").lines().takeWhile { it.startsWith("    - ") }
                 .map { it.removePrefix("    - \"").removeSuffix("\"").replace("\\\"", "\"").replace("\\\\", "\\") }
@@ -551,10 +551,10 @@ class DoublePinyinSchemeTest {
                 雾凇拼音 - 小鹤双拼
 
             translator:
-              dictionary: rime_ice
+              dictionary: cayboard_pinyin
               prism: double_pinyin_flypy    # 注释
               enable_correction: true
-              cyime_neighbor_correction: true
+              cayboard_neighbor_correction: true
               preedit_format:
                 - xform/(\w)g/${'$'}1eng/
 
@@ -579,7 +579,7 @@ class DoublePinyinSchemeTest {
             assertTrue(text.contains("  prism: $id\n  spelling_hints: 8\n  always_show_comments: true\n"))
             // 代表字母是小写，26 键的编码显示会把它显示成别的音节；临键纠错按 26 键位置算，合并键上不开。
             assertTrue(text.contains("  preedit_format: []\n"))
-            assertFalse(text.contains("enable_correction") || text.contains("cyime_neighbor_correction"))
+            assertFalse(text.contains("enable_correction") || text.contains("cayboard_neighbor_correction"))
             val rules = text.substringAfter("  algebra:\n").lines().takeWhile { it.startsWith("    - ") }
                 .map { it.removePrefix("    - \"").removeSuffix("\"").replace("\\\"", "\"").replace("\\\\", "\\") }
             assertEquals(scheme.algebra() + scheme.separatorRules() + listOf(0, 1).flatMap { p -> groups.filter { it.length == 2 }.map { "derive/^(.{$p})[${it[1]}](.*)$/\$1${it[0]}\$2/" } }, rules)

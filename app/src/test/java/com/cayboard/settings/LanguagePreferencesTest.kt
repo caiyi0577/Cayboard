@@ -5,14 +5,14 @@ import org.junit.Test
 
 class LanguagePreferencesTest {
     @Test fun retiredNativeSelectionsFallBackToBundledChinese() {
-        assertEquals("rime_ice", LanguagePreferences.nativeSchema(
-            "rime_ice", listOf("rime_ice", "japanese_kana"),
+        assertEquals("cayboard_pinyin", LanguagePreferences.nativeSchema(
+            "cayboard_pinyin", listOf("cayboard_pinyin", "japanese_kana"),
             setOf(InputLanguage.JAPANESE, InputLanguage.ENGLISH)))
-        assertEquals("rime_ice", LanguagePreferences.nativeSchema(
-            "japanese", listOf("rime_ice", "japanese_kana"),
+        assertEquals("cayboard_pinyin", LanguagePreferences.nativeSchema(
+            "japanese", listOf("cayboard_pinyin", "japanese_kana"),
             setOf(InputLanguage.JAPANESE, InputLanguage.ENGLISH)))
-        assertEquals("rime_ice", LanguagePreferences.nativeSchema(
-            "japanese", listOf("rime_ice", "japanese", "japanese_kana"),
+        assertEquals("cayboard_pinyin", LanguagePreferences.nativeSchema(
+            "japanese", listOf("cayboard_pinyin", "japanese", "japanese_kana"),
             setOf(InputLanguage.JAPANESE, InputLanguage.ENGLISH)))
     }
 
@@ -25,9 +25,9 @@ class LanguagePreferencesTest {
     }
 
     @Test fun englishOnlyKeepsRealNativeFallback() {
-        assertEquals("rime_ice", LanguagePreferences.nativeSchema(
-            InputModes.ENGLISH, listOf("rime_ice", "japanese_kana"), setOf(InputLanguage.ENGLISH)))
-        assertEquals("rime_ice", LanguagePreferences.nativeSchema(
-            "rime_ice", emptyList(), setOf(InputLanguage.ENGLISH)))
+        assertEquals("cayboard_pinyin", LanguagePreferences.nativeSchema(
+            InputModes.ENGLISH, listOf("cayboard_pinyin", "japanese_kana"), setOf(InputLanguage.ENGLISH)))
+        assertEquals("cayboard_pinyin", LanguagePreferences.nativeSchema(
+            "cayboard_pinyin", emptyList(), setOf(InputLanguage.ENGLISH)))
     }
 }

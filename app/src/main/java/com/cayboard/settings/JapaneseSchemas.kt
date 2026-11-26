@@ -9,7 +9,7 @@ import java.util.zip.ZipInputStream
 /** 日语方案（azooKey 转换）与上游默认方案子模块独立分发，兼容用户从市场更新同名 jaroomaji 文件。 */
 object JapaneseSchemas {
     val ids = listOf("japanese", "japanese_kana")
-    private const val ASSET_DIRECTORY = "rime_japanese"
+    private const val ASSET_DIRECTORY = "cayboard_japanese"
     private const val ADDED = "japanese_schemas_added_v1"
 
     // Only byte-equivalent old bundled schemas are upgraded. User/market edits remain intact.
@@ -51,7 +51,7 @@ object JapaneseSchemas {
     fun installAssets(context: Context, target: File) {
         target.mkdirs()
         for (name in context.assets.list(ASSET_DIRECTORY).orEmpty()) {
-            val processor = name in setOf("cyime_japanese_romaji.lua", "cyime_japanese_completion.lua")
+            val processor = name in setOf("cayboard_japanese_romaji.lua", "cayboard_japanese_completion.lua")
             if (!name.endsWith(".yaml") && !processor) continue
             val destination = File(target, if (processor) "lua/$name" else name)
             if (destination.exists()) {
@@ -73,23 +73,23 @@ object JapaneseSchemas {
 
     private const val AZOOKEY_DICTIONARY = "azookey/dictionary.zip"
     private const val AZOOKEY_DICTIONARY_VERSION = "azookey/dictionary.version"
-    private const val INSTALLED_VERSION = ".cyime-version"
+    private const val INSTALLED_VERSION = ".cayboard-version"
 
     /**
-     * azooKey 词典随 APK 打包成一个 zip，版本变了才解压到 rime/azookey/dictionary（日语翻译器从这里读）。
-     * 学习记录在 rime/azookey/memory，不动。版本是词典内容哈希（tasks-japanese.gradle.kts），解压后再核对一遍。
+     * azooKey 词典随 APK 打包成一个 zip，版本变了才解压到输入数据目录的 azookey/dictionary（日语翻译器从这里读）。
+     * 学习记录在输入数据目录的 azookey/memory，不动。版本是词典内容哈希（tasks-japanese.gradle.kts），解压后再核对一遍。
      * 没有这个资源的包（长辈版不带日语）直接跳过。
      */
     @Synchronized
-    fun installAzooKeyDictionary(rimeDir: File, open: (String) -> InputStream) {
+    fun installAzooKeyDictionary(inputDataDir: File, open: (String) -> InputStream) {
         val version = runCatching { open(AZOOKEY_DICTIONARY_VERSION).use { it.readBytes().decodeToString().trim() } }
             .getOrNull() ?: return
-        val root = File(rimeDir, "azookey")
+        val root = File(inputDataDir, "azookey")
         val dictionary = File(root, "dictionary")
         val marker = File(dictionary, INSTALLED_VERSION)
         if (marker.isFile && marker.readText() == version) return
-        val staging = File(root, "dictionary.cyime-installing")
-        val retired = File(root, "dictionary.cyime-old")
+        val staging = File(root, "dictionary.cayboard-installing")
+        val retired = File(root, "dictionary.cayboard-old")
         staging.deleteRecursively()
         retired.deleteRecursively()
         try {

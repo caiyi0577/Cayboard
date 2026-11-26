@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.InputCommandSample
+import com.cayboard.engine.InputCommandSample
 
 /**
  * 按动作类别（九键数字、删除、选词、停顿重排等）分别统计排队、执行与占用引擎的时长，

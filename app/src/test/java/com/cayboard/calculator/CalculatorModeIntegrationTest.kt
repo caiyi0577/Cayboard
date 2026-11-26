@@ -9,7 +9,7 @@ import org.junit.Test
  * 直接测试生产代码 [routeCalculatorKey] 函数，确保：
  * - Number 键盘下的数字/运算符先经计算器引擎再直接提交（不绕过计算器）
  * - CommonSymbol 键盘下的符号直接提交（不经过计算器）
- * - 全键盘下的计算器键返回 NotHandled（由下游 Rime 管线处理）
+ * - 全键盘下的计算器键返回 NotHandled（由下游输入引擎管线处理）
  *
  * 如果将来有人修改 [CayboardInputMethodService.handleKeyPress] 中的计算器路由逻辑，
  * 必须同步修改 [routeCalculatorKey]，这组测试会立即暴露不匹配行为。

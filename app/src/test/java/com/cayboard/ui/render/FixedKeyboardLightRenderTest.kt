@@ -21,7 +21,7 @@ import com.cayboard.ui.keyboard.*
 import com.cayboard.ui.theme.*
 import com.cayboard.viewmodel.KeyboardUiState
 import com.cayboard.viewmodel.KeyboardViewModel
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.doReturn
 import org.junit.Rule
@@ -102,14 +102,14 @@ class FixedKeyboardLightRenderTest {
                 }
             }
         }
-        val out = File(System.getenv("CYIME_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
+        val out = File(System.getenv("CAYBOARD_RENDER_OUT") ?: "build/fixed-keyboard-renders").apply { mkdirs() }
         val sharedAtlas = FixedKeycapAtlas.get(app)
         for ((name, id, night) in listOf(Triple("t9-light", "t9_pinyin", false),
-            Triple("qwerty-light", "rime_ice", false), Triple("t9-dark", "t9_pinyin", true),
-            Triple("qwerty-dark", "rime_ice", true), Triple("number-dark", "number", true),
+            Triple("qwerty-light", "cayboard_pinyin", false), Triple("t9-dark", "t9_pinyin", true),
+            Triple("qwerty-dark", "cayboard_pinyin", true), Triple("number-dark", "number", true),
             Triple("symbols-light", "symbols", false), Triple("symbols-dark", "symbols", true),
             Triple("t9-pinyin-dark", "t9_pinyin", true), Triple("t9-dark-return", "t9_pinyin", true),
-            Triple("english-dark", "cyime_english", true), Triple("english-light", "cyime_english", false),
+            Triple("english-dark", "cayboard_english", true), Triple("english-light", "cayboard_english", false),
             Triple("14-dark", "pinyin_14jian", true), Triple("number-light", "number", false),
             Triple("edit-dark", "edit", true), Triple("edit-light", "edit", false))) {
             KeysConfigHelper.setActiveKeyboardSchema(id)

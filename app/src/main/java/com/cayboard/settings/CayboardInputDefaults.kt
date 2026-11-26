@@ -3,11 +3,11 @@ package com.cayboard.settings
 /** 面向用户的是布局；词典依赖继续安装/编译，但不重复占用语言菜单。 */
 object CayboardInputDefaults {
     const val CHINESE_SCHEMA = "t9_pinyin"
-    val recommended = listOf(CHINESE_SCHEMA, "rime_ice")
+    val recommended = listOf(CHINESE_SCHEMA, "cayboard_pinyin")
 
     /** 首装就提供小鹤及 14 键，组合由实际安装的方案文件派生。升级保留原先的启停选择。 */
     fun firstDefaults(freshInstall: Boolean): List<String> = if (freshInstall)
-        listOf(CHINESE_SCHEMA, "rime_ice", "double_pinyin_flypy", "pinyin_14jian") else recommended
+        listOf(CHINESE_SCHEMA, "cayboard_pinyin", "double_pinyin_flypy", "pinyin_14jian") else recommended
 
     /**
      * 「已安装的方案」里关着也直接列出、不收进「其他已安装方案（高级）」的。
@@ -19,9 +19,9 @@ object CayboardInputDefaults {
      * 形码、笔画、注音（用户 11-04：收在「其他已安装方案」里，以为没有）：随包的仓颉、速成、笔画、注音和下载后的五笔
      * 关着也列在「语言与方案」的方案、布局里，点了才启用；不加进默认启用。
      */
-    val shapeAndStroke = listOf("wubi86", "wubi98", "cyime_cangjie", "cyime_quick", "stroke", "cyime_zhuyin")
-    val dependencies = setOf("cyime_t9_english", "cyime_k14_english", "cyime_cn_en", "cyime_omission", "cyime_letter_swap",
-        "cyime_digit_edit", "cyime_digit_tap", "melt_eng", "radical_pinyin", "numbers", "handwriting", "stroke_phrase")
+    val shapeAndStroke = listOf("wubi86", "wubi98", "cayboard_cangjie", "cayboard_quick", "stroke", "cayboard_zhuyin")
+    val dependencies = setOf("cayboard_t9_english", "cayboard_k14_english", "cayboard_cn_en", "cayboard_omission", "cayboard_letter_swap",
+        "cayboard_digit_edit", "cayboard_digit_tap", "melt_eng", "radical_pinyin", "numbers", "handwriting", "stroke_phrase")
 
     /**
      * 方案 × 布局的组合配置：所需的方案和布局都启用时自动启用，不作为独立条目单独开关。
@@ -47,7 +47,7 @@ object CayboardInputDefaults {
     fun withDoublePinyin(enabled: List<String>, available: Set<String>): List<String>? {
         if (!available.containsAll(doublePinyin)) return null
         val missing = doublePinyin.filterNot { it in enabled }
-        val pinyin = enabled.indexOf("rime_ice")
+        val pinyin = enabled.indexOf("cayboard_pinyin")
         val insertAt = if (pinyin < 0) enabled.size else
             pinyin + 1 + enabled.drop(pinyin + 1).takeWhile { it in doublePinyin }.size
         val merged = enabled.take(insertAt) + missing + enabled.drop(insertAt)
@@ -75,7 +75,7 @@ object CayboardInputDefaults {
     fun canonicalIds(ids: List<String>, available: Set<String>): List<String> = ids.mapNotNull { id ->
         when {
             id in dependencies || id == InputModes.ENGLISH -> null
-            id == "pinyin_simp" && "rime_ice" in available -> "rime_ice"
+            id == "pinyin_simp" && "cayboard_pinyin" in available -> "cayboard_pinyin"
             id == "t9" && "t9_pinyin" in available -> "t9_pinyin"
             id == "jaroomaji" && "japanese" in available -> "japanese"
             else -> id
@@ -88,7 +88,7 @@ object CayboardInputDefaults {
     fun hasIndependentToggle(id: String, available: Set<String>) = !isCompanion(id) && visibleSchema(id, available)
 
     fun description(id: String): String? = when (id) {
-        "t9_pinyin", "rime_ice", "pinyin_14jian", "double_pinyin_flypy" -> "默认雾凇词库 · 支持市场同名更新"
+        "t9_pinyin", "cayboard_pinyin", "pinyin_14jian", "double_pinyin_flypy" -> "默认雾凇词库 · 支持市场同名更新"
         "japanese", "japanese_kana" -> "共享日语词库 · 支持市场同名方案更新"
         else -> null
     }

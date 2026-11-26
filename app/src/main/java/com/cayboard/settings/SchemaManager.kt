@@ -97,21 +97,44 @@ object SchemaManager {
     private val enabledChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST)
     internal val enabledSchemasChanged = enabledChanges.asSharedFlow()
-    internal const val ASSET_INSTALL_MARKER = ".cyime-assets-installing"
+    internal const val ASSET_INSTALL_MARKER = ".cayboard-assets-installing"
+    internal const val LEGACY_ASSET_INSTALL_MARKER = com.cayboard.engine.compat.LegacyNames.OLD_ASSET_MARKER
     private const val CUSTOM_YAML = "default.custom.yaml"
     internal val yaml = Yaml(configuration = YamlConfiguration(strictMode = false, anchorsAndAliases = com.charleskorn.kaml.AnchorsAndAliases.Permitted(maxAliasCount = UInt.MAX_VALUE)))
 
 
-    fun getRimeDir(context: Context): File =
-        File(context.filesDir, "rime")
+    fun getInputDataDir(context: Context): File =
+        File(context.filesDir, "cayboard_input")
 
-    /** 清空 rime/ 目录除 default.yaml、xime.yaml 及受保护文件之外的所有文件。 */
-    fun cleanRimeDir(context: Context) {
-        val rimeDir = getRimeDir(context)
-        if (!rimeDir.exists()) return
-        rimeDir.listFiles()?.forEach { file ->
+    internal fun migrateKeyboardConfigFiles(inputDataDir: File) {
+        val conflicts = File(inputDataDir.parentFile, "cayboard-name-conflicts")
+        for ((oldName, newName) in listOf(
+            com.cayboard.engine.compat.LegacyNames.OLD_CONFIG to "cayboard.yaml",
+            com.cayboard.engine.compat.LegacyNames.OLD_CUSTOM_CONFIG to "cayboard.custom.yaml",
+        )) {
+            val oldFile = File(inputDataDir, oldName)
+            if (!oldFile.isFile) continue
+            val newFile = File(inputDataDir, newName)
+            if (!newFile.exists()) {
+                check(oldFile.renameTo(newFile)) { "Cannot migrate keyboard config $oldName" }
+            } else {
+                check(conflicts.mkdirs() || conflicts.isDirectory) { "Cannot preserve conflicting config $oldName" }
+                var preserved = File(conflicts, oldName)
+                var suffix = 1
+                while (preserved.exists()) preserved = File(conflicts, "$oldName.$suffix")
+                check(oldFile.renameTo(preserved)) { "Cannot preserve conflicting config $oldName" }
+            }
+        }
+    }
+
+    /** 清空输入引擎目录除系统配置与受保护文件之外的所有文件。 */
+    fun cleanInputDataDir(context: Context) {
+        val inputDataDir = getInputDataDir(context)
+        if (!inputDataDir.exists()) return
+        migrateKeyboardConfigFiles(inputDataDir)
+        inputDataDir.listFiles()?.forEach { file ->
             val name = file.name
-            if (name == "default.yaml" || name == "xime.yaml") return@forEach
+            if (name == "default.yaml" || name == "cayboard.yaml") return@forEach
             if (isProtectedImportName(name)) return@forEach
             // themes/ 存放用户导入或自定义的背景图片，全量清理时保留
             if (name == "themes") return@forEach
@@ -121,10 +144,10 @@ object SchemaManager {
                 file.delete()
             }
         }
-        Log.i(TAG, "rime/ directory cleaned")
+        Log.i(TAG, "cayboard_input/ directory cleaned")
     }
 
-    /** market 根目录（与 rime/ 同级，不属于 Rime 数据）。 */
+    /** market 根目录（与输入数据目录同级，不属于引擎数据）。 */
     fun getMarketDir(context: Context): File =
         File(context.filesDir, "market")
 
@@ -133,7 +156,7 @@ object SchemaManager {
         File(getMarketDir(context), schemeId)
 
     /**
-     * 列出 market/{schemeId}/ 下归档文件解压后将会放置到 rime/ 的所有文件名。
+     * 列出 market/{schemeId}/ 下归档文件解压后将会放置到输入数据目录的所有文件名。
      * 用于安装前的文件冲突提示。
      */
     suspend fun listInstallTargetFiles(context: Context, schemeId: String): List<String> {
@@ -280,22 +303,22 @@ object SchemaManager {
             FileLogger.i(TAG, "installPackageFromMarketDir: schemas before install: $before")
 
             var declaredOrder = emptyList<String>()
-            val ok = installFromMarketToRime(context, packageId, staged) { defaults ->
+            val ok = installFromMarketToInputData(context, packageId, staged) { defaults ->
                 topLevelSection(defaults, "schema_list")?.let { section ->
                     declaredOrder = runCatching { readEnabledSchemaList(section) }.getOrNull().orEmpty()
                 }
             }
             if (!ok) {
-                FileLogger.e(TAG, "installPackageFromMarketDir: installFromMarketToRime returned false")
+                FileLogger.e(TAG, "installPackageFromMarketDir: installFromMarketToInputData returned false")
                 return@withContext InstallFromDirResult(success = false, failureReason = "安装失败")
             }
 
-            // Rime 装载根目录下以 schema_id 命名的方案；目录名和文件名不是方案 ID。
+            // 引擎装载根目录下以 schema_id 命名的方案；目录名和文件名不是方案 ID。
             val definitions = targetFiles.filter { it.endsWith(".schema.yaml") }
             val rootDefinitions = definitions.filterNot { '/' in it || '\\' in it }
             if (definitions.isNotEmpty() && rootDefinitions.isEmpty()) {
                 return@withContext InstallFromDirResult(false, failureReason =
-                    "方案文件分散在子目录中，请把要用的 .schema.yaml 和配套词库按 Rime 用户目录结构打成一个包")
+                    "方案文件分散在子目录中，请把要用的 .schema.yaml 和配套词库按输入引擎目录结构打成一个包")
             }
             val targetSchemaIds = linkedSetOf<String>()
             val parseFailures = mutableListOf<String>()
@@ -316,7 +339,7 @@ object SchemaManager {
                 }
             }
             if (unreadableFiles.isNotEmpty() && (targetSchemaIds.isEmpty() ||
-                    unreadableFiles.any { File(getRimeDir(context), it).exists() })) {
+                    unreadableFiles.any { File(getInputDataDir(context), it).exists() })) {
                 return@withContext InstallFromDirResult(false, failureReason = parseFailures.joinToString("\n"))
             }
             val installTargets = targetFiles - unreadableFiles.toSet()
@@ -326,7 +349,7 @@ object SchemaManager {
             )
             val keptExisting = installTargets.distinct().filter { name ->
                 name !in installedFiles && !SchemaManifestManager.isProtectedSystemFile(name) &&
-                    File(staged, name).isFile && File(getRimeDir(context), name).exists()
+                    File(staged, name).isFile && File(getInputDataDir(context), name).exists()
             }
             if (keptExisting.isNotEmpty()) FileLogger.i(TAG, "installPackageFromMarketDir: kept existing $keptExisting")
 
@@ -337,7 +360,7 @@ object SchemaManager {
             var unresolved = emptyList<String>()
             var dependencyIds = emptyList<String>()
             if (dependencies.isNotEmpty()) {
-                val completion = RimeDependencyResolver.complete(
+                val completion = SchemaDependencyResolver.complete(
                     context = context,
                     schemaId = newIds.firstOrNull() ?: packageId,
                     dependencies = dependencies,
@@ -346,7 +369,7 @@ object SchemaManager {
                 unresolved = (completion.unresolved + completion.failedToDownload + completion.stillMissingFiles).distinct()
                 dependencyIds = completion.downloaded
             } else if (!fromMarket) {
-                unresolved = targetSchemaIds.flatMap { RimeDependencyResolver.missingImportFiles(getRimeDir(context), it) }.distinct()
+                unresolved = targetSchemaIds.flatMap { SchemaDependencyResolver.missingImportFiles(getInputDataDir(context), it) }.distinct()
             }
 
             SchemaManifestManager.appendDependencies(context, packageId, dependencyIds)
@@ -355,7 +378,7 @@ object SchemaManager {
                 SettingsPreferences.addInstalledMarketId(context, packageId)
             }
 
-            // 至少启用一个新方案，避免 RimeEngine 因 schema_list 为空而挂起。
+            // 至少启用一个新方案，避免 InputEngine 因 schema_list 为空而挂起。
             // 更新已安装方案时（switchEnabled=false）不强制切换启用列表，保留用户现有方案。
             val availableIds = targetSchemaIds.intersect(after)
             val firstSchema = declaredOrder.firstOrNull { it in availableIds }
@@ -378,7 +401,7 @@ object SchemaManager {
       }
     }
 
-    /** 解析单个归档（或普通文件）将被释放到 rime/ 的目标文件名列表。 */
+    /** 解析单个归档（或普通文件）将被释放到输入数据目录的目标文件名列表。 */
     private fun listArchiveTargetFiles(archiveFile: File): List<String> {
         val entryNames = when {
             archiveFile.name.endsWith(".zip", ignoreCase = true) -> {
@@ -417,23 +440,23 @@ object SchemaManager {
     }
 
     /**
-     * 从 market 目录安装方案到 rime 目录：
+     * 从 market 目录安装方案到输入数据目录：
      * - .zip / .tar.gz / .tgz → 解压
      * - 其他文件 → 直接复制
      */
     /**
-     * 从 market/{schemeId}/ 安装所有已下载文件到 rime 目录：
+     * 从 market/{schemeId}/ 安装所有已下载文件到输入数据目录：
      * - .zip / .tar.gz / .tgz → 解压
      * - 其他文件 → 直接复制
      */
-    fun installFromMarketToRime(context: Context, schemeId: String, destination: File = getRimeDir(context),
+    fun installFromMarketToInputData(context: Context, schemeId: String, destination: File = getInputDataDir(context),
                                 onPackageDefaults: ((String) -> Unit)? = null): Boolean {
         val dir = getMarketDir(context, schemeId)
         if (!dir.exists()) return false
         val files = dir.listFiles()?.filter { it.isFile } ?: return false
         if (files.isEmpty()) return false
-        val rimeDir = destination
-        if (!rimeDir.exists()) rimeDir.mkdirs()
+        val inputDataDir = destination
+        if (!inputDataDir.exists()) inputDataDir.mkdirs()
         var allOk = true
         for (file in files) {
             try {
@@ -442,29 +465,29 @@ object SchemaManager {
                 val isArchive = name.endsWith(".zip", ignoreCase = true) ||
                     name.endsWith(".tar.gz", ignoreCase = true) || name.endsWith(".tgz", ignoreCase = true)
                 if (isArchive && !validateArchive(file)) {
-                    FileLogger.e(TAG, "installFromMarketToRime: ${file.name} is corrupted for $schemeId, deleting")
+                    FileLogger.e(TAG, "installFromMarketToInputData: ${file.name} is corrupted for $schemeId, deleting")
                     file.delete()
                     allOk = false
                     continue
                 }
                 val ok = when {
-                    name.endsWith(".zip", ignoreCase = true) -> importZipFromFile(file, rimeDir, onPackageDefaults)
+                    name.endsWith(".zip", ignoreCase = true) -> importZipFromFile(file, inputDataDir, onPackageDefaults)
                     name.endsWith(".tar.gz", ignoreCase = true) || name.endsWith(".tgz", ignoreCase = true) ->
-                        importTarGzFromFile(file, rimeDir, onPackageDefaults)
+                        importTarGzFromFile(file, inputDataDir, onPackageDefaults)
                     else -> {
-                        val target = File(rimeDir, file.name)
+                        val target = File(inputDataDir, file.name)
                         file.copyTo(target, overwrite = true)
-                        FileLogger.i(TAG, "Copied ${file.name} to rime dir")
+                        FileLogger.i(TAG, "Copied ${file.name} to input data dir")
                         true
                     }
                 }
                 if (!ok) {
-                    FileLogger.e(TAG, "installFromMarketToRime: failed to process ${file.name} for $schemeId, deleting")
+                    FileLogger.e(TAG, "installFromMarketToInputData: failed to process ${file.name} for $schemeId, deleting")
                     file.delete()
                     allOk = false
                 }
             } catch (e: Exception) {
-                FileLogger.e(TAG, "installFromMarketToRime: error processing ${file.name} for $schemeId, deleting", e)
+                FileLogger.e(TAG, "installFromMarketToInputData: error processing ${file.name} for $schemeId, deleting", e)
                 file.delete()
                 allOk = false
             }
@@ -473,10 +496,10 @@ object SchemaManager {
     }
 
     internal fun getBuildDir(context: Context): File =
-        File(getRimeDir(context), "build")
+        File(getInputDataDir(context), "build")
 
     private fun getCustomYamlFile(context: Context): File =
-        File(getRimeDir(context), CUSTOM_YAML)
+        File(getInputDataDir(context), CUSTOM_YAML)
 
     fun isSchemaCompiled(context: Context, schemaId: String): Boolean {
         val buildDir = getBuildDir(context)
@@ -541,7 +564,7 @@ object SchemaManager {
 
     /**
      * F1: 把启用方案写回 `default.yaml` 的 schema_list。
-     * librime 编译以 default.yaml 的真实 schema_list 为准（default.custom.yaml 的
+     * 引擎编译以 default.yaml 的真实 schema_list 为准（default.custom.yaml 的
      * patch 在本项目构建里不作用到词典编译阶段），所以必须直接改 default.yaml。
      *
      * @param schemaIds 缺省取当前启用列表；[setEnabledSchemas] 会显式传入避免重复读取。
@@ -551,7 +574,7 @@ object SchemaManager {
         schemaIds: List<String> = getEnabledSchemas(context)
     ) {
         if (schemaIds.isEmpty()) return
-        val defaultYaml = File(getRimeDir(context), "default.yaml")
+        val defaultYaml = File(getInputDataDir(context), "default.yaml")
         if (!defaultYaml.exists()) return
         try {
             val text = defaultYaml.readText()
@@ -594,7 +617,8 @@ object SchemaManager {
     fun isProtectedImportName(name: String): Boolean {
         val base = name.substringAfterLast('/')
         return base == "default.yaml" ||
-               base == "xime.yaml" ||
+               base == "cayboard.yaml" ||
+               base == com.cayboard.engine.compat.LegacyNames.OLD_CONFIG ||
                base == "custom_phrase.txt" ||
                name.startsWith(".registry")
     }
@@ -610,7 +634,7 @@ object SchemaManager {
     }
 
     fun getReferencedDictName(context: Context, schemaId: String): String? {
-        val schemaFile = File(getRimeDir(context), "$schemaId.schema.yaml")
+        val schemaFile = File(getInputDataDir(context), "$schemaId.schema.yaml")
         if (!schemaFile.exists()) return null
         return try {
             val content = schemaFile.readText()
@@ -622,24 +646,24 @@ object SchemaManager {
 
     fun hasDictFile(context: Context, schemaId: String): Boolean {
         val dictName = getReferencedDictName(context, schemaId) ?: schemaId
-        val f = File(getRimeDir(context), "$dictName.dict.yaml")
+        val f = File(getInputDataDir(context), "$dictName.dict.yaml")
         return f.exists()
     }
 
     fun schemaNeedsDict(context: Context, schemaId: String): Boolean {
         val dictName = getReferencedDictName(context, schemaId) ?: schemaId
-        return !File(getRimeDir(context), "$dictName.dict.yaml").exists()
+        return !File(getInputDataDir(context), "$dictName.dict.yaml").exists()
     }
 
     fun getSchemaIssues(context: Context, schemaId: String): List<String> {
         val issues = mutableListOf<String>()
-        val schemaFile = File(getRimeDir(context), "$schemaId.schema.yaml")
+        val schemaFile = File(getInputDataDir(context), "$schemaId.schema.yaml")
         if (!schemaFile.exists()) {
             issues.add("缺少 .schema.yaml 文件")
             return issues
         }
         val dictName = getReferencedDictName(context, schemaId) ?: schemaId
-        if (!File(getRimeDir(context), "$dictName.dict.yaml").exists()) {
+        if (!File(getInputDataDir(context), "$dictName.dict.yaml").exists()) {
             issues.add("缺少 $dictName.dict.yaml 词典文件，无法编译")
         }
         return issues
@@ -656,11 +680,11 @@ object SchemaManager {
     }
 
     fun discoverSchemas(context: Context): List<SchemaMeta> {
-        val rimeDir = getRimeDir(context)
-        if (!rimeDir.exists()) return emptyList<SchemaMeta>().also(InputProfiles::updateInstalled)
+        val inputDataDir = getInputDataDir(context)
+        if (!inputDataDir.exists()) return emptyList<SchemaMeta>().also(InputProfiles::updateInstalled)
 
         val schemas = mutableListOf<SchemaMeta>()
-        val schemaFiles = rimeDir.listFiles { f -> f.name.endsWith(".schema.yaml") }
+        val schemaFiles = inputDataDir.listFiles { f -> f.name.endsWith(".schema.yaml") }
             ?: return emptyList()
 
         for (file in schemaFiles) {
@@ -718,7 +742,7 @@ object SchemaManager {
      */
     internal fun extractSchemaBlock(yamlText: String): String? = topLevelSection(yamlText, "schema")
 
-    /** Isolate metadata without parsing unrelated Rime sections, preserving flow values and indentless lists. */
+    /** Isolate metadata without parsing unrelated schema sections, preserving flow values and indentless lists. */
     private fun topLevelSection(text: String, key: String): String? {
         val lines = text.lines()
         val firstKey = lines.firstOrNull {
@@ -769,7 +793,7 @@ object SchemaManager {
 
     /** 仅从 .schema.yaml 读取显示名，不依赖编译/启用状态。 */
     fun getSchemaDisplayName(context: Context, schemaId: String): String? {
-        val file = File(getRimeDir(context), "$schemaId.schema.yaml")
+        val file = File(getInputDataDir(context), "$schemaId.schema.yaml")
         if (!file.exists()) return null
         return try {
             val entry = yaml.decodeFromString(SchemaYaml.serializer(), file.readText().trimStart('\uFEFF')).schema
@@ -786,11 +810,11 @@ object SchemaManager {
      * 导入方案作者自己写的 recognizer/patterns 里以固定字符开头的规则（`^V` 计算、`` ^` `` 部件组字）的开头字符（GitHub #118）。
      * 读方案文件、它的 .custom.yaml，再加部署后的 build/<id>.schema.yaml（__include、__patch 展开后的结果）。
      * 不算 default 预设里原样带进来的通用规则（/ 符号、大写），所以不改其他方案原来的按键。
-     * 小写字母、数字不算：小写本来就交给 Rime，数字按 #106 的规则走。读不到返回空集。
+     * 小写字母、数字不算：小写本来就交给候选引擎，数字按 #106 的规则走。读不到返回空集。
      */
     fun recognizerLeadChars(context: Context, schemaId: String): Set<Char> {
         recognizerLeads?.takeIf { it.first == schemaId }?.let { return it.second }
-        val dir = getRimeDir(context)
+        val dir = getInputDataDir(context)
         fun read(file: File) = runCatching { file.takeIf { it.isFile }?.readText() }.getOrNull().orEmpty()
         val leads = runCatching {
             parseRecognizerLeads(read(File(dir, "$schemaId.schema.yaml")), read(File(dir, "$schemaId.custom.yaml")),
@@ -860,12 +884,12 @@ object SchemaManager {
     @Volatile private var bundledSchemaIds: Set<String>? = null
 
     /**
-     * APK 自带的方案：assets 下 rime* 目录里的 *.schema.yaml。读不到 assets 时按自带处理，保持原来的行为。
+     * APK 自带的方案：assets 下已登记资源目录里的 *.schema.yaml。读不到 assets 时按自带处理，保持原来的行为。
      */
     fun isBundledSchema(context: Context, schemaId: String): Boolean {
         val ids = bundledSchemaIds ?: runCatching {
             val assets = context.assets
-            assets.list("").orEmpty().filter { it.startsWith("rime") }.flatMap { dir ->
+            SchemaManifestManager.bundledAssetRoots.flatMap { dir ->
                 assets.list(dir).orEmpty().filter { it.endsWith(".schema.yaml") }.map { it.removeSuffix(".schema.yaml") }
             }.toSet().takeIf { it.isNotEmpty() }
         }.getOrNull()?.also { bundledSchemaIds = it } ?: return true
@@ -877,7 +901,7 @@ object SchemaManager {
      * `switches` 位于 schema 块之外，需单独解析。解析失败或不存在时返回空列表。
      */
     fun getSchemaSwitches(context: Context, schemaId: String): List<SchemaSwitch> {
-        val file = File(getRimeDir(context), "$schemaId.schema.yaml")
+        val file = File(getInputDataDir(context), "$schemaId.schema.yaml")
         if (!file.exists()) return emptyList()
         return parseSchemaSwitches(file)
     }
@@ -965,10 +989,12 @@ object SchemaManager {
 
     fun getEnabledSchemas(context: Context): List<String> {
         val customFile = getCustomYamlFile(context)
-        if (File(getRimeDir(context), ASSET_INSTALL_MARKER).exists()) return BUILTIN_SCHEMAS
+        val inputDataDir = getInputDataDir(context)
+        if (File(inputDataDir, ASSET_INSTALL_MARKER).exists() ||
+            File(inputDataDir, LEGACY_ASSET_INSTALL_MARKER).exists()) return BUILTIN_SCHEMAS
         // UI can query while assets are still being copied. Return the intended defaults
         // without creating an empty custom list or marking migrations complete.
-        if (getRimeDir(context).listFiles().orEmpty().none { it.name.endsWith(".schema.yaml") }) return BUILTIN_SCHEMAS
+        if (getInputDataDir(context).listFiles().orEmpty().none { it.name.endsWith(".schema.yaml") }) return BUILTIN_SCHEMAS
         if (!customFile.exists()) {
             return initializeEnabledSchemas(context)
         }
@@ -978,15 +1004,15 @@ object SchemaManager {
             val schemas = storedSchemas?.filter(InputResourcePolicy::supportsSchema)
             if (schemas != null && schemas != storedSchemas) setEnabledSchemas(context, schemas)
             if (schemas != null && schemas.isEmpty()) {
-                val available = getRimeDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
+                val available = getInputDataDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
                     .map { it.name.removeSuffix(".schema.yaml") }.toSet()
                 val fallback = fallbackNativeSchema(available)
                 setEnabledSchemas(context, fallback)
                 // 明确空列表不是旧版本遗漏；不得在下一次读取时又补回全部模式。
                 SettingsPreferences.setBuiltinSchemasMerged(context, true)
                 SettingsPreferences.getPrefsPublic(context).edit()
-                    .putBoolean("japanese_schemas_added_v1", true)
-                    .putBoolean("cyime_chinese_defaults_v1", true).apply()
+                    .putBoolean("japanese_schemas_added_v1", true).apply()
+                ChineseSchemas.markDefaultsAdded(context)
                 return fallback
             }
             if (schemas == null) {
@@ -1019,7 +1045,7 @@ object SchemaManager {
 
     /** No saved schema list: offer the same installed modes as the bundled first-install template. */
     private fun initializeEnabledSchemas(context: Context): List<String> {
-        val available = getRimeDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
+        val available = getInputDataDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
             .map { it.name.removeSuffix(".schema.yaml") }.toSet()
         val defaults = CayboardInputDefaults.firstDefaults(freshInstall = true).filter { it in available }
             .ifEmpty { fallbackNativeSchema(available) }
@@ -1029,9 +1055,9 @@ object SchemaManager {
     }
 
     fun setEnabledSchemas(context: Context, requestedIds: List<String>) {
-        val available = getRimeDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
+        val available = getInputDataDir(context).listFiles().orEmpty().filter { it.name.endsWith(".schema.yaml") }
             .map { it.name.removeSuffix(".schema.yaml") }.toSet()
-        // Rime 始终需要一个底层方案支撑固定英文模式；依赖方案不成为独立入口。
+        // 固定英文模式始终需要一个底层方案支撑；依赖方案不成为独立入口。
         val normalized = CayboardInputDefaults.withCompanions(
             CayboardInputDefaults.canonicalIds(requestedIds.filter(InputResourcePolicy::supportsSchema), available), available)
         val schemaIds = normalized.ifEmpty { fallbackNativeSchema(available) }
@@ -1061,7 +1087,7 @@ object SchemaManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write custom.yaml schema_list", e)
         }
-        // F1: 同步写进 default.yaml，确保 librime 真正编译启用的方案
+        // F1: 同步写进 default.yaml，确保引擎真正编译启用的方案
         applyEnabledSchemasToDefaultYaml(context, schemaIds)
         if (changed) enabledChanges.tryEmit(Unit)
     }
@@ -1076,7 +1102,7 @@ object SchemaManager {
         customFile.writeText(sb.toString())
     }
 
-    /** 复制 app 固定的 assets/default.custom.yaml 模板（assets 根与 rime 目录同名，与 RimeConfigHelper 同步的是同一份）。 */
+    /** 复制 app 固定的 assets/default.custom.yaml 模板（assets 根与输入数据目录同步）。 */
     private fun copyBuiltinDefaultCustom(context: Context, target: File): Boolean {
         return try {
             context.assets.open(CUSTOM_YAML).use { input ->
@@ -1145,17 +1171,17 @@ object SchemaManager {
         name.endsWith(".woff", ignoreCase = true) ||
         name.endsWith(".woff2", ignoreCase = true)
 
-    /** fonts 目录：rime/fonts/，存放用户导入的自定义字体。 */
+    /** fonts 目录：输入数据目录/fonts/，存放用户导入的自定义字体。 */
     fun getFontsDir(context: Context): File =
-        File(getRimeDir(context), "fonts")
+        File(getInputDataDir(context), "fonts")
 
-    /** themes 目录：rime/themes/，存放用户导入或自定义的背景图片。 */
+    /** themes 目录：输入数据目录/themes/，存放用户导入或自定义的背景图片。 */
     fun getThemesDir(context: Context): File =
-        File(getRimeDir(context), "themes")
+        File(getInputDataDir(context), "themes")
 
     /**
      * 某些 Android 内容提供器会将未知 MIME 类型的文件（如 .yaml）自动追加 .txt 后缀，
-     * 导致 xime.custom.yaml 变成 xime.custom.yaml.txt。此处修复已知情况。
+     * 导致 cayboard.custom.yaml 变成 cayboard.custom.yaml.txt。此处修复已知情况。
      */
     fun sanitizeDisplayName(name: String): String {
         return when {
@@ -1167,7 +1193,7 @@ object SchemaManager {
     /**
      * 统一保存导入的文件：
      * - 压缩包（zip/tar.gz/tgz）→ market/{importId}/，等待用户手动安装
-     * - 非压缩包（yaml/txt/bin 等）→ 直接放入 rime/
+     * - 非压缩包（yaml/txt/bin 等）→ 直接放入输入数据目录
      * 所有导入路径（文件选择器、无线导入、URL 下载等）最终都汇聚于此。
      */
     suspend fun saveImportedFile(
@@ -1179,7 +1205,7 @@ object SchemaManager {
     ): ImportResult = withContext(Dispatchers.IO) {
         val name = sanitizeDisplayName(displayName)
         if (isFont(name)) {
-            // 字体文件：保存到 rime/fonts/，供自定义字体功能使用
+            // 字体文件：保存到输入数据目录/fonts/，供自定义字体功能使用
             val fontsDir = getFontsDir(context)
             try {
                 fontsDir.mkdirs()
@@ -1187,14 +1213,14 @@ object SchemaManager {
                 inputStream.use { input ->
                     target.outputStream().use { output -> input.copyTo(output) }
                 }
-                FileLogger.i(TAG, "Imported $name -> rime/fonts/")
+                FileLogger.i(TAG, "Imported $name -> input/fonts/")
                 ImportResult(true)
             } catch (e: Exception) {
                 FileLogger.e(TAG, "Failed to import font $name", e)
                 ImportResult(false)
             }
         } else if (isImage(name)) {
-            // 图片：背景图等，保存到 rime/themes/，供主题使用
+            // 图片：背景图等，保存到输入数据目录/themes/，供主题使用
             val themesDir = getThemesDir(context)
             try {
                 themesDir.mkdirs()
@@ -1202,7 +1228,7 @@ object SchemaManager {
                 inputStream.use { input ->
                     target.outputStream().use { output -> input.copyTo(output) }
                 }
-                FileLogger.i(TAG, "Imported $name -> rime/themes/")
+                FileLogger.i(TAG, "Imported $name -> input/themes/")
                 ImportResult(true)
             } catch (e: Exception) {
                 FileLogger.e(TAG, "Failed to import image $name", e)
@@ -1227,11 +1253,11 @@ object SchemaManager {
                 ImportResult(false)
             }
         } else {
-            // 非压缩包：直接放入 rime/ 目录，不经过 market
-            val rimeDir = getRimeDir(context)
+            // 非压缩包：直接放入输入数据目录，不经过 market
+            val inputDataDir = getInputDataDir(context)
             try {
-                rimeDir.mkdirs()
-                val target = File(rimeDir, name)
+                inputDataDir.mkdirs()
+                val target = File(inputDataDir, name)
                 inputStream.use { input ->
                     target.outputStream().use { output -> input.copyTo(output) }
                 }
@@ -1244,7 +1270,7 @@ object SchemaManager {
                         setEnabledSchemas(context, enabled)
                     }
                 }
-                FileLogger.i(TAG, "Imported $name -> rime/ (direct)")
+                FileLogger.i(TAG, "Imported $name -> input/ (direct)")
                 ImportResult(true, installedDirect = true)
             } catch (e: Exception) {
                 FileLogger.e(TAG, "Failed to import $name directly", e)
@@ -1285,16 +1311,16 @@ object SchemaManager {
 
     /**
      * 找到所有 .schema.yaml 文件所在的共同父目录作为基目录。
-     * 例如 zip 结构为 rime-ice-main/rime_ice.schema.yaml，
+     * 例如 zip 结构为仓库根目录/cayboard_pinyin.schema.yaml，
      * 则返回 "rime-ice-main/"，解压时剥离此前缀。
      * 基目录下的子目录（如 cn_dicts/）会原样保留。
      */
     internal fun findSchemaBaseDir(entryNames: List<String>): String {
         val schemaEntries = entryNames.filter { it.endsWith(".schema.yaml") }
         if (schemaEntries.isEmpty()) {
-            // 无 .schema.yaml 的包(如 rime-essay 只含 essay.txt、rime-prelude 含 symbols.yaml）：
+            // 无 .schema.yaml 的包（只含 essay.txt 或 symbols.yaml 的词库/标点包）：
             // 若所有条目同处唯一壳目录（GitHub 归档形如 <repo>-<branch>/），剥掉它，
-            // 否则文件会落进子目录（rime/rime-essay-master/essay.txt）导致 rime 读不到。
+            // 否则文件会落进多余子目录，导致引擎找不到文件。
             val files = entryNames.filter { it.isNotBlank() }
             if (files.isEmpty() || files.any { !it.contains('/') }) return ""
             val tops = files.map { it.substringBefore('/') }.distinct()
@@ -1315,7 +1341,7 @@ object SchemaManager {
         return if (idx >= 0) commonPrefix.substring(0, idx + 1) else ""
     }
 
-    // 多平台发行包常把 Rime、Fcitx 和其它码表放在并列目录；只安装选定 Rime 根下的资源。
+    // 多平台发行包常把不同输入引擎和其它码表放在并列目录；只安装选定输入根下的资源。
     private fun archiveTarget(entry: String, baseDir: String): String? =
         entry.takeIf { it.startsWith(baseDir) }?.removePrefix(baseDir)
 
@@ -1414,7 +1440,7 @@ object SchemaManager {
     internal fun importZipFromStream(inputStream: InputStream, targetDir: File): Boolean {
         return try {
             // 保存到临时文件，以便两趟处理（检测共同根目录 + 解压）
-            val tempFile = File.createTempFile("rime_import_", ".zip", targetDir)
+            val tempFile = File.createTempFile("cayboard_import_", ".zip", targetDir)
             try {
                 tempFile.outputStream().use { output -> inputStream.copyTo(output) }
                 importZipFromFile(tempFile, targetDir)
@@ -1478,7 +1504,7 @@ object SchemaManager {
     internal fun importTarGzFromStream(inputStream: InputStream, targetDir: File): Boolean {
         return try {
             // 落临时文件后走文件版（统一 gunzip + zip-slip/受保护文件 防护）
-            val tempFile = File.createTempFile("rime_import_", ".tar.gz", targetDir)
+            val tempFile = File.createTempFile("cayboard_import_", ".tar.gz", targetDir)
             try {
                 tempFile.outputStream().use { output -> inputStream.copyTo(output) }
                 importTarGzFromFile(tempFile, targetDir)

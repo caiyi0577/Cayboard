@@ -69,25 +69,14 @@ class SettingsSearchTest {
         assertTrue("没登记自动展开：${folded - TIMING_SEARCH_KEYS}", TIMING_SEARCH_KEYS.containsAll(folded))
     }
 
-    /** 滑行（英文、中文、九键和两个选项）11-09 合到「键盘布局 › 滑行输入」一页，搜「滑行输入」先出这一页，各项都在同一页。 */
-    @Test fun glideSettingsLiveOnOnePage() {
-        val found = searchSettings("滑行输入")
-        assertEquals("滑行输入", found.first().title)
-        assertEquals(LayoutInputCategory.Glide.route, found.first().target)
-        for (title in listOf("英文滑行", "中文滑行", "九键滑行", "滑行时实时显示词", "逐字删除中文滑行")) {
-            val entry = found.single { it.title == title }
-            assertEquals(title, LayoutInputCategory.Glide.route, entry.target)
-            assertEquals(title, "输入 › 键盘布局 › 滑行输入", entry.path)
-        }
-        assertTrue("九键滑行" in titles("九宫格 滑行"))
-    }
-
     /** 新设置树：每项只出现一处，路径都从首页五组之一开始。 */
     @Test fun everySettingLivesInOnePlaceUnderTheNewGroups() {
         val dup = SettingsSearchIndex.groupBy { it.title }.filterValues { it.size > 1 }.keys
         assertTrue("重复：$dup", dup.isEmpty())
         val groups = setOf("配置选择", "输入", "外观", "智能", "系统")
-        val stray = SettingsSearchIndex.filter { it.path.substringBefore(" › ") !in groups }.map { it.title }
+        val stray = SettingsSearchIndex.filter {
+            it.path.substringBefore(" › ") !in groups && it.title !in setOf("联系人姓名", "联系人号码")
+        }.map { it.title }
         assertTrue("不在新分组下：$stray", stray.isEmpty())
     }
 

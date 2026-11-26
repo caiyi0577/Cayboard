@@ -15,7 +15,7 @@ enum class InputLanguage(val id: String, val displayName: String) {
         /** Languages a shipped speech recognizer can transcribe. The [LetterLanguage]s have none yet. */
         val speech: List<InputLanguage> get() = supported.filter { LetterLanguage.of(it) == null }
         fun fromId(id: String): InputLanguage? = entries.firstOrNull { it.id == id }
-        /** Compatibility boundary for stored Rime IDs. New business code uses InputProfile. */
+        /** Compatibility boundary for stored decoder schema IDs. New business code uses InputProfile. */
         fun forSchema(id: String): InputLanguage = InputProfiles.describe(id).language
     }
 }
@@ -50,7 +50,7 @@ data class InputLayout(val id: String, val displayName: String, val kind: Layout
 }
 
 sealed interface EngineProfile {
-    data class Rime(val schemaId: String) : EngineProfile
+    data class Decoder(val schemaId: String) : EngineProfile
     data object Direct : EngineProfile
     data object Handwriting : EngineProfile
 }
@@ -76,7 +76,7 @@ data class InputProfile(
     val summary: String get() = if (mode == InputMode.HANDWRITING) "手写" else
         "${scheme.displayName} · ${layout.displayName}"
 
-    /** 字母逐字直接上屏、补全另给（英文直接输入、西班牙语等）；英文单词方案走 Rime 组字，不算。 */
+    /** 字母逐字直接上屏、补全另给（英文直接输入、西班牙语等）；英文单词方案走候选组字，不算。 */
     val typesLettersDirectly: Boolean get() = language.typesLettersDirectly && scheme == InputScheme.DIRECT
 
     /** Entering handwriting retains language and the keyboard scheme to return to. */
@@ -90,9 +90,9 @@ object InputProfiles {
     /** Display samples are backend metadata; unknown double-pinyin variants must not borrow Flypy codes. */
     fun schemePreview(profile: InputProfile): String = when (profile.scheme) {
         InputScheme.PINYIN -> "pin'yin"
-        InputScheme.DOUBLE_PINYIN -> when ((profile.engineProfile as? EngineProfile.Rime)?.schemaId) {
+        InputScheme.DOUBLE_PINYIN -> when ((profile.engineProfile as? EngineProfile.Decoder)?.schemaId) {
             "double_pinyin_flypy", "double_pinyin_flypy_14jian" -> "xn'he'ul'pb"
-            else -> DoublePinyinSchemes.find((profile.engineProfile as? EngineProfile.Rime)?.schemaId.orEmpty())
+            else -> DoublePinyinSchemes.find((profile.engineProfile as? EngineProfile.Decoder)?.schemaId.orEmpty())
                 ?.preview() ?: "双拼编码"
         }
         InputScheme.ROMAJI -> "romaji"
@@ -104,11 +104,11 @@ object InputProfiles {
         InputScheme.EXTERNAL -> "自定义编码"
         InputScheme.ZHUYIN -> "ㄓㄨˋㄧㄣ"
         // 倉：仓颉 oiar，速成取首尾 or
-        InputScheme.CANGJIE -> if ((profile.engineProfile as? EngineProfile.Rime)?.schemaId == "cyime_quick") "人口" else "人戈日口"
+        InputScheme.CANGJIE -> if ((profile.engineProfile as? EngineProfile.Decoder)?.schemaId == "cayboard_quick") "人口" else "人戈日口"
     }
     private val descriptions = java.util.concurrent.ConcurrentHashMap<String, InputProfile>()
     @Volatile private var installed: Map<String, InputProfile> = emptyMap()
-    private val pinyinIds = setOf("rime_ice", "pinyin_simp", "luna_pinyin", "luna_pinyin_simp",
+    private val pinyinIds = setOf("cayboard_pinyin", "pinyin_simp", "luna_pinyin", "luna_pinyin_simp",
         "luna_pinyin_fluency", "t9", "t9_pinyin", "pinyin_14jian", "pinyin_17jian", "pinyin_18jian")
     private val doublePinyinIds = setOf("double_pinyin", "double_pinyin_flypy", "double_pinyin_flypy_14jian", "double_pinyin_abc",
         "double_pinyin_mspy", "double_pinyin_sogou", "double_pinyin_ziguang", "double_pinyin_pyjj")
@@ -155,8 +155,8 @@ object InputProfiles {
             id == "stroke" -> InputScheme.STROKE
             id == "japanese" || id == "jaroomaji" -> InputScheme.ROMAJI
             id == "japanese_kana" -> InputScheme.KANA
-            id == "cyime_zhuyin" -> InputScheme.ZHUYIN
-            id == "cyime_cangjie" || id == "cyime_quick" -> InputScheme.CANGJIE
+            id == "cayboard_zhuyin" -> InputScheme.ZHUYIN
+            id == "cayboard_cangjie" || id == "cayboard_quick" -> InputScheme.CANGJIE
             else -> InputScheme.EXTERNAL
         }
         val inputLanguage = when {
@@ -176,11 +176,11 @@ object InputProfiles {
             id == "stroke" -> InputLayout.STROKE
             id == "handwriting" -> InputLayout.HANDWRITING
             id == "numbers" -> InputLayout.NUMBER
-            id == "cyime_zhuyin" -> InputLayout.ZHUYIN
+            id == "cayboard_zhuyin" -> InputLayout.ZHUYIN
             else -> InputLayout.QWERTY
         }
         return InputProfile(inputLanguage, inputScheme, layout,
-            if (id == InputModes.ENGLISH) EngineProfile.Direct else EngineProfile.Rime(id),
+            if (id == InputModes.ENGLISH) EngineProfile.Direct else EngineProfile.Decoder(id),
             capabilities = capabilities(inputScheme)).let { if (id == "handwriting") it.handwriting() else it }
     }
 
@@ -226,7 +226,7 @@ object InputProfiles {
         val layout = resolveLayout(KeysConfigHelper.boundSectionForSchema(id), CustomKeyboardLayouts.forSchema(id))
         val bound = if (layout.kind == LayoutKind.HANDWRITING) profile.handwriting()
             else if (profile.mode == InputMode.HANDWRITING) profile.copy(layout = layout,
-                mode = InputMode.KEYBOARD, engineProfile = EngineProfile.Rime(id))
+                mode = InputMode.KEYBOARD, engineProfile = EngineProfile.Decoder(id))
             else if (layout == profile.layout) profile else profile.copy(layout = layout)
         return if (arranged) arranged(bound) else bound
     }

@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
 import org.junit.Assert.*
@@ -10,11 +10,11 @@ import org.junit.Test
 class ExpandedCandidateLoaderTest {
     @Test fun loadsInBoundedBatchesWithoutDuplicatingGlobalIndices() = runTest {
         val offsets = mutableListOf<Pair<Int, Int>>()
-        val publications = mutableListOf<List<RimeCandidate>>()
+        val publications = mutableListOf<List<EngineCandidate>>()
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { revision, offset, count ->
             assertEquals(42L, revision)
             offsets += offset to count
-            List(count) { RimeCandidate((offset + it).toString(), "") }
+            List(count) { EngineCandidate((offset + it).toString(), "") }
         }
         loader.load(42, { true }, publish = publications::add)
         assertTrue(publications.isEmpty())
@@ -27,10 +27,10 @@ class ExpandedCandidateLoaderTest {
     // 11-11：长编码的单字排在几百个词组后面。「单字」开着时读满 500 个还没单字就接着往后读。
     @Test fun singleCharacterFilterReadsPastTheUsualLimitUntilCharactersAppear() = runTest {
         val offsets = mutableListOf<Int>()
-        val publications = mutableListOf<List<RimeCandidate>>()
+        val publications = mutableListOf<List<EngineCandidate>>()
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { _, offset, count ->
             offsets += offset
-            List(count) { i -> RimeCandidate(if (offset + i < 1200) "词组" else "字", "") }
+            List(count) { i -> EngineCandidate(if (offset + i < 1200) "词组" else "字", "") }
         }
         loader.load(7, { true }, singleCharacters = { true }, publish = publications::add)
         advanceUntilIdle()
@@ -42,9 +42,9 @@ class ExpandedCandidateLoaderTest {
         assertTrue(publications.none { it.size in 501 until 1200 })
     }
     @Test fun singleCharacterSearchStopsAtTheLimitAndPublishesWhatItRead() = runTest {
-        val publications = mutableListOf<List<RimeCandidate>>()
+        val publications = mutableListOf<List<EngineCandidate>>()
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { _, _, count ->
-            List(count) { RimeCandidate("词组", "") }
+            List(count) { EngineCandidate("词组", "") }
         }
         loader.load(7, { true }, singleCharacters = { true }, publish = publications::add)
         advanceUntilIdle()
@@ -52,12 +52,12 @@ class ExpandedCandidateLoaderTest {
     }
     @Test fun turningOnSingleCharactersContinuesFromWhatWasAlreadyRead() = runTest {
         val offsets = mutableListOf<Int>()
-        val publications = mutableListOf<List<RimeCandidate>>()
+        val publications = mutableListOf<List<EngineCandidate>>()
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { _, offset, count ->
             offsets += offset
-            List(count) { RimeCandidate("字", "") }
+            List(count) { EngineCandidate("字", "") }
         }
-        val read = List(ExpandedCandidateLoader.MAX_CANDIDATES) { RimeCandidate("词组", "") }
+        val read = List(ExpandedCandidateLoader.MAX_CANDIDATES) { EngineCandidate("词组", "") }
         loader.load(7, { true }, singleCharacters = { true }, initial = read, publish = publications::add)
         advanceUntilIdle()
         assertEquals(ExpandedCandidateLoader.MAX_CANDIDATES, offsets.first())
@@ -77,14 +77,14 @@ class ExpandedCandidateLoaderTest {
         var published = false
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { _, _, _ ->
             current = false
-            listOf(RimeCandidate("旧输入框", ""))
+            listOf(EngineCandidate("旧输入框", ""))
         }
         loader.load(1, { current }) { published = true }
         advanceUntilIdle()
         assertFalse(published)
     }
     @Test fun replacementCancelsOlderLoadAndEmptyListEndsValidSnapshot() = runTest {
-        val publications = mutableListOf<List<RimeCandidate>>()
+        val publications = mutableListOf<List<EngineCandidate>>()
         val revisions = mutableListOf<Long>()
         val loader = ExpandedCandidateLoader(this, StandardTestDispatcher(testScheduler)) { revision, _, _ ->
             revisions += revision
@@ -94,6 +94,6 @@ class ExpandedCandidateLoaderTest {
         loader.load(2, { true }, publish = publications::add)
         advanceUntilIdle()
         assertEquals(listOf(2L), revisions)
-        assertEquals(listOf(emptyList<RimeCandidate>()), publications)
+        assertEquals(listOf(emptyList<EngineCandidate>()), publications)
     }
 }

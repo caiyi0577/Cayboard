@@ -16,7 +16,7 @@ import com.cayboard.settings.LayoutKind
  */
 sealed class KeyboardLayoutState {
 
-    /** 中文全键盘（默认模式，带 Rime 手势配置；可手动切换为分体键盘） */
+    /** 中文全键盘（默认模式，带输入引擎手势配置；可手动切换为分体键盘） */
     data object Chinese : KeyboardLayoutState()
 
     /** 英文全键盘（纯 QWERTY，无手势配置；可手动切换为分体键盘） */
@@ -104,7 +104,7 @@ fun initialKeyboardLayoutState(
 
 /**
  * 判断是否为九键（T9）方案：仅认 keyboard.t9.schemas 绑定声明
- * （xime.yaml / xime.custom.yaml），未声明的方案一律全键盘。
+ * （cayboard.yaml / cayboard.custom.yaml），未声明的方案一律全键盘。
  */
 fun isT9Schema(schemaId: String): Boolean =
     InputProfiles.current(schemaId).layout.kind == LayoutKind.T9
@@ -118,7 +118,7 @@ fun isStrokeSchema(schemaId: String): Boolean =
 
 /**
  * 判断是否为手写方案：仅认 keyboard.handwriting.schemas 绑定声明，
- * 未声明的方案一律全键盘（手写方案不经过 rime 引擎）。
+ * 未声明的方案一律全键盘（手写方案不经过候选引擎）。
  */
 fun isHandwritingSchema(schemaId: String): Boolean =
     InputProfiles.current(schemaId).layout.kind == LayoutKind.HANDWRITING

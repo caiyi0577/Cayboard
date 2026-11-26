@@ -1,6 +1,6 @@
 """生成中文滑行词表 app/src/main/assets/glide_pinyin.txt。
 
-来源是仓库里的 rime-ice 词频（app/data/rime_ice_8105_weights.tsv.gz、rime_ice_base_weights.tsv.gz）：
+来源是仓库里的 rime-ice 词频（app/data/cayboard_pinyin_8105_weights.tsv.gz、cayboard_pinyin_base_weights.tsv.gz）：
 同一拼音的各个词频相加，按总频率从高到低取前 LIMIT 个编码，再补上所有单音节，
 保证词表外的词也能按音节逐个划出。每行一个编码，音节之间用空格分开（双拼按音节换码要用）。
 glide_pinyin_extra.txt 里的词（雾凇词频偏低的口语，如牛逼 niu bi 在第 68007 名）不占 30000 的名额，
@@ -14,7 +14,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SOURCES = ["app/data/rime_ice_8105_weights.tsv.gz", "app/data/rime_ice_base_weights.tsv.gz"]
+SOURCES = ["app/data/cayboard_pinyin_8105_weights.tsv.gz", "app/data/cayboard_pinyin_base_weights.tsv.gz"]
 OUTPUT = ROOT / "app/src/main/assets/glide_pinyin.txt"
 EXTRA = ROOT / "tools/glide_lab/glide_pinyin_extra.txt"
 LIMIT = 30000

@@ -41,7 +41,7 @@ import java.io.File
 
 /**
  * 开关下面的图例（11-02 限宽卡片，只画当前效果）：开关关着时不画多出来的那一项，开着时画出来。
- * 设置了 CYIME_RENDER_OUT 时，左右两栏（关／开）各出浅色、深色一张，手机宽 390dp。
+ * 设置了 CAYBOARD_RENDER_OUT 时，左右两栏（关／开）各出浅色、深色一张，手机宽 390dp。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1720dp-h1900dp-mdpi")
@@ -70,7 +70,7 @@ class SettingsToggleLegendRenderTest {
             assertEquals(true, prefs().traditionalOutput)
             // 旧键保存时清掉。
             assertEquals(false, raw.contains(com.cayboard.ui.keyboard.KeyboardInputPreferences.LEGACY_ZHUYIN_SIMPLIFIED_KEY))
-            System.getenv("CYIME_RENDER_OUT")?.let { path ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let { path ->
                 val view = context.window.decorView
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
                 view.draw(android.graphics.Canvas(bitmap))
@@ -87,7 +87,7 @@ class SettingsToggleLegendRenderTest {
     fun longSentenceChoiceRequiresBothFilesAndSavesTheSwitch() {
         val context = rule.activity
         com.cayboard.ui.theme.KeyboardThemes.initFromConfig(context)
-        val dir = com.cayboard.settings.SchemaManager.getRimeDir(context).apply { mkdirs() }
+        val dir = com.cayboard.settings.SchemaManager.getInputDataDir(context).apply { mkdirs() }
         val lexicon = File(dir, "cylm_lexicon.cylx")
         val model = File(dir, "cylm_model.lm")
         val generation = mutableStateOf(0)
@@ -112,7 +112,7 @@ class SettingsToggleLegendRenderTest {
             rule.onNodeWithText(label).performClick()
             rule.runOnIdle { assertEquals(true, enabled()); generation.value++ }
             rule.waitForIdle()
-            System.getenv("CYIME_RENDER_OUT")?.let { path ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let { path ->
                 val root = context.window.decorView
                 val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
                 rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }
@@ -170,7 +170,7 @@ class SettingsToggleLegendRenderTest {
 
     /** 11-02 挪过位置的几页：语言与方案（只留入口）、中文输入、英文输入、候选词（四组）。左右并排，浅色、深色各一张。 */
     @Test fun renderMovedPages() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
         com.cayboard.ui.theme.KeyboardThemes.initFromConfig(context)
@@ -209,7 +209,7 @@ class SettingsToggleLegendRenderTest {
     }
 
     @Test fun renderLegends() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         val dark = mutableStateOf(false)
         rule.setContent {

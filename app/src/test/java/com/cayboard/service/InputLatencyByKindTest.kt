@@ -1,8 +1,8 @@
 package com.cayboard.service
 
-import com.cayboard.rime.EngineTimeMeter
-import com.cayboard.rime.InputCommandQueue
-import com.cayboard.rime.InputCommandSample
+import com.cayboard.engine.EngineTimeMeter
+import com.cayboard.engine.InputCommandQueue
+import com.cayboard.engine.InputCommandSample
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext

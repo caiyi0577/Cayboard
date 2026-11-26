@@ -8,18 +8,18 @@ package com.cayboard.settings
  */
 object CellDictionaryEnglish {
     enum class Kind(val dictionary: String, val translator: String, val options: String) {
-        ALPHABETIC("user_cyime_cells_en26", "table_translator",
+        ALPHABETIC("user_cayboard_cells_en26", "table_translator",
             "enable_sentence: false, enable_user_dict: false, initial_quality: 1.1, comment_format: [\"xform/.*//\"]"),
-        MERGED("user_cyime_cells_en14", "t9_english_translator",
+        MERGED("user_cayboard_cells_en14", "t9_english_translator",
             "enable_completion: false, enable_sentence: false, enable_user_dict: false, initial_quality: -1, " +
                 "comment_format: [], completion_limit: 3, completion_keys: \"QETUOADGJZCBlm\""),
-        // Nine keys: quality above ordinary Chinese words; cyime_candidate_policy keeps it off the first place.
-        T9("user_cyime_cells_en9", "t9_english_translator",
+        // Nine keys: quality above ordinary Chinese words; cayboard_candidate_policy keeps it off the first place.
+        T9("user_cayboard_cells_en9", "t9_english_translator",
             "enable_completion: false, enable_sentence: false, enable_user_dict: false, initial_quality: 1.0, " +
                 "comment_format: [], digit_suffixes: false, completion_limit: 3"),
     }
 
-    const val NAMESPACE = "cyime_cells_en"
+    const val NAMESPACE = "cayboard_cells_en"
     private const val DIGITS = "22233344455566677778889999"
     private const val KEYS14 = "ABCDEDGGUJJlmBOOQEATUCQZTZ"
 
@@ -49,7 +49,7 @@ object CellDictionaryEnglish {
         words.distinct().forEach { word -> code(kind, word)?.let { append(word).append('\t').append(it).append("\t100\n") } }
     }
 
-    /** Compilation-only schema, like cyime_k14_english: Rime builds a table's prism through a schema. */
+    /** Compilation-only schema, like cayboard_k14_english: the decoder builds a table's prism through a schema. */
     fun schema(kind: Kind): String = """
         |# Internal compilation dependency of imported English words; not an input mode. Managed by Cayboard.
         |schema:
@@ -70,7 +70,7 @@ object CellDictionaryEnglish {
         |""".trimMargin()
 
     /**
-     * Patch lines adding the table to a schema (inside CellDictionaryRime's marked block); null when the
+     * Patch lines adding the table to a schema (inside CellDictionaryEngine's marked block); null when the
      * schema's own patch already uses every key a line could take. A YAML map cannot hold the same key twice,
      * so a list another patch already appends to with `/+` (Cayboard's own custom-phrase translator does) gets
      * this table through `/@next` instead.
@@ -85,7 +85,7 @@ object CellDictionaryEnglish {
         val translator = "${kind.translator}@$NAMESPACE"
         val lines = listOf(
             append("schema/dependencies", kind.dictionary),
-            // Rime elects among translations pairwise in list order, so on nine keys the table must sit before
+            // The decoder elects among translations pairwise in list order, so on nine keys the table must sit before
             // the bundled English (t9_english, last); appended after it, its words came only after every Chinese one.
             if (kind == Kind.T9) "\"engine/translators/@before last\": \"$translator\"".takeUnless { taken("engine/translators/@before last") }
             else append("engine/translators", translator),

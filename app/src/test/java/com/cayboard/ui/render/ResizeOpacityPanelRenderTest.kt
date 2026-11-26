@@ -85,9 +85,9 @@ import kotlin.math.roundToInt
 
 /**
  * 键盘调节界面的透明度条（底板、描边、标签）和下面的按钮，用真实 KeyboardResizeOverlay 盖在一块画出来的假键盘上，
- * 在电脑上渲染成一张图（真实 KeyboardView 要加载 rime 原生库，电脑上跑不了）。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图。可选变量：CYIME_RENDER_TAG（文件名里的标记，默认 after）、
- * CYIME_RENDER_THEMES（默认 soft_blue/light,soft_blue/dark）、CYIME_RENDER_AFTER_DRAG=1 时先把每个滑条拖到 40% 再截，
+ * 在电脑上渲染成一张图（真实 KeyboardView 要加载 Android 原生输入库，电脑上跑不了）。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图。可选变量：CAYBOARD_RENDER_TAG（文件名里的标记，默认 after）、
+ * CAYBOARD_RENDER_THEMES（默认 soft_blue/light,soft_blue/dark）、CAYBOARD_RENDER_AFTER_DRAG=1 时先把每个滑条拖到 40% 再截，
  * 看调完透明度后外框和四个按钮是否还在。手机宽 411dp 四个变体排一行，再一行小键盘 300dp 和横屏矮键盘 600×250dp
  * （看控件跟着键盘大小缩放），平板宽 1200dp 每行一个。
  */
@@ -98,14 +98,14 @@ class ResizeOpacityPanelRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderOpacityPanel() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
-        val themes = (System.getenv("CYIME_RENDER_THEMES") ?: "soft_blue/light,soft_blue/dark").split(",")
+        val themes = (System.getenv("CAYBOARD_RENDER_THEMES") ?: "soft_blue/light,soft_blue/dark").split(",")
             .map { it.trim().split("/") }.map { it[0] to (it[1] == "dark") }
-        val afterDrag = System.getenv("CYIME_RENDER_AFTER_DRAG") == "1"
-        val tag = System.getenv("CYIME_RENDER_TAG") ?: "after"
+        val afterDrag = System.getenv("CAYBOARD_RENDER_AFTER_DRAG") == "1"
+        val tag = System.getenv("CAYBOARD_RENDER_TAG") ?: "after"
         val variants = buildList {
             for ((id, dark) in themes) for (glass in listOf(false, true)) add(Triple(id, dark, glass))
         }
@@ -140,11 +140,11 @@ class ResizeOpacityPanelRenderTest {
      * 每个变体按住时各出一张 resize-opacity-dragging-<n>.png，同一张图里其他变体是松手的样子，正好对照。
      */
     @Test fun renderWhileDragging() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
-        val themes = (System.getenv("CYIME_RENDER_THEMES") ?: "soft_blue/light,soft_blue/dark").split(",")
+        val themes = (System.getenv("CAYBOARD_RENDER_THEMES") ?: "soft_blue/light,soft_blue/dark").split(",")
             .map { it.trim().split("/") }.map { it[0] to (it[1] == "dark") }
         val variants = buildList {
             for ((id, dark) in themes) for (glass in listOf(false, true)) add(Triple(id, dark, glass))
@@ -269,7 +269,7 @@ class ResizeOpacityPanelRenderTest {
             rule.waitForIdle()
             val slider = rule.onNodeWithTag("keyboard-opacity-slider")
             slider.performSemanticsAction(SemanticsActions.SetProgress) { it(0.35f) }
-            val out = System.getenv("CYIME_RENDER_OUT")
+            val out = System.getenv("CAYBOARD_RENDER_OUT")
             if (out != null || i == 0) {
                 if (i == 0) slider.performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
                 rule.waitForIdle()

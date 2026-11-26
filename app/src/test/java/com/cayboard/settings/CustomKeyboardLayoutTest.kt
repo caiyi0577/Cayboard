@@ -2,8 +2,8 @@ package com.cayboard.settings
 
 import android.content.Context
 import com.charleskorn.kaml.*
-import com.cayboard.rime.merged14Preedit
-import com.cayboard.rime.PinyinEditDisplay
+import com.cayboard.engine.merged14Preedit
+import com.cayboard.engine.PinyinEditDisplay
 import com.cayboard.ui.keyboard.*
 import androidx.compose.ui.graphics.Color
 import org.junit.Assert.*
@@ -45,16 +45,16 @@ class CustomKeyboardLayoutTest {
     }
     @Test fun generatedSchemaHasIndependentPrismAndFinalTransliteration() {
         val layout = CustomKeyboardLayout.fresh().copy(name = "测试：\"引号\"").merge("q").merge("e")
-        val base = File("build/generated/chinese-assets/rime_ice/rime_ice.schema.yaml").readText()
+        val base = File("build/generated/chinese-assets/cayboard_pinyin/cayboard_pinyin.schema.yaml").readText()
         val node = Yaml.default.parseToYamlNode(layout.schema(base)) as YamlMap
         fun entry(map: YamlMap, key: String) = map.entries.entries.first { it.key.content == key }.value
-        val shortcuts = entry(node, "cyime_particle_shortcuts") as YamlMap
+        val shortcuts = entry(node, "cayboard_particle_shortcuts") as YamlMap
         val keys = (entry(shortcuts, "alphabet") as YamlScalar).content
         // On this layout w shares q: the tail-initial shortcut for 我呢 must be qon.
         assertEquals("qon", "won".map { keys[it - 'a'] }.joinToString(""))
         val translator = entry(node, "translator") as YamlMap
         assertEquals(layout.id, (entry(translator, "prism") as YamlScalar).content)
-        assertEquals("rime_ice", (entry(translator, "dictionary") as YamlScalar).content)
+        assertEquals("cayboard_pinyin", (entry(translator, "dictionary") as YamlScalar).content)
         val algebra = entry(entry(node, "speller") as YamlMap, "algebra") as YamlList
         // qw、er 两组：点按的代表字母和长按选的另一个字母都能打（不用整表 xlit，xlit 会把 wen 解成“额”）。
         assertEquals(listOf("derive/[w]/q/", "derive/[r]/e/"), algebra.items.takeLast(2).map { (it as YamlScalar).content })
@@ -63,7 +63,7 @@ class CustomKeyboardLayoutTest {
     }
     @Test fun legacyTransliterationIsReplacedByPerGroupDerivation() {
         val layout = CustomKeyboardLayout.fresh().merge("q").merge("e")
-        val legacy = "speller:\n  algebra:\n    - erase/^xx$/\n" + CustomKeyboardLayout.legacyRule(layout) + "\ntranslator:\n  dictionary: rime_ice\n"
+        val legacy = "speller:\n  algebra:\n    - erase/^xx$/\n" + CustomKeyboardLayout.legacyRule(layout) + "\ntranslator:\n  dictionary: cayboard_pinyin\n"
         assertEquals("    - xlit/abcdefghijklmnopqrstuvwxyz/abcdefghijklmnopqestuvqxyz/\n", CustomKeyboardLayout.legacyRule(layout))
         val migrated = legacy.replace(CustomKeyboardLayout.legacyRule(layout), layout.mergedRules())
         assertTrue(migrated.contains("    - erase/^xx$/\n    - derive/[w]/q/\n    - derive/[r]/e/\n\ntranslator:"))
@@ -229,8 +229,8 @@ class CustomKeyboardLayoutTest {
         }
     }
     @Test fun layoutSchemasFollowTheCurrentChineseSchemaInsteadOfAnOldSnapshot() {
-        val root = File("build/generated/chinese-assets/rime_ice")
-        val base = File(root, "rime_ice.schema.yaml").readText()
+        val root = File("build/generated/chinese-assets/cayboard_pinyin")
+        val base = File(root, "cayboard_pinyin.schema.yaml").readText()
         val builtin = File(root, "pinyin_cyletix10.schema.yaml").readText()
         // An untouched built-in file from an older base (here: without the candidate filters) becomes today's file.
         val old = builtin.replace(Regex("(?m)^  filters:\\n(?:    - .*\\n)+"), "")
@@ -242,7 +242,7 @@ class CustomKeyboardLayoutTest {
         val current = saved.schema(base)
         assertEquals(current, CustomKeyboardLayouts.refreshedSchema(base, old, saved))
         assertEquals(current, CustomKeyboardLayouts.refreshedSchema(base, current, saved))
-        // A rime_ice that is not Cayboard's own (market or hand-written) never overwrites layout schemas.
-        assertNull(CustomKeyboardLayouts.refreshedSchema(base.replace("cyime_neighbor_correction: true", ""), old, null))
+        // A cayboard_pinyin that is not Cayboard's own (market or hand-written) never overwrites layout schemas.
+        assertNull(CustomKeyboardLayouts.refreshedSchema(base.replace("cayboard_neighbor_correction: true", ""), old, null))
     }
 }

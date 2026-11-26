@@ -89,7 +89,7 @@ internal fun RotatedShiftKeyboard(app: Application, commit: (String) -> Unit, ro
                     isFloatingMode = true, showPreeditPreview = false)
                 KeyboardLayout({ commit(it); vm.onCharacterTyped() }, vm,
                     KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
-                    KeyboardUiState(currentSchemaId = "rime_ice", isAsciiMode = true, isDarkTheme = true, themeId = "soft_blue"),
+                    KeyboardUiState(currentSchemaId = "cayboard_pinyin", isAsciiMode = true, isDarkTheme = true, themeId = "soft_blue"),
                     isAsciiMode = true, modifier = Modifier.fillMaxSize())
             }
         }

@@ -1,4 +1,4 @@
-"""生成候选“中英释义”词典包（cyime_gloss）。
+"""生成候选“中英释义”词典包（cayboard_gloss）。
 
 输入：
   ECDICT ecdict.csv（MIT，https://github.com/skywind3000/ECDICT）：英文词 → 中文释义
@@ -21,7 +21,7 @@ v4：不可靠的单字释义加 “~” 前缀，供 App 拼整句英文时跳�
 v3：修 v2 反查时没拆开 ECDICT 多行释义的错误；单字改为“正好译回本字 → 按顺序第一个含本字的义项 → 首义”；
 “X 的异体 / 见 X” 借用 X 的释义；CC-CEDICT 没收的常用词组用 ECDICT 反查补（很多 → plenty，博客 → blog）。
 
-用法：python -I build_glossary.py --ecdict ecdict.csv --cedict cedict.txt.gz         --rime-dict app/src/main/assets/rime/pinyin_simp.dict.yaml         --rime-dict app/src/main/assets/rime/pinyin_simp_ext.dict.yaml --mt-phrases mt-phrases.tsv --output cyime_gloss-v8.tsv
+用法：python -I build_glossary.py --ecdict ecdict.csv --cedict cedict.txt.gz         --pinyin-dict app/src/main/assets/cayboard_base/pinyin_simp.dict.yaml         --pinyin-dict app/src/main/assets/cayboard_base/pinyin_simp_ext.dict.yaml --mt-phrases mt-phrases.tsv --output cayboard_gloss-v12.tsv
 """
 from __future__ import annotations
 
@@ -54,12 +54,12 @@ EN_PROFANITY = re.compile(r"\b(?:fuck\w*|shit\w*|cunt|bitch\w*|dick|cock|piss\w*
 EN_ALT_MAX_RANK = 20000   # 换用后面义项时，这个英文的词频名次上限
 LE_MAX_RANK = 8000   # “X了”只给这个名次以内的常用英文动词做过去式（slinked、cribbed 这类不要）
 LE_PAST_MAX_RANK = 20000   # 过去式本身也要在这个名次以内（shallowed、blued 不要）
-LE_MIN_WEIGHT = 20000   # 多字动词在 rime_ice 里至少这么常用才补“X了”：冷僻词本身的英文就常选错（挨近 → draw）
+LE_MIN_WEIGHT = 20000   # 多字动词在 cayboard_pinyin 里至少这么常用才补“X了”：冷僻词本身的英文就常选错（挨近 → draw）
 COMMON_FIRST_RANK = 5000   # 首义在这个名次以内算常用英文，反查对上的冷僻词不替换它
 COMMON_EN_RANK: dict[str, int] = {}
 ORIGINAL_CASE: dict[str, str] = {}    # load_ecdict 填：小写英文 → ECDICT 原写法   # load_ecdict 填：英文词 → 词频名次
 # 开头是这些虚字的低频词组多半是候选里临时拼出来的（在教 = 在 + 教），只认能用英汉词典反查回来的义项。
-RELAXED_MIN_WEIGHT = 3000   # 实词开头的词在 rime_ice 里至少这么常用才不从严（闲心 9129、下半夜 5010）
+RELAXED_MIN_WEIGHT = 3000   # 实词开头的词在 cayboard_pinyin 里至少这么常用才不从严（闲心 9129、下半夜 5010）
 FUNCTION_LEADS = set("在几你我他她它这那是有不没也都就才很好一的了又再还和跟把被给让对从向")
 CEDICT_LINE = re.compile(r"^(\S+) (\S+) \[([^\]]*)\] /(.*)/\s*$")
 
@@ -68,7 +68,7 @@ EN_GLOSS_MAX = 24
 EN_GLOSS_FULL_MAX = 28   # 不超过这个长度的释义整条保留；更长的才截断，截断的只在没有更短义项时才用（见 clean_en）
 
 HEADER = [
-    "# Cayboard 候选中英释义词典 cyime_gloss",
+    "# Cayboard 候选中英释义词典 cayboard_gloss",
     "# 英→中释义取自 ECDICT，https://github.com/skywind3000/ECDICT ，其许可如下：",
     "#   MIT License. Copyright (c) 2025 Linwei",
     "#   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated",
@@ -238,8 +238,8 @@ def load_ecdict(path: str) -> tuple[dict[str, str], dict[str, str]]:
     return {k: v[1] for k, v in result.items()}, back
 
 
-def load_rime_weights(paths: list[str]) -> dict[str, dict[str, int]]:
-    """Rime 拼音词库：词 → {不带调拼音: 权重}。用来判断中文词是否常用，以及它常用的读音。"""
+def load_pinyin_weights(paths: list[str]) -> dict[str, dict[str, int]]:
+    """拼音词典：词 → {不带调拼音: 权重}。用来判断中文词是否常用，以及它常用的读音。"""
     weights: dict[str, dict[str, int]] = {}
     for path in paths:
         body = False
@@ -301,8 +301,8 @@ def load_cedict(path: str, back: dict[str, str], weights: dict[str, dict[str, in
             trad, simp, pinyin, body = match.groups()
             rime = weights.get(simp, {})
             if len(simp) > 1 and max(rime.values(), default=0) < min_weight:
-                # 输入法实际用的是 rime_ice 词库，pinyin_simp 没收或权重低的常用词（口罩、缆车）也会出现在候选里。
-                # 这类词只在 rime_ice 有这个读音时收，并且释义必须能用英汉词典反查回这个词（见 strict），
+                # 输入法实际用的是 cayboard_pinyin 词库，pinyin_simp 没收或权重低的常用词（口罩、缆车）也会出现在候选里。
+                # 这类词只在 cayboard_pinyin 有这个读音时收，并且释义必须能用英汉词典反查回这个词（见 strict），
                 # 否则候选里由单字拼出的 在教 会撞上它的宗教义 “be a believer”。
                 lexicon = (engine or {}).get(simp, {})
                 if max(lexicon.values(), default=0) < engine_min or plain_pinyin(pinyin) not in lexicon:
@@ -502,7 +502,7 @@ def load_curated(path: str | Path) -> dict[str, str]:
 
 def apply_single_policy(entries: dict[str, str], curated: dict[str, str], engine: dict[str, dict[str, int]],
                         max_rank: int) -> int:
-    """单字只给有用的释义：看过的字按人工表；没看过的字只留常用字（rime_ice 单字权重前 max_rank）里
+    """单字只给有用的释义：看过的字按人工表；没看过的字只留常用字（cayboard_pinyin 单字权重前 max_rank）里
     英文能正好译回本字的（没有 APPROX 前缀）。生僻字和不可靠的单字释义一律不显示。返回去掉的条数。"""
     singles = sorted((w for w in engine if len(w) == 1 and "一" <= w <= "鿿"),
                      key=lambda w: -max(engine[w].values()))
@@ -526,29 +526,29 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ecdict", required=True)
     parser.add_argument("--cedict", required=True)
-    parser.add_argument("--rime-dict", action="append", required=True,
-                        help="Rime 拼音词库（pinyin_simp.dict.yaml 等），可重复；用来筛常用中文词")
+    parser.add_argument("--pinyin-dict", action="append", required=True,
+                        help="拼音词库（pinyin_simp.dict.yaml 等），可重复；用来筛常用中文词")
     parser.add_argument("--min-weight", type=int, default=500,
                         help="多字中文词在 Rime 词库里的最低权重")
     parser.add_argument("--engine-dict", action="append", default=[],
-                        help="输入法实际用的 rime_ice 词库（cn_dicts/*.dict.yaml），可重复；补收 pinyin_simp 里没有的常用词")
+                        help="输入法实际用的 cayboard_pinyin 词库（cn_dicts/*.dict.yaml），可重复；补收 pinyin_simp 里没有的常用词")
     parser.add_argument("--word-by-word-phrases", action="store_true",
                         help="同时收逐词拼出的日常短语（v5 的做法，读不通，默认不收）")
     parser.add_argument("--phrase-min-weight", type=int, default=20000,
-                        help="日常短语在 rime_ice 词库里的最低权重")
+                        help="日常短语在 cayboard_pinyin 词库里的最低权重")
     parser.add_argument("--mt-phrases", help="电脑上离线机器翻译并筛过的常见短语（短语	英文	把握度），见 mt_filter；"
                         "替换同一短语的逐词版")
     parser.add_argument("--curated-singles", help="单字人工表（curated_singles.tsv），需同时给 --engine-dict")
     parser.add_argument("--single-max-rank", type=int, default=3500,
-                        help="人工表没看过的单字，只在 rime_ice 单字权重前这么多个里才显示")
+                        help="人工表没看过的单字，只在 cayboard_pinyin 单字权重前这么多个里才显示")
     parser.add_argument("--curated-phrases", help="多字词人工表（curated_phrases.tsv），优先于自动释义")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
     entries, back = load_ecdict(args.ecdict)
     english = len(entries)
-    weights = load_rime_weights(args.rime_dict)
-    engine = load_rime_weights(args.engine_dict) if args.engine_dict else None
+    weights = load_pinyin_weights(args.pinyin_dict)
+    engine = load_pinyin_weights(args.engine_dict) if args.engine_dict else None
     chinese = load_cedict(args.cedict, back, weights, args.min_weight, engine)
     filled = fill_from_english(chinese, back, weights, args.min_weight, engine)
     print(f"filled_from_english={filled}", file=sys.stderr)

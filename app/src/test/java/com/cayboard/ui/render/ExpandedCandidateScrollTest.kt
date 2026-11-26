@@ -24,8 +24,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.AppFonts
@@ -86,7 +86,7 @@ class ExpandedCandidateScrollTest {
     }
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val bounds = rule.onNodeWithTag("panel", true).fetchSemanticsNode().boundsInRoot
         val bmp = Bitmap.createBitmap(bounds.width.toInt(), bounds.height.toInt(), Bitmap.Config.ARGB_8888)
         rule.runOnIdle {
@@ -153,14 +153,14 @@ class ExpandedCandidateScrollTest {
         KeysConfigHelper.loadConfig(app)
         KeyboardThemes.initFromConfig(app)
         val model = spy(KeyboardViewModel(app))
-        val words = List(96) { RimeCandidate("候选词" + (it + 1), "") }
+        val words = List(96) { EngineCandidate("候选词" + (it + 1), "") }
         val snapshot = mutableStateOf(CandidateState(engineRevision = 12, inputText = "ci", isComposing = true,
             candidates = words.take(8).map { it.text }, hasNextPage = true,
             expandedCandidates = words, expandedCandidatesLoaded = true))
         val callbacks = KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {})
         doReturn(mock<T9InputController>()).whenever(model).bindT9Controller(callbacks)
         rule.setContent {
-            KeyboardView(model, KeyboardUiState(currentSchemaId = "rime_ice"), callbacks,
+            KeyboardView(model, KeyboardUiState(currentSchemaId = "cayboard_pinyin"), callbacks,
                 modifier = Modifier.size(400.dp, 284.dp), candidateState = snapshot, inputSessionManagedByHost = true)
         }
         val arrow = rule.onNodeWithTag("candidate-expansion")

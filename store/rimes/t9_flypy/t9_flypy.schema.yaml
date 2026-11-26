@@ -2,9 +2,9 @@
 # encoding: utf-8
 # 小鹤双拼九键（原型）：每个字按小鹤双拼的两个字母打，字母落在九键 ABC/DEF/…/WXYZ 上，
 # 于是每个字固定两位数字（如 你 ni → 64，好 hc → 42，双 ul → 85）。
-# 与「中文九键」共用雾凇词库、九键组句、词组模型和用户词库；键盘布局由 CyIME 的 keyboard.t9.schemas 绑定。
+# 与「中文九键」共用雾凇词库、九键组句、词组模型和用户词库；键盘布局由 Cayboard 的 keyboard.t9.schemas 绑定。
 # 左侧音节栏只认全拼，这里关掉；CyLM 整句按全拼九键解码，这里不用。
-cyime_particle_shortcuts:
+cayboard_particle_shortcuts:
   exact: ["5353 来了"]
 t9:
   # 双拼没有全拼音节栏，左栏只放快捷符号。
@@ -26,7 +26,7 @@ t9:
   ngram_user_weight: 0.05
   ngram_dictionary_prior: 0.02
   ngram_merge_segmentations: false
-  reading_table: cyime_readings
+  reading_table: cayboard_readings
   # 编码栏显示按下的数字；候选注释显示词库读音。
   isDisplayOriginalPreedit: true
   enable_date_translator: true
@@ -42,13 +42,13 @@ t9:
 schema:
   schema_id: t9_flypy
   dependencies:
-    - cyime_t9_english
+    - cayboard_t9_english
   name: 小鹤双拼九键
   version: "0.1"
   language: zh
   input_scheme: double_pinyin
   author:
-    - CyIME
+    - Cayboard contributors
   description: |
     小鹤双拼打在九键上：每个字两位数字。与中文九键共用雾凇词库和词组模型。
 
@@ -85,7 +85,7 @@ engine:
     - script_translator
     - t9_english_translator@t9_english
   filters:
-    - cyime_candidate_policy
+    - cayboard_candidate_policy
     - t9_filter
     - uniquifier
 
@@ -131,7 +131,7 @@ speller:
     - xlit/abcdefghijklmnopqrstuvwxyz/22233344455566677778889999/
 
 translator:
-  dictionary: rime_ice
+  dictionary: cayboard_pinyin
   max_homophones: 32
   max_sentences: 3
   prism: t9_flypy
@@ -139,10 +139,10 @@ translator:
   always_show_comments: true
   comment_format: []
 
-cyime:
+cayboard:
   candidate_policy: true
 
-# amzxyz/RIME-LMDG, CC-BY-4.0（随 CyIME 提供）。
+# amzxyz/RIME-LMDG, CC-BY-4.0（见内置第三方许可说明）。
 grammar:
   language: wanxiang-lts-zh-hans
   collocation_max_length: 6
@@ -168,7 +168,7 @@ editor:
     space: confirm
 
 t9_english:
-  dictionary: cyime_t9_english
+  dictionary: cayboard_t9_english
   enable_completion: false
   enable_sentence: false
   enable_user_dict: true

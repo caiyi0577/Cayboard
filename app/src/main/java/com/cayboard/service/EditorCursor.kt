@@ -6,7 +6,7 @@ import android.view.inputmethod.ExtractedText
 import android.view.inputmethod.InputConnection
 import kotlin.math.abs
 
-/** 编辑器光标操作不经过 Rime，所有键盘布局使用相同的选择区语义。 */
+/** 编辑器光标操作不经过输入引擎，所有键盘布局使用相同的选择区语义。 */
 internal class EditorCursor(private val clock: () -> Long = { System.nanoTime() / 1_000_000 }) {
     /**
      * 键盘自己的输入框（剪贴板编辑、新增固定等）按它自己的排版给出的视觉行位置，都是绝对偏移。

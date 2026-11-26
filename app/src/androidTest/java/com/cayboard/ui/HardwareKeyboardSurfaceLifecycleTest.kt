@@ -17,8 +17,8 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.core.app.ApplicationProvider
 import com.cayboard.keyboard.KeyboardPage
 import com.cayboard.keyboard.OverlayRoute
-import com.cayboard.rime.InputCommandQueue
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.InputCommandQueue
+import com.cayboard.engine.T9InputController
 import com.cayboard.ui.keyboard.KeyboardCallbacks
 import com.cayboard.ui.keyboard.KeyboardView
 import com.cayboard.viewmodel.KeyboardUiState
@@ -61,7 +61,7 @@ class HardwareKeyboardSurfaceLifecycleTest {
         var mounted by mutableStateOf(true)
         lateinit var vm: KeyboardViewModel
         lateinit var controller: T9InputController
-        val ui = KeyboardUiState(inputSessionId = 7, currentSchemaId = "rime_ice")
+        val ui = KeyboardUiState(inputSessionId = 7, currentSchemaId = "cayboard_pinyin")
 
         try {
             rule.runOnUiThread {
@@ -69,7 +69,7 @@ class HardwareKeyboardSurfaceLifecycleTest {
                 vm = ViewModelProvider(store, ViewModelProvider.AndroidViewModelFactory(app))
                     .get(KeyboardViewModel::class.java)
                 // This editor begins while compact, before a KeyboardView has ever existed.
-                vm.synchronizeInputSession(7, 0, false, "rime_ice")
+                vm.synchronizeInputSession(7, 0, false, "cayboard_pinyin")
                 vm.showOverlay(OverlayRoute.Emoji)
             }
             rule.setContent {
@@ -94,7 +94,7 @@ class HardwareKeyboardSurfaceLifecycleTest {
             rule.runOnIdle {
                 vm.closeOverlay()
                 vm.showOverlay(OverlayRoute.Clipboard())
-                vm.synchronizeInputSession(7, 0, false, "rime_ice")
+                vm.synchronizeInputSession(7, 0, false, "cayboard_pinyin")
                 boundCallbacks = secondCallbacks
                 mounted = true
             }

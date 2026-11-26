@@ -17,7 +17,7 @@ import os
 import subprocess
 import tempfile
 
-REMOTE = "/data/local/tmp/cyime-latency.txt"
+REMOTE = "/data/local/tmp/cayboard-latency.txt"
 
 
 def pointer(down_ms, at_ms, action, x, y):

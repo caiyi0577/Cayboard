@@ -11,9 +11,9 @@ object DictionaryLookup {
     fun find(context: Context, word: String): List<DictionaryHit> {
         val target = word.trim()
         if (target.isEmpty()) return emptyList()
-        val rimeDir = SchemaManager.getRimeDir(context)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
         val hits = mutableListOf<DictionaryHit>()
-        builtInTables(rimeDir).forEach { file ->
+        builtInTables(inputDataDir).forEach { file ->
             codes(file, target).takeIf { it.isNotEmpty() }?.let { hits += DictionaryHit("内置词库", target, it) }
         }
         val store = CellDictionaryManager.store(context)
@@ -32,11 +32,11 @@ object DictionaryLookup {
         }
     }
 
-    /** rime_ice.dict.yaml and the tables it imports (cn_dicts/base …), as listed in its import_tables. */
-    internal fun builtInTables(rimeDir: File, main: String = "rime_ice"): List<File> {
+    /** cayboard_pinyin.dict.yaml and the tables it imports (cn_dicts/base …), as listed in its import_tables. */
+    internal fun builtInTables(inputDataDir: File, main: String = "cayboard_pinyin"): List<File> {
         val seen = LinkedHashSet<File>()
         fun visit(name: String) {
-            val file = File(rimeDir, "$name.dict.yaml")
+            val file = File(inputDataDir, "$name.dict.yaml")
             if (!file.isFile || !seen.add(file)) return
             importTables(file).forEach(::visit)
         }

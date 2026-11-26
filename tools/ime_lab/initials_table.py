@@ -1,15 +1,15 @@
 """Initials-only table for the 26-key schemas (Cayboard-Windows d2d458c, docs/ANDROID_ALIGNMENT_20261021.md there).
 
 Typed initials (hx, fdc, nsdd) are where spoken usage matters most, full pinyin is where written weights are safe.
-This writes cyime_abbrev: the initials of every 2-4 character base.dict word, weight = max(upstream weight, chat
+This writes cayboard_abbrev: the initials of every 2-4 character base.dict word, weight = max(upstream weight, chat
 blend), so a written word chat text never uses (房地产, 上市公司) keeps its upstream place while spoken words
 (好像, 知道了) can rise above it. The chat blend is the weight base.dict gets in the build (the Android blend of
-upstream and LCCC counts, chat_base_weights.py), read from the generated rime_ice directory. Initials that spell an
+upstream and LCCC counts, chat_base_weights.py), read from the generated cayboard_pinyin directory. Initials that spell an
 English word of three or more letters (ppt, jpg, why) are left to the English table.
 
 Usage: python initials_table.py GENERATED_RIME_ICE_DIR UPSTREAM_ZIP OUT_DIR [--upstream-weights OUT.tsv.gz]
-Writes OUT_DIR/cyime_abbrev.dict.yaml and cyime_abbrev.schema.yaml; --upstream-weights also writes the upstream
-base weights as a text/code/weight gzip TSV (lexicon_regression CYIME_BASE_WEIGHTS) for the variant where full
+Writes OUT_DIR/cayboard_abbrev.dict.yaml and cayboard_abbrev.schema.yaml; --upstream-weights also writes the upstream
+base weights as a text/code/weight gzip TSV (lexicon_regression CAYBOARD_BASE_WEIGHTS) for the variant where full
 pinyin goes back to them.
 """
 import argparse
@@ -67,24 +67,24 @@ def main():
         value = max(weight, upstream.get((text, code), 0))
         table[(text, initials)] = max(table.get((text, initials), 0), value)
     args.out.mkdir(parents=True, exist_ok=True)
-    with (args.out / "cyime_abbrev.dict.yaml").open("w", encoding="utf-8", newline="\n") as f:
+    with (args.out / "cayboard_abbrev.dict.yaml").open("w", encoding="utf-8", newline="\n") as f:
         f.write("# Rime dictionary\n# encoding: utf-8\n# Initials of 2-4 character base words (tools/ime_lab/initials_table.py)\n"
-                "---\nname: cyime_abbrev\nversion: \"2026.10.21\"\nsort: by_weight\n...\n")
+                "---\nname: cayboard_abbrev\nversion: \"2026.10.21\"\nsort: by_weight\n...\n")
         for (text, initials), weight in sorted(table.items(), key=lambda kv: (kv[0][1], -kv[1])):
             f.write(f"{text}\t{initials}\t{weight}\n")
-    (args.out / "cyime_abbrev.schema.yaml").write_text(
-        "# Compiles cyime_abbrev for table_translator@abbrev in the 26-key schemas.\n"
-        "schema:\n  schema_id: cyime_abbrev\n  name: Cayboard initials\n  version: '2026.10.21'\n"
+    (args.out / "cayboard_abbrev.schema.yaml").write_text(
+        "# Compiles cayboard_abbrev for table_translator@abbrev in the 26-key schemas.\n"
+        "schema:\n  schema_id: cayboard_abbrev\n  name: Cayboard initials\n  version: '2026.10.21'\n"
         "engine:\n  processors: [speller, selector, express_editor]\n  segmentors: [abc_segmentor]\n"
         "  translators: [table_translator]\nspeller:\n  alphabet: zyxwvutsrqponmlkjihgfedcba\n"
-        "translator:\n  dictionary: cyime_abbrev\n  enable_completion: false\n  enable_sentence: false\n"
+        "translator:\n  dictionary: cayboard_abbrev\n  enable_completion: false\n  enable_sentence: false\n"
         "  enable_user_dict: false\n", encoding="utf-8")
     if args.upstream_weights:
         with gzip.open(args.upstream_weights, "wt", encoding="utf-8") as f:
             for (text, code), weight in upstream.items():
                 f.write(f"{text}\t{code}\t{weight}\n")
     raised = sum(1 for (t, c), w in current.items() if w > upstream.get((t, c), w))
-    print(f"cyime_abbrev: {len(table)} rows; {len(english)} English spellings excluded; "
+    print(f"cayboard_abbrev: {len(table)} rows; {len(english)} English spellings excluded; "
           f"{raised} base entries above upstream")
 
 

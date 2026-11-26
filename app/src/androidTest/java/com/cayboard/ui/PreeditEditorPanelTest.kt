@@ -11,7 +11,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
-import com.cayboard.rime.PinyinEditSession
+import com.cayboard.engine.PinyinEditSession
 import com.cayboard.ui.keyboard.PreeditEditorBar
 import org.junit.Assert.*
 import org.junit.Rule
@@ -21,7 +21,7 @@ class PreeditEditorPanelTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     @Test fun editorIsAboveKeyboardAndNeverChangesItsBounds() {
         var show by mutableStateOf(false)
-        var frame by mutableStateOf(PinyinEditSession(1, "rime_ice", "nihao", "", "", "nihao", 5, false))
+        var frame by mutableStateOf(PinyinEditSession(1, "cayboard_pinyin", "nihao", "", "", "nihao", 5, false))
         rule.setContent {
             Column { Spacer(Modifier.height(140.dp)); Column(Modifier.width(320.dp).height(240.dp).testTag("keyboard-body")) {
                 if (show) PreeditEditorBar(frame, Color.DarkGray, Color.White, Color.Cyan, { show = false },

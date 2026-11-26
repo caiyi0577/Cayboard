@@ -43,7 +43,7 @@ import java.io.File
 
 /**
  * 当前方案是小鹤双拼时，键盘里的选择面板和设置页的布局行：没有小鹤双拼的布局（九键）标灰。
- * 浅色/纯黑 × 不透明/玻璃 × 手机/平板，加设置页浅色/深色。只在设置了 CYIME_RENDER_OUT 时出图。
+ * 浅色/纯黑 × 不透明/玻璃 × 手机/平板，加设置页浅色/深色。只在设置了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -52,11 +52,11 @@ class SchemeLayoutHintRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderUnavailableLayouts() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
-        val schemas = listOf("rime_ice", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian")
+        val schemas = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "double_pinyin_flypy_14jian")
             .map { SchemaInfo(it, if (it.startsWith("double_pinyin_flypy")) "小鹤双拼" else it, "", "", "") }
         val current = "double_pinyin_flypy"
         var theme by mutableStateOf("soft_blue")

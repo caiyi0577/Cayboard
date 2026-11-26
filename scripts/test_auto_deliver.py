@@ -6,12 +6,13 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location('auto_deliver', Path(__file__).with_name('auto-deliver.py'))
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -153,9 +154,9 @@ class FakeRunner(m.Runner):
             return f"package: name='{pkg}' versionCode='20261071' versionName='1.6.0' platformBuildVersionName='1'\nnative-code: 'arm64-v8a'"
         if args[0] == 'fake-adb':
             if 'pm' in args:
-                return 'package:/data/app/cyime/base.apk' if self.installed else ''
+                return 'package:/data/app/cayboard/base.apk' if self.installed else ''
             if 'sha256sum' in args:
-                return f'{self.installed}  /data/app/cyime/base.apk'
+                return f'{self.installed}  /data/app/cayboard/base.apk'
             if 'install' in args:
                 if self.fail_install: raise m.DeliveryError('INSTALL_FAILED_UPDATE_INCOMPATIBLE')
                 self.installed = m.digest(Path(args[-1])); self.install_count += 1
@@ -240,6 +241,15 @@ class PureTests(unittest.TestCase):
 
 class FlowTests(unittest.TestCase):
     def setUp(self):
+        # Use a predictable memory report for the simulated build.
+        if os.name == 'nt':
+            def report_memory(status):
+                status._obj.available = 8 * 1024**3
+                return 1
+
+            memory_probe = patch('ctypes.windll.kernel32.GlobalMemoryStatusEx', side_effect=report_memory)
+            memory_probe.start()
+            self.addCleanup(memory_probe.stop)
         self.tmp=tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name)
         files={'app/build.gradle.kts':'versionCode = 20261071\nversionName = "1.6.0"\n',
@@ -474,11 +484,16 @@ class FlowTests(unittest.TestCase):
         self.assertEqual((self.runner.build_count,self.runner.install_count),(0,0))
 
     def test_configured_entry_stays_within_the_same_repository(self):
-        subprocess.run(['git','config','cyime.integrationRoot',str(self.root/'missing')],cwd=self.root,check=True)
-        with self.assertRaises(m.DeliveryError):m.integration_root(self.root)
+        for key in ('cyime.integrationRoot', 'cayboard.integrationRoot'):
+            subprocess.run(['git', 'config', '--local', key, str(self.root / 'missing')], cwd=self.root, check=True)
+            with self.assertRaises(m.DeliveryError):
+                m.integration_root(self.root)
+        (self.root / 'scripts').mkdir(exist_ok=True)
+        (self.root / 'scripts/auto-deliver.py').touch()
+        subprocess.run(['git', 'config', '--local', 'cayboard.integrationRoot', str(self.root)], cwd=self.root, check=True)
+        self.assertEqual(self.root.resolve(), m.integration_root(self.root))
 
     def test_real_cmd_launcher_help_preserves_error_exit(self):
-        import os
         if os.name!='nt':self.skipTest('Windows entry-point check')
         launcher=Path(__file__).resolve().parents[1]/'auto.cmd'
         result=subprocess.run(['cmd.exe','/d','/c',str(launcher),'--not-a-valid-option'],capture_output=True)

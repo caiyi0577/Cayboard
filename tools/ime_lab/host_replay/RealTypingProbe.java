@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -11,8 +11,8 @@ import java.util.Random;
  * Simulated real typist for 26-key full pinyin (2026-10-31, real_typing_bench.py). Not a ranking query: it plays
  * what a person does and counts how often they have to stop.
  *
- * PROBE_OPTIONS (environment, optional): comma separated session switches, e.g. cyime_mixed_input=1.
- * PROBE_SCHEMA (environment, optional): schema to type in, default rime_ice (e.g. double_pinyin_flypy, t9_pinyin).
+ * PROBE_OPTIONS (environment, optional): comma separated session switches, e.g. cayboard_mixed_input=1.
+ * PROBE_SCHEMA (environment, optional): schema to type in, default cayboard_pinyin (e.g. double_pinyin_flypy, t9_pinyin).
  *
  * type  LIB USER CASES OUT NEIGHBORS
  *   Each case (id, typed letters, target) is typed key by key without picking. Per key the first candidate is
@@ -41,12 +41,12 @@ public final class RealTypingProbe {
     return rows;
   }
 
-  static RimeEngine open(String lib, String user, String neighbors) throws Exception {
-    System.load(new File(lib, "librime_jni.so").getAbsolutePath());
-    RimeEngine e = new RimeEngine();
+  static InputEngine open(String lib, String user, String neighbors) throws Exception {
+    System.load(new File(lib, "cayboard_jni.so").getAbsolutePath());
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user, user);
     String schema = System.getenv("PROBE_SCHEMA");
-    if (schema == null || schema.isEmpty()) schema = "rime_ice";
+    if (schema == null || schema.isEmpty()) schema = "cayboard_pinyin";
     t9 = schema.equals("t9_pinyin");
     // Nine-key: the app writes its schema patches before deploying (as ChatReplay does).
     if (t9) e.nativeEnsureT9SchemaPatches(schema);
@@ -57,7 +57,7 @@ public final class RealTypingProbe {
     if (!e.nativeCreateSession()) throw new Exception("session unavailable");
     if (!e.nativeSwitchSchema(schema)) throw new Exception("schema unavailable: " + schema);
     e.nativeSetOption("ascii_mode", false);
-    // PROBE_OPTIONS=name=1,other=0 sets session switches the app sets from its settings (cyime_mixed_input).
+    // PROBE_OPTIONS=name=1,other=0 sets session switches the app sets from its settings (cayboard_mixed_input).
     String options = System.getenv("PROBE_OPTIONS");
     if (options != null && !options.isEmpty())
       for (String o : options.split(",")) {
@@ -71,16 +71,16 @@ public final class RealTypingProbe {
   /** Nine-key (t9_pinyin): digits go through the T9 processor, which needs a flush after each key. */
   static boolean t9;
 
-  static void clear(RimeEngine e) {
+  static void clear(InputEngine e) {
     if (t9) {
       e.nativeT9ClearComposition(1);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
     }
     e.nativeSetInput("");
   }
 
   /** After the last key the person looks at the bar; nine-key finishes its pause refinement first (ChatReplay). */
-  static void settle(RimeEngine e) throws Exception {
+  static void settle(InputEngine e) throws Exception {
     if (!t9) return;
     long start = System.nanoTime();
     int state = e.nativeT9RefinementState();
@@ -93,10 +93,10 @@ public final class RealTypingProbe {
 
   static String clean(String s) { return s.replace('\t', ' ').replace('|', '/').replace('\n', ' '); }
 
-  static void typeKeys(RimeEngine e, String keys, List<String> firsts) throws Exception {
+  static void typeKeys(InputEngine e, String keys, List<String> firsts) throws Exception {
     for (char c : keys.toCharArray()) {
       if (!e.nativeProcessKey(c, 0)) throw new Exception("unhandled key " + c + " in " + keys);
-      if (t9) e.nativeT9FlushRimeInput();
+      if (t9) e.nativeT9FlushInput();
       if (firsts != null) {
         String[][] rows = e.nativeInspectCandidates(1);
         firsts.add(rows.length > 0 ? clean(rows[0][0]) : "");
@@ -134,7 +134,7 @@ public final class RealTypingProbe {
   }
 
   static void type(String[] a) throws Exception {
-    RimeEngine e = open(a[1], a[2], a.length > 5 ? a[5] : "");
+    InputEngine e = open(a[1], a[2], a.length > 5 ? a[5] : "");
     try (PrintStream out = new PrintStream(new File(a[4]), "UTF-8")) {
       for (String[] f : read(a[3])) {
         List<String> firsts = new ArrayList<>();
@@ -178,7 +178,7 @@ public final class RealTypingProbe {
   }
 
   /** Type and commit one stream line; returns false when the target could not be reached. */
-  static boolean commit(RimeEngine e, String keys, String target, Random rng, double mispick, int[] wrong)
+  static boolean commit(InputEngine e, String keys, String target, Random rng, double mispick, int[] wrong)
       throws Exception {
     typeKeys(e, keys, null);
     String rest = target;
@@ -206,7 +206,7 @@ public final class RealTypingProbe {
   }
 
   static void history(String[] a) throws Exception {
-    RimeEngine e = open(a[1], a[2], a[6]);
+    InputEngine e = open(a[1], a[2], a[6]);
     List<String[]> stream = read(a[3]);
     List<String[]> probes = read(a[4]);
     double mispick = Double.parseDouble(a[7]);

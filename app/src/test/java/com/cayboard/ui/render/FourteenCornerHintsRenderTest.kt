@@ -47,7 +47,7 @@ import java.io.File
 /**
  * 14 键自己的一套角标（FourteenKeySymbols）：每个键只有一组上下角标，前两排上 1-0、下半角符号，第三排中文标点。
  * 出：平时、er 下拉（上角标 2）、m 上滑（下角标 》）三张，并排一张 26 键对照；最后出符号设置页「中文14键」。
- * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CYIME_RENDER_OUT 时出图。
+ * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -66,7 +66,7 @@ class FourteenCornerHintsRenderTest {
     }
 
     @Test fun renderCornerHints() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
@@ -111,8 +111,8 @@ class FourteenCornerHintsRenderTest {
         for ((w, h) in listOf(360 to 240, 800 to 300)) for ((id, isDark) in listOf("soft_blue" to false,
             "soft_blue" to true, "pure_black" to true, "pure_black" to false)) for (g in listOf(false, true)) {
             val name = "${w}-$id-${if (isDark) "dark" else "light"}-${if (g) "glass" else "solid"}"
-            KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
-            rule.runOnIdle { schema = "rime_ice"; width = w; height = h; theme = id; dark = isDark; glass = g }
+            KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
+            rule.runOnIdle { schema = "cayboard_pinyin"; width = w; height = h; theme = id; dark = isDark; glass = g }
             rule.waitForIdle()
             shot(out, "26-$name", "layout-body")
             KeysConfigHelper.setActiveKeyboardSchema("pinyin_14jian")
@@ -128,11 +128,11 @@ class FourteenCornerHintsRenderTest {
             drag("qwerty-key:er", pullDown = true, name = "14-$name-1-er-pull-down")
             drag("qwerty-key:m", pullDown = false, name = "14-$name-2-m-swipe-up")
         }
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     @Test fun renderSymbolEditorFourteenTab() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)

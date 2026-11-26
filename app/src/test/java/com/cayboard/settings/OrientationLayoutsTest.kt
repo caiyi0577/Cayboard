@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 class OrientationLayoutsTest {
     private val ctx get() = ApplicationProvider.getApplicationContext<Context>()
     private val zh = InputLanguage.CHINESE
-    private val entries = listOf("rime_ice", "t9_pinyin", "japanese", "japanese_kana")
+    private val entries = listOf("cayboard_pinyin", "t9_pinyin", "japanese", "japanese_kana")
         .map { SchemaInfo(it, it, "", "", "") }
 
     private fun portrait() = RuntimeEnvironment.setQualifiers("w411dp-h891dp-port")
@@ -27,12 +27,12 @@ class OrientationLayoutsTest {
         assertFalse(OrientationLayouts.isEnabled(ctx))
         InputModes.selectProfile(ctx, "t9_pinyin", zh)
         landscape()
-        InputModes.selectProfile(ctx, "rime_ice", zh)
+        InputModes.selectProfile(ctx, "cayboard_pinyin", zh)
         assertNull(OrientationLayouts.slot(ctx, zh, true))
         assertNull(OrientationLayouts.slot(ctx, zh, false))
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "rime_ice", entries))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries))
         portrait()
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "rime_ice", entries))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries))
     }
 
     @Test fun landscapeQwertyPortraitNineKeys() {
@@ -42,15 +42,15 @@ class OrientationLayoutsTest {
         // 竖屏九键时转横屏点 26 键：横屏记 26 键，竖屏补记成之前的九键。
         landscape()
         assertEquals("t9_pinyin", OrientationLayouts.prepared(ctx, "t9_pinyin", entries))
-        InputModes.selectProfile(ctx, "rime_ice", zh)
-        assertEquals("rime_ice", OrientationLayouts.slot(ctx, zh, true))
+        InputModes.selectProfile(ctx, "cayboard_pinyin", zh)
+        assertEquals("cayboard_pinyin", OrientationLayouts.slot(ctx, zh, true))
         assertEquals("t9_pinyin", OrientationLayouts.slot(ctx, zh, false))
         portrait()
-        assertEquals("t9_pinyin", OrientationLayouts.prepared(ctx, "rime_ice", entries))
+        assertEquals("t9_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries))
         landscape()
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "t9_pinyin", entries))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "t9_pinyin", entries))
         // 已在这个方向的条目上：不动。
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "rime_ice", entries))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries))
     }
 
     @Test fun otherLanguagesRemovedEntriesAndSwitchingOffKeepTheCurrentEntry() {
@@ -58,16 +58,16 @@ class OrientationLayoutsTest {
         OrientationLayouts.setEnabled(ctx, true)
         InputModes.selectProfile(ctx, "t9_pinyin", zh)
         landscape()
-        InputModes.selectProfile(ctx, "rime_ice", zh)
+        InputModes.selectProfile(ctx, "cayboard_pinyin", zh)
         // 日语没记过，中文的记录不影响日语。
         assertEquals("japanese_kana", OrientationLayouts.prepared(ctx, "japanese_kana", entries))
         // 记的条目被删掉了：留在当前条目。
         portrait()
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "rime_ice", entries.filter { it.schemaId != "t9_pinyin" }))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries.filter { it.schemaId != "t9_pinyin" }))
         // 关掉后清掉记录，再打开也不会带回旧布局。
         OrientationLayouts.setEnabled(ctx, false)
         OrientationLayouts.setEnabled(ctx, true)
         assertNull(OrientationLayouts.slot(ctx, zh, false))
-        assertEquals("rime_ice", OrientationLayouts.prepared(ctx, "rime_ice", entries))
+        assertEquals("cayboard_pinyin", OrientationLayouts.prepared(ctx, "cayboard_pinyin", entries))
     }
 }

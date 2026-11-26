@@ -49,14 +49,14 @@ class CornerHintGestureTest {
 
     private val typed = mutableListOf<String>()
     private var preferences by mutableStateOf(KeyboardInputPreferences())
-    private var schema by mutableStateOf("rime_ice")
+    private var schema by mutableStateOf("cayboard_pinyin")
     private var ascii by mutableStateOf(false)
 
     private data class Board(val schema: String, val english: Boolean = false, val englishArrangement: String? = null)
     /** 每种字母布局：中文 26 键、小鹤双拼 26 键、英文 26 键、Cyletix10/Colemak/蜂窝排列（中英）、14/17/18 键。 */
-    private val layouts = listOf(Board("rime_ice"), Board("double_pinyin_flypy"), Board("rime_ice", english = true),
+    private val layouts = listOf(Board("cayboard_pinyin"), Board("double_pinyin_flypy"), Board("cayboard_pinyin", english = true),
         Board(Cyletix10Layout.ID), Board(ColemakLayout.ID), Board(TypewiseLayout.ID),
-        Board("rime_ice", english = true, englishArrangement = Cyletix10Layout.ID),
+        Board("cayboard_pinyin", english = true, englishArrangement = Cyletix10Layout.ID),
         Board("pinyin_14jian"), Board("double_pinyin_flypy_14jian"), Board("pinyin_17jian"), Board("pinyin_18jian"))
 
     private fun show() {

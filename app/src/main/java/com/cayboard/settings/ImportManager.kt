@@ -38,7 +38,7 @@ object ImportManager {
     /** 从 URI 导入（文件选择器、分享等）。按文件名自动路由；方案、词库装好后自动应用（#340），不用再点「应用方案更改」。 */
     suspend fun import(context: Context, uri: Uri): ImportResult = route(context, uri).also { result ->
         if (result is ImportResult.Content && result.success && result.installedDirect)
-            com.cayboard.rime.SchemaChangeApplier.request(context)
+            com.cayboard.engine.SchemaChangeApplier.request(context)
     }
 
     private suspend fun route(context: Context, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
@@ -46,10 +46,10 @@ object ImportManager {
             ?: return@withContext ImportResult.Failed("无法识别文件名")
         val name = SchemaManager.sanitizeDisplayName(displayName)
         if (listOf(".rar", ".7z", ".tar").any { name.endsWith(it, ignoreCase = true) }) {
-            return@withContext ImportResult.Failed("请解开「$name」，把含 .schema.yaml 的 Rime 目录连同词库、Lua 等子目录重新压成 .zip 再导入")
+            return@withContext ImportResult.Failed("请解开「$name」，把含 .schema.yaml 的输入方案目录连同词库、Lua 等子目录重新压成 .zip 再导入")
         }
         if (listOf(".apk", ".exe", ".msi").any { name.endsWith(it, ignoreCase = true) }) {
-            return@withContext ImportResult.Failed("「$name」是应用安装程序，请选择 Rime 方案包")
+            return@withContext ImportResult.Failed("「$name」是应用安装程序，请选择输入方案包")
         }
 
         if (name.endsWith(".xipk", ignoreCase = true)) return@withContext ImportResult.Unsupported(name)

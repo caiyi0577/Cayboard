@@ -243,7 +243,7 @@ class MenuSwipeBackTest {
     }
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         rule.waitForIdle()
         val view = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

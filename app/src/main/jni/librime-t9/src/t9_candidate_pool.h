@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_CANDIDATE_POOL_H_
-#define CYIME_T9_CANDIDATE_POOL_H_
+#ifndef CAYBOARD_T9_CANDIDATE_POOL_H_
+#define CAYBOARD_T9_CANDIDATE_POOL_H_
 #include <algorithm>
 #include <functional>
 #include <set>

@@ -1,4 +1,4 @@
-// Host replay only: linked into the host librime_jni.so by host_tail.cmake and
+// Host replay only: linked into the host cayboard_jni.so by host_tail.cmake and
 // never part of the Android build. Reads the per-key work counters declared in
 // librime-t9/src/t9_lookup_trace.h and seeds a preset user dictionary snapshot.
 #include <jni.h>
@@ -11,15 +11,15 @@
 #include <t9_lookup_trace.h>
 #include <string>
 
-#if !defined(CYIME_T9_WORK_COUNTERS)
-#error "The host replay adapter requires -DCYIME_T9_WORK_COUNTERS=ON"
+#if !defined(CAYBOARD_T9_WORK_COUNTERS)
+#error "The host replay adapter requires -DCAYBOARD_T9_WORK_COUNTERS=ON"
 #endif
 
 namespace {
 const char* const kWorkCounterNames[] = {
-#define CYIME_T9_WORK_NAME(name) #name,
-    CYIME_T9_WORK_COUNTER_LIST(CYIME_T9_WORK_NAME)
-#undef CYIME_T9_WORK_NAME
+#define CAYBOARD_T9_WORK_NAME(name) #name,
+    CAYBOARD_T9_WORK_COUNTER_LIST(CAYBOARD_T9_WORK_NAME)
+#undef CAYBOARD_T9_WORK_NAME
 };
 static_assert(sizeof(kWorkCounterNames) / sizeof(kWorkCounterNames[0]) == rime::kT9WorkCounterCount,
               "work counter names");
@@ -37,7 +37,7 @@ std::string Utf8(JNIEnv* env, jstring value) {
 extern "C" {
 
 JNIEXPORT jobjectArray JNICALL
-Java_com_cayboard_rime_RimeEngine_nativeHostWorkCounterNames(JNIEnv* env, jobject) {
+Java_com_cayboard_engine_InputEngine_nativeHostWorkCounterNames(JNIEnv* env, jobject) {
   jclass string_class = env->FindClass("java/lang/String");
   jobjectArray result = env->NewObjectArray(rime::kT9WorkCounterCount, string_class, nullptr);
   for (int i = 0; i < rime::kT9WorkCounterCount; ++i) {
@@ -51,7 +51,7 @@ Java_com_cayboard_rime_RimeEngine_nativeHostWorkCounterNames(JNIEnv* env, jobjec
 // Returns and clears the calling thread's counters. The replay thread runs each
 // key, flush, settlement and candidate inspection synchronously.
 JNIEXPORT jlongArray JNICALL
-Java_com_cayboard_rime_RimeEngine_nativeHostTakeWorkCounters(JNIEnv* env, jobject) {
+Java_com_cayboard_engine_InputEngine_nativeHostTakeWorkCounters(JNIEnv* env, jobject) {
   jlong values[rime::kT9WorkCounterCount];
   for (int i = 0; i < rime::kT9WorkCounterCount; ++i) {
     values[i] = static_cast<jlong>(rime::t9_work_counters[i]);
@@ -66,7 +66,7 @@ Java_com_cayboard_rime_RimeEngine_nativeHostTakeWorkCounters(JNIEnv* env, jobjec
 // then counts the live entries and tick of the named userdb. Call after
 // deployment and before a session opens the userdb. Returns null on failure.
 JNIEXPORT jlongArray JNICALL
-Java_com_cayboard_rime_RimeEngine_nativeHostRestoreUserDict(
+Java_com_cayboard_engine_InputEngine_nativeHostRestoreUserDict(
     JNIEnv* env, jobject, jstring snapshot, jstring dict_name) {
   const std::string snapshot_path = Utf8(env, snapshot);
   const std::string name = Utf8(env, dict_name);

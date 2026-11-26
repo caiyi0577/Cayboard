@@ -66,7 +66,7 @@ import java.io.File
 
 /**
  * 九键「下一项」0 键：短左滑、较长左滑（没过键盘半宽）仍是键内左箭头，右滑是键内右箭头（下一项）；拖出键盘一半高到候选上才是拖动选词，
- * 画出从键到手指的拖线、候选高亮，松手选中这个候选。只在设了 CYIME_RENDER_OUT 时出图。
+ * 画出从键到手指的拖线、候选高亮，松手选中这个候选。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w420dp-h700dp-xhdpi")
@@ -75,7 +75,7 @@ class T9ZeroKeyDragRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderDragToCandidate() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
@@ -227,7 +227,7 @@ class T9ZeroKeyDragRenderTest {
             frames.forEachIndexed { index, frame -> canvas.drawBitmap(frame, labelWidth + index * (cell.width + 16f), top, null) }
         }
         File(out!!).mkdirs()
-        File(out, "${System.getenv("CYIME_RENDER_NAME") ?: "t9-zero-key-drag"}.png").outputStream().use {
+        File(out, "${System.getenv("CAYBOARD_RENDER_NAME") ?: "t9-zero-key-drag"}.png").outputStream().use {
             sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }

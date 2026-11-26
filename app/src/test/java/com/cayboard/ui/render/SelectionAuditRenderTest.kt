@@ -82,7 +82,7 @@ class SelectionAuditRenderTest {
                                 Row { ExpressionTab("表情",true,c.onSurface,c.primary,onClick={});ExpressionTab("颜文字",false,c.onSurface,c.primary,onClick={}) }
                                 OptionMenuCard("输入方式",listOf("九键","26键"),"九键",width=240.dp,onChoose={})
                                 Text("语言切换",color=c.onSurface)
-                                LanguageMenuCard(listOf(SchemaInfo("t9_pinyin","拼音九键","","",""),SchemaInfo("rime_ice","拼音26键","","",""),SchemaInfo("english","英文","","","")),
+                                LanguageMenuCard(listOf(SchemaInfo("t9_pinyin","拼音九键","","",""),SchemaInfo("cayboard_pinyin","拼音26键","","",""),SchemaInfo("english","英文","","","")),
                                     "t9_pinyin",240.dp,130.dp,40.dp,rememberScrollState(),{}, {})
                             }
                         }
@@ -91,7 +91,7 @@ class SelectionAuditRenderTest {
             }
         }
         rule.waitForIdle()
-        System.getenv("CYIME_RENDER_OUT")?.let { out ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { out ->
             val root=rule.activity.window.decorView
             val bitmap=Bitmap.createBitmap(root.width,root.height,Bitmap.Config.ARGB_8888)
             rule.runOnIdle {root.draw(android.graphics.Canvas(bitmap))}

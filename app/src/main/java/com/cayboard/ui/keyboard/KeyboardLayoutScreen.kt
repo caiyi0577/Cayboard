@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cayboard.keyboard.GestureAction
 import com.cayboard.keyboard.OverlayRoute
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.theme.KeyboardThemes

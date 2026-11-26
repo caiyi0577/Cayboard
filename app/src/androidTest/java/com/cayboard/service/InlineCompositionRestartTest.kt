@@ -17,7 +17,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
+import com.cayboard.engine.EngineConfig
 import com.cayboard.settings.SettingsPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -44,7 +44,7 @@ class InlineCompositionRestartTest {
     @Test fun hostRestartsAndHidingNeverLeaveRawPinyin() = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("realIme") == "true")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertTrue(RimeConfigHelper.prepareEngine(context))
+        assertTrue(EngineConfig.prepareEngine(context))
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         val imeId = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
@@ -71,7 +71,7 @@ class InlineCompositionRestartTest {
         }
         fun drain() {
             val done = java.util.concurrent.atomic.AtomicBoolean(false)
-            rule.runOnUiThread { checkNotNull(service).keyRouter.postRimeJob { withContext(Dispatchers.Main) { done.set(true) } } }
+            rule.runOnUiThread { checkNotNull(service).keyRouter.postEngineJob { withContext(Dispatchers.Main) { done.set(true) } } }
             rule.waitUntil(10_000) { done.get() }
         }
         fun type(keys: String) = keys.forEach { key ->
@@ -102,7 +102,7 @@ class InlineCompositionRestartTest {
             openField()
             drain()
             val actual = checkNotNull(service)
-            rule.runOnUiThread { actual.schemaController.switchSchema("rime_ice") }
+            rule.runOnUiThread { actual.schemaController.switchSchema("cayboard_pinyin") }
             drain()
             rule.waitUntil(10_000) { !actual.uiState.value.isAsciiMode }
 

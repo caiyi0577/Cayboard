@@ -1,6 +1,6 @@
-package com.cyime.audit;
+package com.cayboard.audit;
 
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -22,8 +22,8 @@ public final class PinyinReplay {
         File libDir = new File(args[0]);
         String user = new File(args[1]).getCanonicalPath();
         String schema = args[2];
-        System.load(new File(libDir, "librime_jni.so").getAbsolutePath());
-        RimeEngine engine = new RimeEngine();
+        System.load(new File(libDir, "cayboard_jni.so").getAbsolutePath());
+        InputEngine engine = new InputEngine();
         engine.nativeInitialize(user, user);
         if (engine.nativeStartMaintenance(true)) {
             while (engine.nativeIsMaintaining()) Thread.sleep(200);

@@ -22,7 +22,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import com.cayboard.CayboardApplication
-import com.cayboard.rime.RimeConfigHelper
+import com.cayboard.engine.EngineConfig
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.settings.InputModes
 import com.cayboard.settings.LanguagePreferences
@@ -51,7 +51,7 @@ class RealEditorFieldInputTest {
         check(instrumentation.javaClass.name == "androidx.test.runner.AndroidJUnitRunner")
         val context = instrumentation.targetContext
         check(context.applicationContext is CayboardApplication)
-        assertTrue(RimeConfigHelper.prepareEngine(context))
+        assertTrue(EngineConfig.prepareEngine(context))
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         val imeId = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
@@ -92,7 +92,7 @@ class RealEditorFieldInputTest {
         fun drainInputQueue() {
             val complete = java.util.concurrent.atomic.AtomicBoolean(false)
             rule.runOnUiThread {
-                checkNotNull(service).keyRouter.postRimeJob {
+                checkNotNull(service).keyRouter.postEngineJob {
                     withContext(Dispatchers.Main) { complete.set(true) }
                 }
             }
@@ -126,7 +126,7 @@ class RealEditorFieldInputTest {
             drainInputQueue()
             val actual = checkNotNull(service)
             val savedSchema = SettingsPreferences.getCurrentSchema(context)
-            val savedAscii = actual.rimeEngine.getUserConfigBool("var/option/ascii_mode")
+            val savedAscii = actual.inputEngine.getUserConfigBool("var/option/ascii_mode")
             val passwordTypes = listOf(
                 InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD,
                 InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
@@ -144,7 +144,7 @@ class RealEditorFieldInputTest {
                 assertFalse(actual.candidateState.value.isComposing)
                 assertTrue(actual.candidateState.value.pendingEnglishText.isEmpty())
                 assertTrue(actual.candidateState.value.associationCandidates.isEmpty())
-                assertTrue(actual.rimeEngine.getInput().isEmpty())
+                assertTrue(actual.inputEngine.getInput().isEmpty())
                 typeKey("q", shifted = true)
                 assertText("abc!Q")
                 typeKey("delete")
@@ -192,7 +192,7 @@ class RealEditorFieldInputTest {
                 // Queue a valid key so the subsequent check also observes the rejected keys completing.
                 typeKey("2")
                 assertText(expected + "2")
-                assertTrue(actual.rimeEngine.getInput().isEmpty())
+                assertTrue(actual.inputEngine.getInput().isEmpty())
             }
             for (variation in listOf(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
                 InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS, InputType.TYPE_TEXT_VARIATION_URI)) {
@@ -201,7 +201,7 @@ class RealEditorFieldInputTest {
                 typeKey("a"); typeKey("＠"); typeKey("b"); typeKey("。"); typeKey("c")
                 assertText("a@b.c")
                 assertFalse(actual.editorInputPolicy.locksNativeInput)
-                val nativeSchema = actual.rimeEngine.getCurrentSchema()
+                val nativeSchema = actual.inputEngine.getCurrentSchema()
                 val nativeLanguage = InputModes.languageOf(nativeSchema, actual.uiState.value.schemas)
                 if (nativeLanguage in LanguagePreferences.enabled(context)) {
                     // Exercise the public native selection, without enabling a disabled user language.
@@ -214,7 +214,7 @@ class RealEditorFieldInputTest {
                     rule.waitUntil(10_000) { actual.uiState.value.inputSessionId != previousSession && actual.inputReadiness.ticket() != null }
                     drainInputQueue()
                     assertFalse("restart preserves this field's explicit language", actual.uiState.value.isAsciiMode)
-                    assertFalse(actual.rimeEngine.isAsciiMode())
+                    assertFalse(actual.inputEngine.isAsciiMode())
                     assertText("a@b.c")
                 }
             }
@@ -222,7 +222,7 @@ class RealEditorFieldInputTest {
                 EditorInfo.IME_ACTION_GO, "在 Google 中搜索或输入网址", EditorFieldPolicy.Kind.SEARCH_OR_ADDRESS)
             drainInputQueue()
             assertEquals("the navigation bar inherits the original language", savedAscii, actual.uiState.value.isAsciiMode)
-            assertEquals(savedAscii, actual.rimeEngine.isAsciiMode())
+            assertEquals(savedAscii, actual.inputEngine.isAsciiMode())
             assertFalse(actual.editorInputPolicy.directInput)
 
             openField(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
@@ -231,7 +231,7 @@ class RealEditorFieldInputTest {
             assertFalse(actual.editorInputPolicy.scoped)
             assertEquals("temporary fields must not save a schema", savedSchema, SettingsPreferences.getCurrentSchema(context))
             assertEquals("temporary fields must not save ASCII mode", savedAscii,
-                actual.rimeEngine.getUserConfigBool("var/option/ascii_mode"))
+                actual.inputEngine.getUserConfigBool("var/option/ascii_mode"))
         } finally {
             rule.runOnUiThread {
                 if (editorReady) {

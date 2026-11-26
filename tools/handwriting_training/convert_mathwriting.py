@@ -2,8 +2,8 @@
 
 用法：
     python tools/handwriting_training/convert_mathwriting.py \
-        D:/CyIME-Data/datasets/mathwriting/mathwriting-2024.tgz \
-        D:/CyIME-Data/datasets/mathwriting/converted
+        D:/Cayboard-Data/datasets/mathwriting/mathwriting-2024.tgz \
+        D:/Cayboard-Data/datasets/mathwriting/converted
 
 每行一个样本：{"id","split","label","creation","strokes":[[[x,y,t],…],…]}。
 label 用 normalizedLabel（symbols 没有，用 label）；坐标保留两位小数，未归一化，

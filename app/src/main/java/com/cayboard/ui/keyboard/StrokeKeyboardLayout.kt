@@ -304,7 +304,7 @@ private fun StrokeKeyboardContent(
     val configVersion by KeysConfigHelper.configVersion.collectAsState()
     val swipeHints = rememberSwipeHintsEnabled()
     val hintsActive = !compactMode
-    // 左侧快捷符号列来自 xime.yaml keyboard.stroke.side_symbols（可自定义，>4 滚动显示）
+    // 左侧快捷符号列来自 cayboard.yaml keyboard.stroke.side_symbols（可自定义，>4 滚动显示）
     val customSymbols = LocalKeyboardInputPreferences.current.symbolsFor(SideSymbolTarget.STROKE)
     val inputActions = LocalKeyboardInputActions.current
     val commitSymbol = (if (customSymbols != null) inputActions.onCommitExactText else null)

@@ -41,7 +41,7 @@ class FloatingEdgeMarginTest {
 
     @Test fun smallAndLargeFloatingWindowsKeepEdgeMargins() {
         KeysConfigHelper.loadConfig(app)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         rule.setContent {
             val configuration = Configuration(LocalConfiguration.current).apply {
                 screenWidthDp = 1280; screenHeightDp = 800; orientation = Configuration.ORIENTATION_LANDSCAPE
@@ -50,7 +50,7 @@ class FloatingEdgeMarginTest {
                 MaterialTheme {
                     Box(Modifier.fillMaxSize().background(Color(0xFF6B7A8F))) {
                         val vm = remember { KeyboardViewModel(app) }
-                        KeyboardView(vm, KeyboardUiState(currentSchemaId = "rime_ice", isDarkTheme = true,
+                        KeyboardView(vm, KeyboardUiState(currentSchemaId = "cayboard_pinyin", isDarkTheme = true,
                             isFloatingMode = true, floatingWidthDp = width.value, keyboardWidthDp = width.value,
                             keyboardHeightDp = 300, floatingScreenHeightDp = 800),
                             KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {},

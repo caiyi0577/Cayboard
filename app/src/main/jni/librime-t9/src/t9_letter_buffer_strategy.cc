@@ -319,7 +319,7 @@ bool LetterBufferStrategy::HandleSelectionPrefixConsumed(
             RCLOG(">>   → rebuild buffer with remaining_sels: digitSeq='%s', consumedCount=%d, selCount=%zu",
                   ctx.input_buffer.digit_sequence.c_str(), ctx.input_buffer.consumed_count,
                   ctx.input_buffer.selections.size());
-            ctx.SyncBufferToRime();
+            ctx.SyncBufferToEngine();
         } else {
             ctx.input_buffer = T9Buffer(remaining_digits, {}, 0,
                 static_cast<int>(remaining_digits.size()));

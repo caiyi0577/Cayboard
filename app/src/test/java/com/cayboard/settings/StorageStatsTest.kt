@@ -47,27 +47,27 @@ class StorageStatsTest {
 
     @Test
     fun `重叠目录跨类目只计一次`() {
-        val rime = tmp.newFolder("rime")
-        val build = tmp.newFolder("rime", "build")
+        val inputData = tmp.newFolder("cayboard_input")
+        val build = tmp.newFolder("cayboard_input", "build")
         File(build, "a.bin").writeText("1234")      // 4，先计入编译缓存
-        File(rime, "dict.yaml").writeText("123456") // 6
+        File(inputData, "dict.yaml").writeText("123456") // 6
         val counter = StorageStats.SizeCounter()
         assertEquals(4L, counter.count(build))
-        assertEquals(6L, counter.count(rime))
-        assertEquals(0L, counter.count(rime))
+        assertEquals(6L, counter.count(inputData))
+        assertEquals(0L, counter.count(inputData))
     }
 
     @Test
     fun `硬链接只计入先统计的目录`() {
         val models = tmp.newFolder("models")
-        val rime = tmp.newFolder("rime")
+        val inputData = tmp.newFolder("cayboard_input")
         val model = File(models, "t9_ngram.lm").apply { writeText("0123456789") }
-        Files.createLink(File(rime, "t9_ngram.lm").toPath(), model.toPath())
+        Files.createLink(File(inputData, "t9_ngram.lm").toPath(), model.toPath())
         // Windows 拿不到 inode，只能按路径去重；这条在 Linux / Android 上验证。
         assumeNotNull(Files.readAttributes(model.toPath(), BasicFileAttributes::class.java).fileKey())
         val counter = StorageStats.SizeCounter()
         assertEquals(10L, counter.count(models))
-        assertEquals(0L, counter.count(rime))
+        assertEquals(0L, counter.count(inputData))
     }
 
     @Test

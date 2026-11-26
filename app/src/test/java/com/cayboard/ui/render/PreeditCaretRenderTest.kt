@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
-/** 拼音条里的编辑光标“|”在每个主题浅色/深色下的样子。只在设了 CYIME_RENDER_OUT 时出图。 */
+/** 拼音条里的编辑光标“|”在每个主题浅色/深色下的样子。只在设了 CAYBOARD_RENDER_OUT 时出图。 */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1400dp-h1600dp-hdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -37,7 +37,7 @@ class PreeditCaretRenderTest {
 
     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     @Test fun renderCaret() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
@@ -67,7 +67,7 @@ class PreeditCaretRenderTest {
 
     /** 闪烁时移动光标：灭着的时候移一下仍是灭的，节拍不从头来。 */
     @Test fun blinkKeepsRhythmWhileMoving() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

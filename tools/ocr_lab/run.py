@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--cache', type=Path, default=Path('D:/CyIME-Data/ocr-lab'))
+parser.add_argument('--cache', type=Path, default=Path('D:/Cayboard-Data/ocr-lab'))
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--exploratory', action='store_true', help='Also run known difficult tilt cases; failures remain failures')
 managed_jdks = sorted((Path.home()/'.gradle/jdks').glob('jdk-21*'))

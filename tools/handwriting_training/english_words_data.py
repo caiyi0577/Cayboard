@@ -1,7 +1,7 @@
 """英文整词手写的训练数据：用单个字母的笔迹拼成整词（从左往右，按小写 / 大写 / 上下伸出的字母摆高低、留字距），
 再混进一部分原公式数据，免得接着训练后公式能力退化。
 
-    python english_words_data.py --out D:/CyIME-Data/handwriting_training/english-words/data [--words 200000] [--formula 150000]
+    python english_words_data.py --out D:/Cayboard-Data/handwriting_training/english-words/data [--words 200000] [--formula 150000]
 
 字母来源：MathWriting 单字符样本（不同人写的，每个字母约 30 份，八成拼训练词、两成拼验证词）、
 训练模式里自己写的字母（--samples，导出的 JSONL，可给多个）。词表：app/src/main/assets/english.txt（按常用度排序，
@@ -156,8 +156,8 @@ def build_split(n: int, words, bank, index, rnd, name):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--mathwriting", default="D:/CyIME-Data/datasets/mathwriting/converted")
-    ap.add_argument("--prepared", default="D:/CyIME-Data/datasets/mathwriting/prepared")
+    ap.add_argument("--mathwriting", default="D:/Cayboard-Data/datasets/mathwriting/converted")
+    ap.add_argument("--prepared", default="D:/Cayboard-Data/datasets/mathwriting/prepared")
     ap.add_argument("--samples", nargs="*", default=[])
     ap.add_argument("--wordlist", default=str(ROOT / "app/src/main/assets/english.txt"))
     ap.add_argument("--words", type=int, default=200000)

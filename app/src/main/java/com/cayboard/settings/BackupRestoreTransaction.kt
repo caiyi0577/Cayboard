@@ -20,6 +20,11 @@ internal object BackupRestoreTransaction {
         val settings = linkedMapOf<String, ByteArray>()
         val oldSettings = linkedMapOf<String, ByteArray>()
         var preserveRecovery = false
+        fun prefixFor(name: String): String? = when {
+            name.startsWith(BackupManager.META_PREFIX) -> BackupManager.META_PREFIX
+            name.startsWith(BackupManager.LEGACY_META_PREFIX) -> BackupManager.LEGACY_META_PREFIX
+            else -> null
+        }
         fun target(base: File, relative: String): File {
             require(relative.isNotBlank() && !relative.startsWith("/") && !relative.contains('\\') &&
                 !Regex("^[A-Za-z]:").containsMatchIn(relative) && relative.split('/').none { it == ".." }) {
@@ -34,6 +39,7 @@ internal object BackupRestoreTransaction {
             var count = 0
             val seen = hashSetOf<String>()
             ZipInputStream(bytes.inputStream()).use { input ->
+                val prefixes = hashSetOf<String>()
                 while (true) {
                     val entry = input.nextEntry ?: break
                     // Validate even ignored metadata; old feature paths are never an escape hatch.
@@ -41,22 +47,24 @@ internal object BackupRestoreTransaction {
                     if (entry.isDirectory) { input.closeEntry(); continue }
                     val name = entry.name
                     require(seen.add(name)) { "备份包包含重复条目: $name" }
-                    val rel = name.removePrefix(BackupManager.META_PREFIX)
-                    val metadata = name.startsWith(BackupManager.META_PREFIX)
+                    val metaPrefix = prefixFor(name)
+                    if (metaPrefix != null) prefixes += metaPrefix
+                    val rel = if (metaPrefix == null) name else name.removePrefix(metaPrefix)
+                    val metadata = metaPrefix != null
                     val prefsName = when {
-                        metadata && rel == "settings.json" -> "kime_settings"
+                        metadata && rel == "settings.json" -> SettingsPreferences.PREFS_NAME
                         metadata && rel.startsWith("prefs/") && rel.endsWith(".json") ->
                             rel.removePrefix("prefs/").removeSuffix(".json")
                                 .takeIf { it in BackupManager.SETTINGS_PREFS || it in BackupManager.PARTIAL_PREFS }
                         else -> null
                     }
                     if (prefsName != null) {
-                        val data = input.readBytes()
+                        val data = BackupManager.migratePreferenceJson(input.readBytes())
                         preferences.validate(data)
                         settings[prefsName] = data
                     } else {
                         val destination = when {
-                            !metadata -> target(File(filesDir, "rime"), name)
+                            !metadata -> target(File(filesDir, "cayboard_input"), name)
                             rel.startsWith("files/") -> rel.removePrefix("files/").let { path ->
                                 require(BackupManager.isFilesEntry(path, personal = true)) { "备份包包含未知文件: $path" }
                                 target(filesDir, path)
@@ -77,6 +85,7 @@ internal object BackupRestoreTransaction {
                     count++
                     input.closeEntry()
                 }
+                require(prefixes.size <= 1) { "备份包混用了不同版本的元数据前缀" }
             }
             require(count > 0) { "备份包为空" }
             settings.keys.forEach { oldSettings[it] = preferences.snapshot(it) }
@@ -88,7 +97,8 @@ internal object BackupRestoreTransaction {
             }
             try {
                 changes.forEach { (destination, staged) ->
-                    check(destination.parentFile.isDirectory || destination.parentFile.mkdirs()) { "无法创建恢复目录" }
+                    val parent = destination.parentFile
+                    check(parent != null && (parent.isDirectory || parent.mkdirs())) { "无法创建恢复目录" }
                     staged.copyTo(destination, overwrite = true)
                 }
                 settings.forEach { (name, data) -> preferences.restore(name, data) }

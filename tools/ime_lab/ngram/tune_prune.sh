@@ -3,7 +3,7 @@
 set -u
 REPO=/mnt/d/GitHub/Cayboard
 OUT=$REPO/.codex-artifacts/t9-ngram-20261010/v3
-M=${M:-$HOME/cyime-work/ngram}  # build workspace; inputs archived in D:/CyIME-Data/corpus, models in D:/CyIME-Data/models
+M=${M:-$HOME/cayboard-work/ngram}  # build workspace; inputs archived in D:/Cayboard-Data/corpus, models in D:/Cayboard-Data/models
 SETS="tune=.codex-artifacts/t9-ngram-20261010/gen/tune/fixture.json dev=.codex-artifacts/t9-ngram-20261010/dev/fixture.json"
 until grep -q TUNE-V3-DONE "$OUT/runs.log" 2>/dev/null; do sleep 30; done
 cd "$REPO"

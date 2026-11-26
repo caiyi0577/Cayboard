@@ -22,16 +22,16 @@ import org.robolectric.annotation.Config
 class ChineseSchemeDefaultsMigrationTest {
     @get:Rule val dispatchers = CoroutineTestRule()
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
-    private val rime get() = SchemaManager.getRimeDir(app)
-    private val custom get() = rime.resolve("default.custom.yaml")
+    private val inputData get() = SchemaManager.getInputDataDir(app)
+    private val custom get() = inputData.resolve("default.custom.yaml")
     private val flypy = "double_pinyin_flypy"
     private val merged = "pinyin_14jian"
     private val flypy14 = "double_pinyin_flypy_14jian"
 
     @Before fun installSchemas() {
-        rime.mkdirs()
-        (listOf("rime_ice", "t9_pinyin", merged, flypy14, "wubi86", "my_scheme") +
-            CayboardInputDefaults.doublePinyin).forEach { rime.resolve("$it.schema.yaml").writeText("schema: {schema_id: $it}") }
+        inputData.mkdirs()
+        (listOf("cayboard_pinyin", "t9_pinyin", merged, flypy14, "wubi86", "my_scheme") +
+            CayboardInputDefaults.doublePinyin).forEach { inputData.resolve("$it.schema.yaml").writeText("schema: {schema_id: $it}") }
     }
 
     @Test fun missingListOffersFlypyOnBothLayouts() = assertFreshChoices()
@@ -39,14 +39,14 @@ class ChineseSchemeDefaultsMigrationTest {
     @Test fun enablingAnAlreadyDeployedSchemaNotifiesTheOpenKeyboardAndKeepsCurrentScheme() = runBlocking {
         val initial = SchemaManager.getEnabledSchemas(app) - "my_scheme"
         SchemaManager.setEnabledSchemas(app, initial)
-        SettingsPreferences.setCurrentSchema(app, "rime_ice")
+        SettingsPreferences.setCurrentSchema(app, "cayboard_pinyin")
         SchemaManager.getBuildDir(app).apply { mkdirs() }.resolve("my_scheme.schema.yaml").writeText("schema: {}")
         val change = async(start = CoroutineStart.UNDISPATCHED) { SchemaManager.enabledSchemasChanged.first() }
         SchemaManager.setEnabledSchemas(app, initial + "my_scheme")
         withTimeout(2_000) { change.await() }
         assertTrue("my_scheme" in SchemaManager.getEnabledSchemas(app))
         assertTrue(SchemaManager.isSchemaCompiled(app, "my_scheme"))
-        assertEquals("rime_ice", SettingsPreferences.getCurrentSchema(app))
+        assertEquals("cayboard_pinyin", SettingsPreferences.getCurrentSchema(app))
     }
 
     @Test fun bundledTemplateOffersFlypyOnBothLayouts() {

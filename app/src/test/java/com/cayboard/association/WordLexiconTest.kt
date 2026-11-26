@@ -9,7 +9,7 @@ import org.junit.Test
 class WordLexiconTest {
     /** 商店里各语言补全词表的源文件（tools/wordlists，原样上传）。 */
     private fun words(language: String): WordLexicon {
-        val path = "tools/wordlists/cyime-words-$language-v1.txt"
+        val path = "tools/wordlists/cayboard-words-$language-v1.txt"
         return WordLexicon(listOf(File(path), File("../$path")).first { it.isFile }.readLines().filter { it.isNotBlank() })
     }
     private val lexicon by lazy { words("es") }

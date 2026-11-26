@@ -1,4 +1,4 @@
-# CyIME 词库/排序回归用例。每个新报告先加一行再修。列：id 键盘(26/14/9/win26) 输入 期望(前缀!表示首选不能是它) 名次上限(期望须在前几位) 来源 日期 备注
+# Cayboard 词库/排序回归用例。每个新报告先加一行再修。列：id 键盘(26/14/9/win26) 输入 期望(前缀!表示首选不能是它) 名次上限(期望须在前几位) 来源 日期 备注
 id	keyboard	input	expect	top_k	source	date	note
 phrase-xingrong-exact	26	xingrongbushanglai	形容不上来	1	用户反馈目标	2026-11-01	准确拼写对照，反馈未提供原始按键
 phrase-pai-ni-lai	26	tamenpainilai	他们派你来	1	对照	2026-11-01	保护「派你来」的正常读音

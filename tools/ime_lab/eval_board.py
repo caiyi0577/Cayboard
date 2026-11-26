@@ -1,6 +1,6 @@
 """One board for every candidate-quality result: rank-weighted score first, top-1 beside it.
 
-Each finished run is registered as a directory under the results root (default D:/CyIME-Data/eval/results):
+Each finished run is registered as a directory under the results root (default D:/Cayboard-Data/eval/results):
 
   <root>/<run-id>/run.json      what was measured (fields below)
   <root>/<run-id>/<files>       rank_score.py inputs, copied in by `add`
@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import rank_score  # noqa: E402
 
-ROOT = Path("D:/CyIME-Data/eval/results")
+ROOT = Path("D:/Cayboard-Data/eval/results")
 
 # column id: (table, header, expected n, use occurrence weights)
 COLUMNS = {

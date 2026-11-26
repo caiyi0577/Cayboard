@@ -1,4 +1,4 @@
 # 内置 123/456/789 排列的全拼九键停顿纠错试验。已有自定义配置时，将下面两项合入原 patch。
 patch:
-  "schema/dependencies/+": [cyime_digit_edit, cyime_digit_tap]
-  cyime_edit_schema: cyime_digit_edit
+  "schema/dependencies/+": [cayboard_digit_edit, cayboard_digit_tap]
+  cayboard_edit_schema: cayboard_digit_edit

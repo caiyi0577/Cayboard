@@ -50,10 +50,10 @@ def codes(dict_path):
 def main():
     table = codes(sys.argv[1])
     items = [("term", t, table[t]) for t in TERMS] + [("sentence", s, p) for s, p in SENTENCES]
-    rows = {"rime_ice": [], "double_pinyin_flypy": [], "t9_pinyin": []}
+    rows = {"cayboard_pinyin": [], "double_pinyin_flypy": [], "t9_pinyin": []}
     for kind, text, pinyin in items:
         syl = pinyin.split()
-        rows["rime_ice"].append((("".join(syl) if kind == "term" else "".join(syl)), text, kind))
+        rows["cayboard_pinyin"].append((("".join(syl) if kind == "term" else "".join(syl)), text, kind))
         rows["double_pinyin_flypy"].append(("".join(flypy(s) for s in syl), text, kind))
         rows["t9_pinyin"].append(("".join(T9[c] for c in "".join(syl)), text, kind))
     with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as f:

@@ -19,8 +19,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.HardwareKeyboardPreferences
 import com.cayboard.settings.InputLanguage
 import com.cayboard.settings.LanguagePreferences
@@ -51,8 +51,8 @@ class HardwareEnglishCandidateImeTest {
             if (value is Set<*>) value.toSet() else value
         }
         val oldIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        val engine = RimeEngine.getInstance()
-        assertTrue("The real input engine must be ready", RimeConfigHelper.prepareEngine(context))
+        val engine = InputEngine.getInstance()
+        assertTrue("The real input engine must be ready", EngineConfig.prepareEngine(context))
         val savedSchema = engine.getCurrentSchema()
         val savedOptions = listOf("ascii_mode", "full_shape", "ascii_punct").associateWith(engine::getOption)
         val savedPersistentAscii = engine.getUserConfigBool("var/option/ascii_mode")
@@ -82,16 +82,16 @@ class HardwareEnglishCandidateImeTest {
         try {
             // Default switching is preserved; Japanese is exercised through the real menu later.
             prefs.edit().putStringSet(LanguagePreferences.KEY, setOf(InputLanguage.CHINESE.id, InputLanguage.ENGLISH.id, InputLanguage.JAPANESE.id))
-                .putString("selected_input_profile_${InputLanguage.CHINESE.id}", "rime_ice")
+                .putString("selected_input_profile_${InputLanguage.CHINESE.id}", "cayboard_pinyin")
                 .remove(LanguageSwitchPreferences.MODE_KEY)
                 .remove(LanguageSwitchPreferences.LANGUAGE_KEY)
                 .putBoolean(HardwareKeyboardPreferences.PREFIX + "ctrl_space", true)
                 .putBoolean(HardwareKeyboardPreferences.PREFIX + "dock_edge", true).commit()
-            assertTrue("Pinyin schema must be available", engine.switchSchema("rime_ice"))
+            assertTrue("Pinyin schema must be available", engine.switchSchema("cayboard_pinyin"))
             engine.clearComposition()
             engine.setOption("ascii_mode", false)
             engine.setUserConfigBool("var/option/ascii_mode", false)
-            SettingsPreferences.setCurrentSchema(context, "rime_ice")
+            SettingsPreferences.setCurrentSchema(context, "cayboard_pinyin")
             val ime = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
             shell("ime set $ime")
             rule.setContent {
@@ -253,7 +253,7 @@ class HardwareEnglishCandidateImeTest {
             prefs.edit().putString("input_language_order", "ja\nzh\nen").commit()
             LanguageSwitchPreferences.save(context, LanguageSwitchOptions(LanguageSwitchMode.CYCLE))
             rule.onNodeWithTag("hardware-toolbar-language", true).performTouchInput { click() }
-            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "rime_ice" }
+            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "cayboard_pinyin" }
             shell("input keyboard keycombination KEYCODE_CTRL_LEFT KEYCODE_SPACE")
             rule.waitUntil(10_000) { engine.isAsciiMode() && languageIs("EN") }
             rule.onNodeWithTag("hardware-toolbar-language", true).performTouchInput { click() }
@@ -263,11 +263,11 @@ class HardwareEnglishCandidateImeTest {
             // An explicit Chinese/English pair first leaves Japanese for the chosen language.
             LanguageSwitchPreferences.save(context, LanguageSwitchOptions(LanguageSwitchMode.SPECIFIC_ENGLISH, InputLanguage.CHINESE))
             rule.onNodeWithTag("hardware-toolbar-language", true).performTouchInput { click() }
-            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "rime_ice" }
+            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "cayboard_pinyin" }
             rule.onNodeWithTag("hardware-toolbar-language", true).performTouchInput { click() }
             rule.waitUntil(10_000) { engine.isAsciiMode() && languageIs("EN") }
             rule.onNodeWithTag("hardware-toolbar-language", true).performTouchInput { click() }
-            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "rime_ice" }
+            rule.waitUntil(10_000) { !engine.isAsciiMode() && languageIs("中") && engine.getCurrentSchema() == "cayboard_pinyin" }
         } finally {
             if (editorReady) {
                 rule.runOnUiThread {

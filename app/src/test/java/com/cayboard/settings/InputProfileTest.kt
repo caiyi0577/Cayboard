@@ -38,13 +38,13 @@ class InputProfileTest {
     private fun entry(id: String) = SchemaInfo(id, id, "", "", "")
 
     @Test fun `scheme preview uses requested codes without applying Flypy to other variants`() {
-        assertEquals("pin'yin", InputProfiles.schemePreview(entry("rime_ice").profile))
+        assertEquals("pin'yin", InputProfiles.schemePreview(entry("cayboard_pinyin").profile))
         assertEquals("xn'he'ul'pb", InputProfiles.schemePreview(entry("double_pinyin_flypy").profile))
         assertNotEquals("xn'he'ul'pb", InputProfiles.schemePreview(entry("double_pinyin_mspy").profile))
     }
 
     @Test fun `scheme options retain concrete double pinyin variants and real targets`() {
-        val entries = listOf(entry("rime_ice").copy(name = "雾凇拼音"), entry("t9_pinyin"),
+        val entries = listOf(entry("cayboard_pinyin").copy(name = "雾凇拼音"), entry("t9_pinyin"),
             entry("double_pinyin_flypy").copy(name = "小鹤双拼"),
             entry("double_pinyin_mspy").copy(name = "微软双拼"), entry("japanese"))
         for (current in listOf(entries[0], entries[1], entries[3])) {
@@ -68,7 +68,7 @@ class InputProfileTest {
     }
 
     @Test fun `pinyin layouts share a scheme but retain distinct backend identities`() {
-        val profiles = listOf("pinyin_simp", "rime_ice", "t9_pinyin", "pinyin_14jian").map { InputProfiles.describe(it) }
+        val profiles = listOf("pinyin_simp", "cayboard_pinyin", "t9_pinyin", "pinyin_14jian").map { InputProfiles.describe(it) }
         assertEquals(setOf(InputLanguage.CHINESE), profiles.map { it.language }.toSet())
         assertEquals(setOf(InputScheme.PINYIN), profiles.map { it.scheme }.toSet())
         assertEquals(listOf(InputLayout.QWERTY, InputLayout.QWERTY, InputLayout.T9, InputLayout.MERGED14), profiles.map { it.layout })
@@ -82,7 +82,7 @@ class InputProfileTest {
         for (id in listOf("double_pinyin_flypy", "wubi86", "japanese", InputModes.ENGLISH))
             assertEquals(InputLayout.QWERTY, entry(id).profile.layout)
         assertEquals(InputLanguage.ENGLISH, InputProfiles.current("japanese_kana", true).language)
-        assertEquals(EngineProfile.Direct, InputProfiles.current("rime_ice", true).engineProfile)
+        assertEquals(EngineProfile.Direct, InputProfiles.current("cayboard_pinyin", true).engineProfile)
     }
 
     @Test fun `Xiaohe fourteen key is a real double pinyin combination in both selectors`() {
@@ -91,7 +91,7 @@ class InputProfileTest {
         assertEquals(InputLanguage.CHINESE, entry(id).profile.language)
         assertEquals(InputScheme.DOUBLE_PINYIN, entry(id).profile.scheme)
         assertEquals(InputLayout.MERGED14, entry(id).profile.layout)
-        assertEquals(EngineProfile.Rime(id), entry(id).profile.engineProfile)
+        assertEquals(EngineProfile.Decoder(id), entry(id).profile.engineProfile)
         assertEquals(id, InputProfileSelection.changeScheme(entries, entry("pinyin_14jian"), InputScheme.DOUBLE_PINYIN)?.schemaId)
         assertEquals(id, InputProfileSelection.changeLayout(entries, entry("double_pinyin_flypy"), InputLayout.MERGED14.id)?.schemaId)
         assertEquals("double_pinyin_flypy", InputProfileSelection.changeLayout(entries, entry(id), InputLayout.QWERTY.id)?.schemaId)
@@ -100,7 +100,7 @@ class InputProfileTest {
     }
 
     @Test fun `handwriting keeps language and does not invent a foreign recognizer`() {
-        for (id in listOf("rime_ice", "japanese", InputModes.ENGLISH)) {
+        for (id in listOf("cayboard_pinyin", "japanese", InputModes.ENGLISH)) {
             val keys = entry(id).profile
             val ink = keys.handwriting()
             assertEquals(keys.language, ink.language)
@@ -130,53 +130,53 @@ class InputProfileTest {
 
     @Test fun `configuration override reaches runtime state and layout routing`() {
         val files = temporary.newFolder()
-        val rime = File(files, "rime").apply { mkdirs() }
+        val inputData = File(files, "cayboard_input").apply { mkdirs() }
         val yaml = """
             keyboard:
               t9:
-                schemas: [rime_ice]
+                schemas: [cayboard_pinyin]
               qwerty_14:
                 schemas: [t9_pinyin]
                 layout:
                   rows: [[[q, w], [e, r]]]
         """.trimIndent()
         val assets = mock<AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { ByteArrayInputStream(yaml.toByteArray()) }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(IOException("absent"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { ByteArrayInputStream(yaml.toByteArray()) }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(IOException("absent"))
         val context = mock<Context>()
         whenever(context.filesDir).thenReturn(files)
-        whenever(context.getSharedPreferences("kime_settings", Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         whenever(context.assets).thenReturn(assets)
         KeysConfigHelper.loadConfig(context)
-        assertTrue(isT9Schema("rime_ice"))
+        assertTrue(isT9Schema("cayboard_pinyin"))
         assertFalse(isT9Schema("t9_pinyin"))
-        assertEquals(InputLayout.T9, InputUIState(currentSchemaId = "rime_ice").inputProfile.layout)
-        assertEquals("拼音 · 九键", entry("rime_ice").profile.summary)
-        assertEquals(InputScheme.PINYIN, InputUIState(currentSchemaId = "rime_ice").inputProfile.scheme)
+        assertEquals(InputLayout.T9, InputUIState(currentSchemaId = "cayboard_pinyin").inputProfile.layout)
+        assertEquals("拼音 · 九键", entry("cayboard_pinyin").profile.summary)
+        assertEquals(InputScheme.PINYIN, InputUIState(currentSchemaId = "cayboard_pinyin").inputProfile.scheme)
         assertEquals(InputLayout.MERGED14, InputProfiles.current("t9_pinyin").layout)
         // The UI can receive the new scheme while the previous scheme's gesture cache is active.
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         assertEquals(listOf("qw", "er"), KeysConfigHelper.getKeyRows("t9_pinyin", false).first())
         assertEquals("q", KeysConfigHelper.getKeyRows("t9_pinyin", true).first().first())
         // 14 键可分体（跨中线的双字母键在分体时拆开）；九键不分体。
         assertTrue(supportsSplitKeyboard("t9_pinyin", false))
         assertTrue(supportsSplitKeyboard("t9_pinyin", true))
-        assertFalse(supportsSplitKeyboard("rime_ice", false))
-        File(rime, "xime.custom.yaml").writeText("keyboard:\n  t9:\n    schemas: [t9_pinyin]\n  qwerty_14:\n    schemas: [rime_ice]\n")
+        assertFalse(supportsSplitKeyboard("cayboard_pinyin", false))
+        File(inputData, "cayboard.custom.yaml").writeText("keyboard:\n  t9:\n    schemas: [t9_pinyin]\n  qwerty_14:\n    schemas: [cayboard_pinyin]\n")
         KeysConfigHelper.loadConfig(context)
         assertTrue(isT9Schema("t9_pinyin"))
-        assertFalse(isT9Schema("rime_ice"))
-        assertEquals(InputLayout.MERGED14, entry("rime_ice").profile.layout)
+        assertFalse(isT9Schema("cayboard_pinyin"))
+        assertEquals(InputLayout.MERGED14, entry("cayboard_pinyin").profile.layout)
     }
 
     @Test fun `installed metadata is used by both engine predicates and UI and refresh removes stale declarations`() {
         val files = temporary.newFolder()
-        val rime = File(files, "rime").apply { mkdirs() }
-        val source = File(rime, "my_romaji.schema.yaml")
+        val inputData = File(files, "cayboard_input").apply { mkdirs() }
+        val source = File(inputData, "my_romaji.schema.yaml")
         val context = mock<Context>()
         whenever(context.filesDir).thenReturn(files)
-        whenever(context.getSharedPreferences("kime_settings", Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         source.writeText("schema:\n  schema_id: my_romaji\n  name: 自定义日语\n  language: ja\n  input_scheme: romaji\n")
         val installed = SchemaManager.discoverSchemas(context)
@@ -202,33 +202,33 @@ class InputProfileTest {
     }
 
     @Test fun `reverse mapping returns real choices and rejects unavailable combinations`() {
-        val entries = listOf("rime_ice", "pinyin_simp", "t9_pinyin", "japanese", "japanese_kana").map(::entry)
-        assertEquals(listOf("rime_ice", "pinyin_simp"), InputProfiles.matching(entries,
+        val entries = listOf("cayboard_pinyin", "pinyin_simp", "t9_pinyin", "japanese", "japanese_kana").map(::entry)
+        assertEquals(listOf("cayboard_pinyin", "pinyin_simp"), InputProfiles.matching(entries,
             InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.QWERTY.id).map { it.schemaId })
         assertTrue(InputProfiles.matching(entries, InputLanguage.JAPANESE, InputScheme.PINYIN, InputLayout.T9.id).isEmpty())
     }
 
     @Test fun `scheme selection stays in its language and preserves layout when available`() {
-        val entries = listOf("rime_ice", "t9_pinyin", "double_pinyin_flypy", "japanese", "japanese_kana").map(::entry)
+        val entries = listOf("cayboard_pinyin", "t9_pinyin", "double_pinyin_flypy", "japanese", "japanese_kana").map(::entry)
         assertEquals("double_pinyin_flypy", InputProfileSelection.changeScheme(entries, entry("t9_pinyin"), InputScheme.DOUBLE_PINYIN)?.schemaId)
         assertNull(InputProfileSelection.changeScheme(entries, entry("japanese"), InputScheme.PINYIN))
-        assertEquals("t9_pinyin", InputProfileSelection.preferred(entries, InputLanguage.CHINESE, "t9_pinyin", "rime_ice")?.schemaId)
-        assertEquals("rime_ice", InputProfileSelection.preferred(entries, InputLanguage.CHINESE, "deleted", "rime_ice")?.schemaId)
+        assertEquals("t9_pinyin", InputProfileSelection.preferred(entries, InputLanguage.CHINESE, "t9_pinyin", "cayboard_pinyin")?.schemaId)
+        assertEquals("cayboard_pinyin", InputProfileSelection.preferred(entries, InputLanguage.CHINESE, "deleted", "cayboard_pinyin")?.schemaId)
         assertEquals("拼音 · 九键", entry("t9_pinyin").profile.summary)
     }
 
     @Test fun `layout choices are unique and backend variants stay separate`() {
-        val entries = listOf("rime_ice", "pinyin_simp", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "japanese", "handwriting").map(::entry)
+        val entries = listOf("cayboard_pinyin", "pinyin_simp", "t9_pinyin", "pinyin_14jian", "double_pinyin_flypy", "japanese", "handwriting").map(::entry)
         assertEquals(listOf(InputScheme.PINYIN, InputScheme.DOUBLE_PINYIN), InputProfileSelection.schemes(entries, InputLanguage.CHINESE))
-        assertEquals(listOf(InputLayout.QWERTY, InputLayout.T9, InputLayout.MERGED14), InputProfileSelection.layouts(entries, entry("rime_ice")))
-        assertEquals(listOf("rime_ice", "pinyin_simp"), InputProfileSelection.variants(entries, entry("pinyin_simp")).map { it.schemaId })
+        assertEquals(listOf(InputLayout.QWERTY, InputLayout.T9, InputLayout.MERGED14), InputProfileSelection.layouts(entries, entry("cayboard_pinyin")))
+        assertEquals(listOf("cayboard_pinyin", "pinyin_simp"), InputProfileSelection.variants(entries, entry("pinyin_simp")).map { it.schemaId })
         assertEquals("pinyin_simp", InputProfileSelection.changeLayout(entries, entry("pinyin_simp"), InputLayout.QWERTY.id)?.schemaId)
         assertEquals("pinyin_simp", InputProfileSelection.changeScheme(entries, entry("pinyin_simp"), InputScheme.PINYIN)?.schemaId)
     }
 
     @Test fun `changing layout preserves scheme and language and refuses imaginary combinations`() {
-        val entries = listOf("rime_ice", "t9_pinyin", "double_pinyin_flypy", "japanese", "japanese_kana").map(::entry)
-        assertEquals("t9_pinyin", InputProfileSelection.changeLayout(entries, entry("rime_ice"), InputLayout.T9.id)?.schemaId)
+        val entries = listOf("cayboard_pinyin", "t9_pinyin", "double_pinyin_flypy", "japanese", "japanese_kana").map(::entry)
+        assertEquals("t9_pinyin", InputProfileSelection.changeLayout(entries, entry("cayboard_pinyin"), InputLayout.T9.id)?.schemaId)
         assertNull(InputProfileSelection.changeLayout(entries, entry("double_pinyin_flypy"), InputLayout.T9.id))
         assertNull(InputProfileSelection.changeLayout(entries, entry("japanese"), InputLayout.KANA.id))
         assertEquals(listOf(InputLayout.QWERTY), InputProfileSelection.layouts(entries, entry("japanese")))

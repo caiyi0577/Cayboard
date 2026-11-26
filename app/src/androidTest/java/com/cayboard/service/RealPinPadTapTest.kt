@@ -23,7 +23,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.cayboard.CayboardApplication
-import com.cayboard.rime.RimeConfigHelper
+import com.cayboard.engine.EngineConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -61,7 +61,7 @@ class RealPinPadTapTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         check(context.applicationContext is CayboardApplication)
-        check(RimeConfigHelper.prepareEngine(context))
+        check(EngineConfig.prepareEngine(context))
         val automation = instrumentation.uiAutomation
         automation.serviceInfo = automation.serviceInfo.apply {
             flags = flags or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS

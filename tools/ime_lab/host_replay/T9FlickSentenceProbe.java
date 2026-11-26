@@ -1,10 +1,10 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
 /**
  * Nine-key flick letters typed for a whole sentence (2026-11-03 report): with no digits in the T9 buffer,
- * each flicked letter goes to Rime as a plain letter. Choosing the first word used to count as the whole
+ * each flicked letter goes to the input engine as a plain letter. Choosing the first word used to count as the whole
  * sentence, so the rest of the code vanished. Now the chosen word takes only its letters and the rest
  * stays; deleting the rest and one more backspace brings the chosen word's letters back. A digit tapped after
  * flicked letters joins them (each letter kept as a fixed letter) instead of replacing them.
@@ -14,10 +14,10 @@ public final class T9FlickSentenceProbe {
   static final String SCHEMA = "t9_pinyin";
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File logs = new File(args[1], "logs");
     if (!logs.isDirectory() && !logs.mkdirs()) throw new Exception("cannot create native log directory");
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(args[1], args[1]);
     try {
       e.nativeEnsureT9SchemaPatches(SCHEMA);
@@ -31,7 +31,7 @@ public final class T9FlickSentenceProbe {
       e.nativeSetOption("ascii_mode", false);
 
       e.nativeT9ClearComposition(1);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       // As the app does while nothing is composing: each flicked letter is an ordinary letter key.
       type(e, "womenquchifan");
       expect("letters reach Rime", "womenquchifan", e.nativeGetInput());
@@ -59,7 +59,7 @@ public final class T9FlickSentenceProbe {
 
       // Flicked letters, then one tap: the letters must stay (11-03: a single tap lost everything typed so far).
       e.nativeT9ClearComposition(1);
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       type(e, "wo");
       key(e, '6');
       expect("letters joined the digits", "966", e.nativeT9GetRemainingDigits());
@@ -68,19 +68,19 @@ public final class T9FlickSentenceProbe {
         throw new Exception("w and o not kept after the tap: " + Arrays.deepToString(Arrays.copyOf(after, Math.min(after.length, 5))));
       // Further flicks join the same code; the word then takes all of it.
       if (!e.nativeT9FixLetter("E") || !e.nativeT9FixLetter("N")) throw new Exception("flick did not join the digits");
-      e.nativeT9FlushRimeInput();
+      e.nativeT9FlushInput();
       expect("flicks after the tap", "96636", e.nativeT9GetRemainingDigits());
       if (!choose(e, "我们")) throw new Exception("我们 did not take the whole code");
       System.out.println("PASS wo + tap 6 + e n -> 我们 (letters kept after a tap)");
     } finally { e.nativeDestroy(); }
   }
 
-  static boolean choose(RimeEngine e, String text) throws Exception {
+  static boolean choose(InputEngine e, String text) throws Exception {
     String[][] rows = e.nativeInspectCandidates(200);
     for (String[] row : rows) {
       if (row.length > 1 && row[0].equals(text)) {
         boolean full = e.nativeT9SelectCandidate(row[1], text, text.length());
-        e.nativeT9FlushRimeInput();
+        e.nativeT9FlushInput();
         return full;
       }
     }
@@ -88,13 +88,13 @@ public final class T9FlickSentenceProbe {
         + Arrays.deepToString(Arrays.copyOf(rows, Math.min(rows.length, 8))));
   }
 
-  static void type(RimeEngine e, String letters) throws Exception {
+  static void type(InputEngine e, String letters) throws Exception {
     for (char c : letters.toCharArray()) key(e, c);
   }
 
-  static void key(RimeEngine e, int code) throws Exception {
+  static void key(InputEngine e, int code) throws Exception {
     if (!e.nativeProcessKey(code, 0)) throw new Exception("unhandled key " + code);
-    e.nativeT9FlushRimeInput();
+    e.nativeT9FlushInput();
   }
 
   static void expect(String what, String expected, String actual) throws Exception {

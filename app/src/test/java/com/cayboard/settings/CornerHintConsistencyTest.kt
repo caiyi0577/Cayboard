@@ -19,18 +19,18 @@ import java.io.File
  */
 class CornerHintConsistencyTest {
     @get:Rule val temp = TemporaryFolder()
-    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("xime.yaml")).readText()
+    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("cayboard.yaml")).readText()
     private val merged = "custom_pinyin_" + "c".repeat(32)
     private lateinit var context: android.content.Context
 
     @Before fun load() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { defaults.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { defaults.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         // 一个自建的双字母布局：qw、as 两个合并键，其余单字母。
         File(temp.root, "custom-keyboard-layouts.json").writeText("""[{"formatVersion":2,"id":"$merged","name":"我的合并",""" +
@@ -49,11 +49,11 @@ class CornerHintConsistencyTest {
 
     private data class Board(val schema: String, val english: Boolean = false, val englishArrangement: String? = null)
 
-    private val singleLetterBoards = listOf(Board("rime_ice"), Board("double_pinyin_flypy"), Board("rime_ice", english = true),
+    private val singleLetterBoards = listOf(Board("cayboard_pinyin"), Board("double_pinyin_flypy"), Board("cayboard_pinyin", english = true),
         Board(QwjrtkLayout.ID), Board(Cyletix10Layout.ID), Board(ColemakLayout.ID), Board(TypewiseLayout.ID),
-        Board("rime_ice", english = true, englishArrangement = Cyletix10Layout.ID),
-        Board("rime_ice", english = true, englishArrangement = ColemakLayout.ID),
-        Board("rime_ice", english = true, englishArrangement = TypewiseLayout.ID))
+        Board("cayboard_pinyin", english = true, englishArrangement = Cyletix10Layout.ID),
+        Board("cayboard_pinyin", english = true, englishArrangement = ColemakLayout.ID),
+        Board("cayboard_pinyin", english = true, englishArrangement = TypewiseLayout.ID))
     private val mergedBoards = listOf(Board("pinyin_14jian"), Board("double_pinyin_flypy_14jian"),
         Board("pinyin_17jian"), Board("pinyin_18jian"), Board(merged))
 
@@ -110,8 +110,8 @@ class CornerHintConsistencyTest {
     @Test fun cyletix10LetterPushedOutBySemicolonTakesTheSemicolonsSlot() {
         // Cyletix10 第一排的分号键站在 26 键 y 那一格，u 被挤到第二排末尾多出来的一格：u 拿 y 那一格（6）。
         for (english in listOf(false, true)) {
-            use(if (english) Board("rime_ice", true, Cyletix10Layout.ID) else Board(Cyletix10Layout.ID))
-            assertEquals("y", KeysConfigHelper.letterLayout(if (english) "rime_ice" else Cyletix10Layout.ID, english)!!.positionLetter("u"))
+            use(if (english) Board("cayboard_pinyin", true, Cyletix10Layout.ID) else Board(Cyletix10Layout.ID))
+            assertEquals("y", KeysConfigHelper.letterLayout(if (english) "cayboard_pinyin" else Cyletix10Layout.ID, english)!!.positionLetter("u"))
             assertEquals("6", KeysConfigHelper.getKeyGesture("u", english)!!.swipeUp!!.value)
         }
     }

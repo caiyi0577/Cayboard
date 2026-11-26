@@ -15,7 +15,7 @@ internal object TypewiseLayout {
 }
 
 /**
- * Built-in letter arrangements. Each one is a pinyin schema generated from rime_ice at build time
+ * Built-in letter arrangements. Each one is a pinyin schema generated from cayboard_pinyin at build time
  * (build-logic/tasks-chinese.gradle.kts) and, through [LetterLayouts], also an arrangement for
  * English and Japanese romaji. Adding one here adds it to all three languages.
  */

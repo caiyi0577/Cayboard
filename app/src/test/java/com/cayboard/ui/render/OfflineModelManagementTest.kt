@@ -32,7 +32,7 @@ class OfflineModelManagementTest {
         rule.onNodeWithTag("model-import-files").assertIsDisplayed()
         rule.onNodeWithTag("model-import-folder").assertIsDisplayed()
         rule.onNodeWithText("下载线路").assertDoesNotExist()
-        System.getenv("CYIME_RENDER_OUT")?.let { directory ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { directory ->
             rule.runOnIdle {
                 val view = rule.activity.window.decorView
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

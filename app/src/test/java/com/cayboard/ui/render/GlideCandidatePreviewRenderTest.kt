@@ -16,7 +16,7 @@ import com.cayboard.ui.keyboard.KeyboardCallbacks
 import com.cayboard.ui.keyboard.KeyboardView
 import com.cayboard.viewmodel.KeyboardUiState
 import com.cayboard.viewmodel.KeyboardViewModel
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.AppFonts
 import com.cayboard.ui.theme.KeyboardThemes
@@ -45,12 +45,12 @@ class GlideCandidatePreviewRenderTest {
         val callbacks = KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = { selections++ })
         doReturn(mock<T9InputController>()).whenever(vm).bindT9Controller(callbacks)
         val original = mutableStateOf(com.cayboard.service.CandidateState())
-        val preview = mutableStateOf<com.cayboard.rime.RimeProcessResult?>(
-            com.cayboard.rime.RimeProcessResult(true, "", "nihao", "ni hao",
-                arrayOf(com.cayboard.rime.RimeCandidate("你好", "ni hao")), false, false, false))
+        val preview = mutableStateOf<com.cayboard.engine.EngineProcessResult?>(
+            com.cayboard.engine.EngineProcessResult(true, "", "nihao", "ni hao",
+                arrayOf(com.cayboard.engine.EngineCandidate("你好", "ni hao")), false, false, false))
         rule.setContent { MaterialTheme {
             KeyboardView(vm, KeyboardUiState(), callbacks, Modifier.width(360.dp).height(300.dp),
-                candidateState = original, glideRimePreview = preview, inputSessionManagedByHost = true)
+                candidateState = original, glideEnginePreview = preview, inputSessionManagedByHost = true)
         } }
         rule.onNodeWithText("你好").assertIsDisplayed().performClick()
         rule.runOnIdle { assertEquals(0, selections); assertEquals("", original.value.inputText); preview.value = null }

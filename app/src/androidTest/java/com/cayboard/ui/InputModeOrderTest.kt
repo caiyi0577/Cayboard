@@ -114,24 +114,24 @@ class InputModeOrderTest {
                 app.getSharedPreferences("$namespace-$name", mode)
         }
         val installed = listOf(
-            SchemaMeta("rime_ice", "中文26键"),
+            SchemaMeta("cayboard_pinyin", "中文26键"),
             SchemaMeta("japanese", "日语"),
             SchemaMeta("t9_pinyin", "中文九键"),
         )
-        InputModes.saveOrder(context, listOf("rime_ice", "japanese", "t9_pinyin", InputModes.ENGLISH))
+        InputModes.saveOrder(context, listOf("cayboard_pinyin", "japanese", "t9_pinyin", InputModes.ENGLISH))
 
-        assertTrue(reorderEnabledModes(context, installed, setOf("rime_ice", "t9_pinyin"),
-            englishEnabled = true, reordered = listOf("t9_pinyin", "rime_ice", InputModes.ENGLISH)))
-        assertEquals(listOf("t9_pinyin", "japanese", "rime_ice", InputModes.ENGLISH),
+        assertTrue(reorderEnabledModes(context, installed, setOf("cayboard_pinyin", "t9_pinyin"),
+            englishEnabled = true, reordered = listOf("t9_pinyin", "cayboard_pinyin", InputModes.ENGLISH)))
+        assertEquals(listOf("t9_pinyin", "japanese", "cayboard_pinyin", InputModes.ENGLISH),
             orderedInstalledModeIds(context, installed))
 
-        assertTrue(reorderEnabledModes(context, installed, setOf("rime_ice", "t9_pinyin"),
-            englishEnabled = true, reordered = listOf("t9_pinyin", InputModes.ENGLISH, "rime_ice")))
-        assertEquals(listOf("t9_pinyin", "japanese", InputModes.ENGLISH, "rime_ice"),
+        assertTrue(reorderEnabledModes(context, installed, setOf("cayboard_pinyin", "t9_pinyin"),
+            englishEnabled = true, reordered = listOf("t9_pinyin", InputModes.ENGLISH, "cayboard_pinyin")))
+        assertEquals(listOf("t9_pinyin", "japanese", InputModes.ENGLISH, "cayboard_pinyin"),
             InputModes.ordered(context, installed.map {
                 SchemaInfo(it.schemaId, it.name, it.version, it.author, it.description)
             }).map { it.schemaId })
-        assertFalse(reorderEnabledModes(context, installed, setOf("rime_ice", "t9_pinyin"),
+        assertFalse(reorderEnabledModes(context, installed, setOf("cayboard_pinyin", "t9_pinyin"),
             englishEnabled = true, reordered = listOf("t9_pinyin", InputModes.ENGLISH, InputModes.ENGLISH)))
     }
 
@@ -143,7 +143,7 @@ class InputModeOrderTest {
                 app.getSharedPreferences("$namespace-$name", mode)
         }
         val initial = listOf(SchemaInfo("t9_pinyin", "拼音", "", "", ""), SchemaInfo("japanese", "日语", "", "", ""))
-        InputModes.saveOrder(context, listOf("t9_pinyin", "rime_ice", "japanese", InputModes.ENGLISH))
+        InputModes.saveOrder(context, listOf("t9_pinyin", "cayboard_pinyin", "japanese", InputModes.ENGLISH))
         val prefs = SettingsPreferences.getPrefsPublic(context)
         val saved = prefs.getString(InputModes.ORDER_KEY, null)
         rule.setContent {

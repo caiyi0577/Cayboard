@@ -1,10 +1,10 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeProcessResult
-import com.cayboard.rime.japanesePreedit
-import com.cayboard.rime.deleteJapaneseRomaji
-import com.cayboard.rime.insertJapaneseRomaji
-import com.cayboard.rime.boundariesAfterInsertion
+import com.cayboard.engine.EngineProcessResult
+import com.cayboard.engine.japanesePreedit
+import com.cayboard.engine.deleteJapaneseRomaji
+import com.cayboard.engine.insertJapaneseRomaji
+import com.cayboard.engine.boundariesAfterInsertion
 import com.cayboard.settings.JapaneseSchemas
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +18,7 @@ internal class JapaneseInputController(private val service: CayboardInputMethodS
     @Volatile private var conversion: JapaneseConversion? = null
     private var session = -1L
     private var schema = ""
-    private val engine get() = service.rimeEngine
+    private val engine get() = service.inputEngine
     /** 按键路径的判定：引擎是权威源（切方案/部署期间可能领先或落后 uiState 一帧）。 */
     private fun available(): Boolean = !engine.isAsciiMode() &&
         com.cayboard.settings.InputProfiles.describe(engine.getCurrentSchema()).capabilities.japaneseConversion

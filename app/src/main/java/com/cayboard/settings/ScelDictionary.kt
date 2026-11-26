@@ -113,7 +113,7 @@ object ScelDictionary {
         var skipped = 0
         fun add(word: String?, code: String?, needsHan: Boolean = false) {
             require(++total <= MAX_ENTRIES) { "词库超过 25 万条，请拆分后导入" }
-            // SCEL's extra field is not a calibrated Rime weight. Keep supplemental terms modest.
+            // SCEL's extra field is not a calibrated engine weight. Keep supplemental terms modest.
             if (word == null || code == null || word.isBlank() || word.length > 128 || word.startsWith('#') ||
                 word.any { it.isISOControl() } || word.contains('�') ||
                 (needsHan && word.none { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN })) {
@@ -181,17 +181,18 @@ object ScelDictionary {
         return Parsed(name, entries.values.toList(), skipped)
     }
 
-    fun toRime(name: String, entries: List<DictEntry>): String = buildString {
-        append(rimeHeader(name))
-        entries.forEach { rimeLine(it) }
+    /** Serialize an imported dictionary in the engine's table format. */
+    fun toEngineDictionary(name: String, entries: List<DictEntry>): String = buildString {
+        append(engineDictionaryHeader(name))
+        entries.forEach { engineDictionaryLine(it) }
     }
 
-    internal fun rimeHeader(name: String): String {
+    internal fun engineDictionaryHeader(name: String): String {
         require(name.matches(Regex("[a-z0-9_]+")))
         return "# Imported SCEL dictionary; managed by Cayboard\n---\nname: $name\nversion: \"1\"\nsort: by_weight\nuse_preset_vocabulary: false\n...\n"
     }
 
-    internal fun Appendable.rimeLine(entry: DictEntry) {
+    internal fun Appendable.engineDictionaryLine(entry: DictEntry) {
         append(entry.word).append('\t').append(entry.code).append("\t100\n")
     }
 }

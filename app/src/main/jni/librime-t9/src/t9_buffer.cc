@@ -172,15 +172,15 @@ std::string T9Buffer::ToPreeditString(char manual_delimiter) const {
     return sb;
 }
 
-std::string T9Buffer::ToRimeInputString(char manual_delimiter) const {
-    T9_SCOPED_TIMER_TAG("T9Buffer", "ToRimeInputString");
+std::string T9Buffer::ToEngineInputString(char manual_delimiter) const {
+    T9_SCOPED_TIMER_TAG("T9Buffer", "ToEngineInputString");
     if (selections.empty()) {
-        return BuildRimeInputForEmptySelections(manual_delimiter);
+        return BuildEngineInputForEmptySelections(manual_delimiter);
     }
     if (!unassigned().empty()) {
-        return BuildRimeInputWithUnassigned();
+        return BuildEngineInputWithUnassigned();
     }
-    std::string result = BuildRimeInputFullyConsumed();
+    std::string result = BuildEngineInputFullyConsumed();
     if (!separator_positions.empty() &&
         separator_positions.back() == static_cast<int>(digit_sequence.size()) &&
         !result.empty() && result.back() != manual_delimiter) {
@@ -189,7 +189,7 @@ std::string T9Buffer::ToRimeInputString(char manual_delimiter) const {
     return result;
 }
 
-std::string T9Buffer::BuildRimeInputForEmptySelections(char manual_delimiter) const {
+std::string T9Buffer::BuildEngineInputForEmptySelections(char manual_delimiter) const {
     // 无选择时：
     // - consumed_count == 0：发完整 digit_sequence（正常输入态）
     //   separator_position 有效时，在对应位置插入分隔符
@@ -200,21 +200,21 @@ std::string T9Buffer::BuildRimeInputForEmptySelections(char manual_delimiter) co
     if (consumed_count > 0) {
         std::string una = unassigned();
         if (!una.empty()) {
-            BUFLOG(">> ToRimeInputString: empty-sels consumed>0 unassigned!='' → '%s'", una.c_str());
+            BUFLOG(">> ToEngineInputString: empty-sels consumed>0 unassigned!='' → '%s'", una.c_str());
             return una;
         }
     }
     // consumed_count == 0 时应用分隔符位置
     if (!separator_positions.empty() && consumed_count == 0) {
         std::string result = InsertDelimiters(digit_sequence, separator_positions, manual_delimiter);
-        BUFLOG(">> ToRimeInputString: empty-sels with separator → '%s'", result.c_str());
+        BUFLOG(">> ToEngineInputString: empty-sels with separator → '%s'", result.c_str());
         return result;
     }
-    BUFLOG(">> ToRimeInputString: empty-sels → digit_sequence='%s'", digit_sequence.c_str());
+    BUFLOG(">> ToEngineInputString: empty-sels → digit_sequence='%s'", digit_sequence.c_str());
     return digit_sequence;
 }
 
-std::string T9Buffer::BuildRimeInputWithUnassigned() const {
+std::string T9Buffer::BuildEngineInputWithUnassigned() const {
     // RIME comment 生成规则（script_translator.cc:549）：
     //   always_show_comments: true 时，spelling==preedit 仍生成 comment
     //   因此所有分支均可发拼音格式，无需发数字码确保 comment 生成。
@@ -227,11 +227,11 @@ std::string T9Buffer::BuildRimeInputWithUnassigned() const {
     }
     if (!selections.empty()) sb += "'";
     sb += una;
-    BUFLOG(">> ToRimeInputString: has-unassigned → '%s'", sb.c_str());
+    BUFLOG(">> ToEngineInputString: has-unassigned → '%s'", sb.c_str());
     return sb;
 }
 
-std::string T9Buffer::BuildRimeInputFullyConsumed() const {
+std::string T9Buffer::BuildEngineInputFullyConsumed() const {
     // 无未分配数字（全部被 selections 消费）
     // 判断所有 selections 是否都是简拼（digit_length == 1）
     bool all_abbrev = std::all_of(selections.begin(), selections.end(),
@@ -243,7 +243,7 @@ std::string T9Buffer::BuildRimeInputFullyConsumed() const {
             if (i > 0) sb += "'";
             sb += selections[i].pinyin;
         }
-        BUFLOG(">> ToRimeInputString: all-abbrev → '%s'", sb.c_str());
+        BUFLOG(">> ToEngineInputString: all-abbrev → '%s'", sb.c_str());
         return sb;
     }
 
@@ -258,22 +258,22 @@ std::string T9Buffer::BuildRimeInputFullyConsumed() const {
             if (i > 0) sb += "'";
             sb += selections[i].pinyin;
         }
-        BUFLOG(">> ToRimeInputString: has-abbrev-mix → '%s'", sb.c_str());
+        BUFLOG(">> ToEngineInputString: has-abbrev-mix → '%s'", sb.c_str());
         return sb;
     }
 
     // 全部全拼（如 [an(2)] 或 [gua(3)]）：
     // always_show_comments: true 时，spelling==preedit 仍生成 comment，
-    // 可安全发拼音格式，限定 RIME 候选词范围。
+    // 可安全发拼音格式，限定 引擎候选词范围。
     // （旧逻辑发数字码确保 comment 生成，但导致不同拼音选项产生相同数字码，
-    //   RIME 候选词不更新，如 an→"26" 和 ao→"26"）
+    //   引擎候选词不更新，如 an→"26" 和 ao→"26"）
     {
         std::string sb;
         for (size_t i = 0; i < selections.size(); ++i) {
             if (i > 0) sb += "'";
             sb += selections[i].pinyin;
         }
-        BUFLOG(">> ToRimeInputString: all-full-pinyin → '%s'", sb.c_str());
+        BUFLOG(">> ToEngineInputString: all-full-pinyin → '%s'", sb.c_str());
         return sb;
     }
 }

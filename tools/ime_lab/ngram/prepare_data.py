@@ -2,7 +2,7 @@
 
 corpus: LCCC-base utterances -> Han runs, one per line (original spaces removed; the
         model re-segments with the T9 dictionary so its units match the decoder).
-vocab:  every Han word of the rime_ice dictionary tables, with the tables' own counts
+vocab:  every Han word of the cayboard_pinyin dictionary tables, with the tables' own counts
         used only as the first segmentation guess (tables without counts get none).
 """
 import argparse

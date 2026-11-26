@@ -8,8 +8,9 @@ import com.cayboard.ui.theme.FixedKeyboardStyle
 object FixedAppearancePreferences {
     const val MIGRATED = "fixed_keyboard_appearance_v1"
     private val retiredPrefixes = listOf("frosted_glass_", "custom_theme_image_", "keyboard_background_motion",
-        "key_gap_light_", "cyime_icon_")
-    private val resetKeys = setOf("keyboard_theme", "dark_mode", "cyime_visual_style", "cyime_key_shape",
+        "key_gap_light_", "cayboard_icon_")
+    private val resetKeys = setOf("keyboard_theme", "dark_mode", "cayboard_visual_style", "cayboard_key_shape",
+        SettingsPreferences.KEY_VISUAL_STYLE, SettingsPreferences.KEY_KEY_SHAPE,
         "glass_liquid", "glass_soft_top_edge", "rounded_keyboard_top", "rounded_keyboard_bottom",
         "key_glow_enabled", "key_animation_enabled", "key_text_scale", "corner_hint_opacity",
         "hide_function_key_hints", "uppercase_key_labels", "chinese_uppercase_key_labels",

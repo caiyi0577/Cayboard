@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
-/** Dedicated offline Jieba DAG/HMM segmentation. Never reads or locks the input engine's Rime dictionaries. */
+/** Dedicated offline Jieba DAG/HMM segmentation. Never reads or locks the input engine dictionaries. */
 object ClipboardWordSegmenter {
     @Volatile private var lexicon: CompactClipboardLexicon? = null
     internal var loadCount = 0

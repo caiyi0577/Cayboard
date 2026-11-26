@@ -1,8 +1,8 @@
 // Cayboard packager: leave selected built-in assets out of this build only.
-// Passed as -PcyimeIgnoreAssets=name1:name2 (file names under app/src/main/assets).
+// Passed as -PcayboardIgnoreAssets=name1:name2 (file names under app/src/main/assets).
 gradle.beforeProject { p ->
     if (p.path != ':app') return
-    def names = (p.findProperty('cyimeIgnoreAssets') ?: '').toString().split(':').findAll { it }
+    def names = (p.findProperty('cayboardIgnoreAssets') ?: '').toString().split(':').findAll { it }
     if (!names) return
     p.plugins.withId('com.android.application') {
         p.androidComponents.finalizeDsl { android ->

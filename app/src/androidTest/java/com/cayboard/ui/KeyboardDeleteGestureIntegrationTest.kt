@@ -32,7 +32,7 @@ import org.junit.Test
 import org.junit.Assert.*
 
 /** Real layout wiring, including the competing whole-keyboard cursor gesture.
- * The T9 editor callback records deletion at the host boundary without starting native Rime.
+ * The T9 editor callback records deletion at the host boundary without starting the native input engine.
  */
 class KeyboardDeleteGestureIntegrationTest {
     @get:Rule val rule = createComposeRule()
@@ -41,11 +41,11 @@ class KeyboardDeleteGestureIntegrationTest {
     private val preferenceKeys = listOf("cursor_gesture_mode", "symbol_input_mode", "reverse_symbol_swipe",
         SettingsPreferences.KEY_SPLIT_KEYBOARD)
     private var originalPreferences: Map<String, Any?> = emptyMap()
-    private val schema = mutableStateOf("rime_ice")
+    private val schema = mutableStateOf("cayboard_pinyin")
     private val actions = mutableListOf<String>()
     private val cursorMoves = mutableListOf<Int>()
     private var activeCallbacks: KeyboardCallbacks? = null
-    private val layouts = listOf("rime_ice", "pinyin_14jian", "t9_pinyin")
+    private val layouts = listOf("cayboard_pinyin", "pinyin_14jian", "t9_pinyin")
 
     @Before fun before() {
         originalPreferences = preferenceKeys.associateWith { prefs.all[it] }
@@ -55,7 +55,7 @@ class KeyboardDeleteGestureIntegrationTest {
             .putBoolean(SettingsPreferences.KEY_SPLIT_KEYBOARD, false)
             .commit()
         KeysConfigHelper.loadConfig(app)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     @After fun after() {
@@ -67,7 +67,7 @@ class KeyboardDeleteGestureIntegrationTest {
                 else -> edit.remove(name)
             }
         } }.commit()
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     private fun show(startDrag: (() -> DeleteDragSession)? = null) {

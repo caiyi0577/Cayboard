@@ -1,4 +1,4 @@
-﻿# Add "Cayboard 打包器" to the Start menu with the Cayboard icon. Re-run after moving the repository or Python.
+# Add "Cayboard 打包器" to the Start menu with the Cayboard icon. Re-run after moving the repository or Python.
 # Remove: delete "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Cayboard 打包器.lnk".
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -11,7 +11,7 @@ $shortcut = $shell.CreateShortcut($link)
 $shortcut.TargetPath = $python
 $shortcut.Arguments = '-B "' + (Join-Path $PSScriptRoot 'server.py') + '"'
 $shortcut.WorkingDirectory = $root
-$shortcut.IconLocation = (Join-Path $PSScriptRoot 'cyime-packager.ico') + ',0'
+$shortcut.IconLocation = (Join-Path $PSScriptRoot 'cayboard-packager.ico') + ',0'
 $shortcut.Description = 'Cayboard Android 打包器'
 $shortcut.Save()
 Write-Host "Start menu shortcut: $link"

@@ -5,7 +5,7 @@ import android.content.Context
 /** Dictionaries are immutable APK resources. Preserve learned words and previously imported local lists. */
 object FixedDictionaryBundle {
     private const val MIGRATED = "fixed_dictionary_bundle_v1"
-    val tables = listOf("fixed_cy", "fixed_ice", "fixed_zhwiki", "fixed_baidu")
+    val tables = listOf("cayboard_corpus", "fixed_ice", "fixed_zhwiki", "fixed_baidu")
     private val retiredIds = CellDictionaryCatalog.builtins.map { it.id }.toSet() +
         CellDictionaryCatalog.offers.map { it.id }
 

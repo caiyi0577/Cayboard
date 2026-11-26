@@ -49,8 +49,7 @@ class FastRepeatedTapTest {
                 LocalKeyboardInputPreferences provides prefs) {
                 MaterialTheme {
                     Box(Modifier.requiredSize(width.dp, height.dp)) {
-                        KeyboardLayout(onKeyPress, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {},
-                            onGlideWord = { _, _ -> }, onGlideCode = { _, _, _ -> }),
+                        KeyboardLayout(onKeyPress, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
                             KeyboardUiState(currentSchemaId = schema, isAsciiMode = ascii), ascii,
                             Modifier.requiredSize(width.dp, height.dp))
                     }
@@ -94,28 +93,7 @@ class FastRepeatedTapTest {
 
     @Test fun alternatingThumbs26() { show(); alternatingThumbsUuru("uuru") }
 
-    @Test fun alternatingThumbsEnglishGlide() {
-        show(ascii = true, prefs = KeyboardInputPreferences(glideTyping = true)); alternatingThumbsUuru("uuru")
-    }
-
-    /**
-     * 用户 11-10：开着滑行快打吞键。手指在键上挪了一点（过了触摸阈值、没成滑行），这一下照常出字；
-     * 两手交替时也一样（中文滑行走同一个按键手势）。
-     */
-    @Test fun driftingTapWithGlideStillTypes() {
-        show(ascii = true, prefs = KeyboardInputPreferences(glideTyping = true))
-        val g = point('g'); val h = point('h')
-        // xhdpi：触摸阈值 8dp = 16px，这里挪 24px，还在 g 键里。
-        touches { step -> down(0, g); step(); moveTo(0, g + Offset(24f, 6f)); step(); up(0) }
-        assertEquals("g", typed.toString())
-        touches { step -> down(0, h); step(); moveTo(0, h + Offset(-20f, -10f)); step(); down(1, g); step(); up(0); step(); up(1) }
-        assertEquals("ghg", typed.toString())
-    }
-
-    /**
-     * 用户 11-11「打两个字第二个字被吞」：快打时落在键的上沿，手指往上抖进上一排（半个键高，不到滑行接管的距离），
-     * 以前出了键又超过 0.6 个短边，不算点按也不是滑行，这一下没了。现在照常出字；中文滑行同一个按键手势。
-     */
+    /** 快打时手指往相邻排轻微漂移，仍按落点提交点按。 */
     private fun upwardDriftTypesG() {
         val bounds = rule.onNodeWithTag("qwerty-key:g", true).fetchSemanticsNode().boundsInRoot
         val start = Offset(bounds.center.x, bounds.top + 4f)
@@ -126,14 +104,6 @@ class FastRepeatedTapTest {
             up(0)
         }
         assertEquals("g", typed.toString())
-    }
-
-    @Test fun upwardDriftOffTheKeyWithEnglishGlideStillTypes() {
-        show(ascii = true, prefs = KeyboardInputPreferences(glideTyping = true)); upwardDriftTypesG()
-    }
-
-    @Test fun upwardDriftOffTheKeyWithChineseGlideStillTypes() {
-        show("rime_ice", prefs = KeyboardInputPreferences(chineseGlideTyping = true)); upwardDriftTypesG()
     }
 
     /** 14 键点双字母键提交整键：四下都要到。 */

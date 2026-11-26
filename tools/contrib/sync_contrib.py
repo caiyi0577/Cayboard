@@ -2,13 +2,13 @@
 """下载并合并魔搭上的手写、滑行练习和词库贡献。
 
 1. 用环境变量 MODELSCOPE_API_TOKEN 下载两个私有数据集（接收端写的，路径带格式版本 v<版本>/）：
-   - Cyletix/cyime-dict-contrib        → D:/CyIME-Data/dict_contrib/cloud/
-   - Cyletix/cyime-handwriting-contrib → D:/CyIME-Data/handwriting_training/contrib/cloud/
+   - Cyletix/cayboard-dict-contrib        → D:/Cayboard-Data/dict_contrib/cloud/
+   - Cyletix/cayboard-handwriting-contrib → D:/Cayboard-Data/handwriting_training/contrib/cloud/
 2. 词库：tools/dict_contribute/aggregate.py 合并云端和 <inbox>、下载目录里分享来的文件，
-   脱敏（数字片段、像人名的、用的人不到 3 个的都去掉）→ D:/CyIME-Data/dict_contrib/merged.tsv 和 .report.txt。
-3. 手写：解压到 contrib/inbox/ 并改成 cyime_handwriting_contribute_*.jsonl，交给
+   脱敏（数字片段、像人名的、用的人不到 3 个的都去掉）→ D:/Cayboard-Data/dict_contrib/merged.tsv 和 .report.txt。
+3. 手写：解压到 contrib/inbox/ 并改成 cayboard_handwriting_contribute_*.jsonl，交给
    tools/handwriting_training/contrib_ingest.py 去重、合并、回放出报告（需要 numpy、onnxruntime；--no-replay 跳过回放）。
-4. 滑行：合并 glide/v1 内的练习，按贡献者与样本编号去重 → D:/CyIME-Data/glide_contrib/samples.jsonl。
+4. 滑行：合并 glide/v1 内的练习，按贡献者与样本编号去重 → D:/Cayboard-Data/glide_contrib/samples.jsonl。
 兼容原接收端的无版本手写与词库目录。数据只放 D:/Cayboard-Data。
 
 用法：python tools/contrib/sync_contrib.py [--no-replay] [--skip-download]
@@ -27,7 +27,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA = pathlib.Path("D:/Cayboard-Data")
 DICT_DIR = DATA / "dict_contrib"
 HAND_DIR = DATA / "handwriting_training/contrib"
-DATASETS = {"dict": "Cyletix/cyime-dict-contrib", "handwriting": "Cyletix/cyime-handwriting-contrib"}
+DATASETS = {"dict": "Cyletix/cayboard-dict-contrib", "handwriting": "Cyletix/cayboard-handwriting-contrib"}
 KNOWN_VERSIONS = {"dict": {"v1"}, "handwriting": {"v1"}}
 
 
@@ -67,7 +67,7 @@ def unpack_handwriting(cloud: pathlib.Path, inbox: pathlib.Path) -> int:
         for gz in sorted(version.glob("*/*.jsonl.gz")):
             if not re.fullmatch(r"[0-9a-f]{8,32}", gz.parent.name):
                 continue
-            name = f"cyime_handwriting_contribute_{gz.parent.name}_{gz.name[:-len('.jsonl.gz')]}.jsonl"
+            name = f"cayboard_handwriting_contribute_{gz.parent.name}_{gz.name[:-len('.jsonl.gz')]}.jsonl"
             out = inbox / name
             if out.exists():
                 continue
@@ -124,7 +124,7 @@ def main(argv=None) -> int:
     print(f"滑行练习：{total} 条去重轨迹")
     sources = [str(d) for d in versioned(dict_cloud, "dict")]
     sources += [str(f) for f in dict_cloud.glob("*.txt.gz")]
-    sources += [str(d) for d in (*([pathlib.Path(os.environ["CYIME_CONTRIB_INBOX"])] if os.environ.get("CYIME_CONTRIB_INBOX") else []), pathlib.Path.home() / "Downloads", DICT_DIR / "inbox")
+    sources += [str(d) for d in (*([pathlib.Path(os.environ["CAYBOARD_CONTRIB_INBOX"])] if os.environ.get("CAYBOARD_CONTRIB_INBOX") else []), pathlib.Path.home() / "Downloads", DICT_DIR / "inbox")
                 if d.is_dir()]
     if sources:
         subprocess.run([sys.executable, str(ROOT / "tools/dict_contribute/aggregate.py"), *sources,

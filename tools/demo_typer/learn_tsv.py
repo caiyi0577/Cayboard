@@ -4,7 +4,7 @@ Each plain Chinese token in demo.yaml (full pinyin, typed then committed with sp
 segment's text in order: the next run of hanzi whose toneless pinyin spells the token is the word it must
 produce. Abbreviations, shuangpin and English bursts don't spell out and are skipped.
 
-  PYTHONPATH=<venv with pypinyin> python tools/demo_typer/learn_tsv.py --out D:/CyIME-Data/demo-video/learn.tsv
+  PYTHONPATH=<venv with pypinyin> python tools/demo_typer/learn_tsv.py --out D:/Cayboard-Data/demo-video/learn.tsv
 """
 import argparse
 import os

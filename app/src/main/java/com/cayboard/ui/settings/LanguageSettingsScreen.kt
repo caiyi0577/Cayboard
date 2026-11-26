@@ -94,7 +94,7 @@ fun LanguageSettingsContent(onOpenDoublePinyin: () -> Unit = {},
                             val active = current.isNotBlank() && !com.cayboard.ui.keyboard.isHandwritingSchema(current) &&
                                 InputModes.languageOf(current, availableProfiles) == language
                             if (entry.schemaId == InputModes.ENGLISH) {
-                                // 英文直接输入不是 Rime 方案，不启用、不部署、不写成当前方案；切到英文时按这里的选择开 ascii。
+                                // 英文直接输入不是候选方案，不启用、不部署、不写成当前方案；切到英文时按这里的选择开 ascii。
                                 message = "已保存：${language.displayName} · ${entry.selectionLabel}，下次切换到该语言时使用"
                             } else if (entry.schemaId in profilesState.enabledSchemas) {
                                 if (active) SettingsPreferences.setCurrentSchema(context, entry.schemaId, language)

@@ -12,8 +12,8 @@ import java.io.File
  */
 internal object InputInventory {
     fun describe(context: Context): String {
-        val rime = File(context.filesDir, "rime")
-        val stores = rime.listFiles().orEmpty()
+        val inputData = File(context.filesDir, "cayboard_input")
+        val stores = inputData.listFiles().orEmpty()
             .filter { it.name.endsWith(".userdb") || it.name.contains("userdict", ignoreCase = true) || it.name.endsWith(".userdb.txt") }
             .sortedBy { it.name }
             .joinToString(",") { "${it.name}:${sizeOf(it) / 1024}KB" }
@@ -21,16 +21,16 @@ internal object InputInventory {
             context.getSystemService(ActivityManager::class.java)?.getMemoryInfo(it)
         }
         return "userdata=[$stores] " +
-            "grammar=${installed(rime, CandidateModelCatalog.GRAMMAR)} " +
-            "sentence=${installed(rime, CandidateModelCatalog.SENTENCE)} " +
+            "grammar=${installed(inputData, CandidateModelCatalog.GRAMMAR)} " +
+            "sentence=${installed(inputData, CandidateModelCatalog.SENTENCE)} " +
             "prediction=${SettingsPreferences.isSmartPredictionEnabled(context)} " +
             "avail_mb=${memory.availMem shr 20} total_mb=${memory.totalMem shr 20} " +
             "threshold_mb=${memory.threshold shr 20} low=${memory.lowMemory}"
     }
 
     /** 只看文件在不在、大小对不对，不做哈希校验：完整校验 400 多 MB 会占 CPU、挤掉别的缓存页。 */
-    private fun installed(rime: File, id: String): Boolean = CandidateModelCatalog.models.firstOrNull { it.id == id }
-        ?.versions?.any { version -> version.files.all { File(rime, it.name).let { file -> file.isFile && file.length() == it.sizeBytes } } } == true
+    private fun installed(inputData: File, id: String): Boolean = CandidateModelCatalog.models.firstOrNull { it.id == id }
+        ?.versions?.any { version -> version.files.all { File(inputData, it.name).let { file -> file.isFile && file.length() == it.sizeBytes } } } == true
 
     private fun sizeOf(file: File): Long =
         if (file.isDirectory) file.walkTopDown().filter { it.isFile }.sumOf { it.length() } else file.length()

@@ -54,7 +54,7 @@ import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.swipeHandlerFor
 import com.cayboard.keyboard.GestureAction
 
-/** 半角 → 全角标点映射，中文模式下键帽显示用。提交仍走半角由 Rime 处理。 */
+/** 半角 → 全角标点映射，中文模式下键帽显示用。提交仍走半角，由输入引擎按标点规则转换。 */
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -238,7 +238,7 @@ fun KeyboardLayout(
             resolvedQwertyStagger(it.qwertyStagger, it.qwertyStaggerCustom, splitCellDp, physicalTargetCellDp)
         },
     )
-    // xime.custom.yaml keyboard.<section>.geometry：第二行缩进、删除键份数、Shift 开关和份数，写了哪项换哪项。
+    // cayboard.custom.yaml keyboard.<section>.geometry：第二行缩进、删除键份数、Shift 开关和份数，写了哪项换哪项。
     // 方案换用应用内自定义布局时同样生效。
     val geometryOverride = remember(cfgVer, uiState.currentSchemaId, isAsciiMode) {
         KeysConfigHelper.letterGeometryOverride(uiState.currentSchemaId, isAsciiMode)
@@ -803,7 +803,7 @@ fun KeyboardLayout(
                                     } else null
 
                                     val rawCommitValue = KeysConfigHelper.getKeyCommitValue(key, isAsciiMode)
-                                    val commitValue = com.cayboard.rime.MergedLetterInput.tapValue(
+                                    val commitValue = com.cayboard.engine.MergedLetterInput.tapValue(
                 key, rawCommitValue, LocalFourteenKeyLayout.current, isShifted)
                                     val displayText = KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode,
                 isShifted || LocalKeyboardInputPreferences.current.uppercaseKeyLabels).let { semicolonKeyLabel(key, isAsciiMode, it) }.let { longVowelKeyLabel(key, it, LocalLongVowelOnL.current) }
@@ -1583,7 +1583,7 @@ fun KeyboardRowWithConfig(
 
             // 键帽显示文本
             val rawCommitValue = KeysConfigHelper.getKeyCommitValue(key, isAsciiMode)
-            val commitValue = com.cayboard.rime.MergedLetterInput.tapValue(
+            val commitValue = com.cayboard.engine.MergedLetterInput.tapValue(
                 key, rawCommitValue, LocalFourteenKeyLayout.current, isShifted)
             val displayText = KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode,
                 isShifted || LocalKeyboardInputPreferences.current.uppercaseKeyLabels).let { semicolonKeyLabel(key, isAsciiMode, it) }.let { longVowelKeyLabel(key, it, LocalLongVowelOnL.current) }
@@ -1951,7 +1951,7 @@ fun CompactKeyboardRowWithConfig(
             } else null
 
             val rawCommitValue = KeysConfigHelper.getKeyCommitValue(key, isAsciiMode)
-            val commitValue = com.cayboard.rime.MergedLetterInput.tapValue(
+            val commitValue = com.cayboard.engine.MergedLetterInput.tapValue(
                 key, rawCommitValue, LocalFourteenKeyLayout.current, isShifted)
             val compactDisplayText = KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode,
                 isShifted || LocalKeyboardInputPreferences.current.uppercaseKeyLabels).let { semicolonKeyLabel(key, isAsciiMode, it) }.let { longVowelKeyLabel(key, it, LocalLongVowelOnL.current) }

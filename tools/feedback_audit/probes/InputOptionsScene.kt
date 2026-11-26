@@ -160,14 +160,14 @@ internal fun InputOptionsScene(app: Application, record: (String) -> Unit, mode:
         KeysConfigHelper.loadConfig(app)
         KeyboardThemes.initFromConfig(app)
         AppFonts.initialize(app)
-        KeyboardViewModel(app).also { it.dispatch(KeyboardDispatchAction.InputSessionStarted(false, "rime_ice")) }
+        KeyboardViewModel(app).also { it.dispatch(KeyboardDispatchAction.InputSessionStarted(false, "cayboard_pinyin")) }
     }
     CayboardTheme(darkTheme = false) {
         if (mode.endsWith("settings")) {
             LayoutInputSettingsContent(LayoutInputCategory.Qwerty) {}
         } else {
             KeyboardView(vm, KeyboardUiState(isFloatingMode = true, keyboardWidthDp = 320, keyboardHeightDp = 244,
-                floatingOffsetY = 80, floatingMinOffsetY = 0, currentSchemaId = "rime_ice"),
+                floatingOffsetY = 80, floatingMinOffsetY = 0, currentSchemaId = "cayboard_pinyin"),
                 KeyboardCallbacks(onKeyPress = { key, _ -> record(key) }, onCandidateSelect = {}, onCommitExactText = record),
                 inputSessionManagedByHost = true)
         }
@@ -175,8 +175,8 @@ internal fun InputOptionsScene(app: Application, record: (String) -> Unit, mode:
     if (mode.endsWith("default")) LaunchedEffect(Unit) {
         val prediction = PredictionManager(app, this, {})
         val store = CellDictionaryManager.store(app)
-        val entry = store.install("cyimequokka\n".toByteArray())
-        suspend fun found() = "cyimequokka" in prediction.getEnglishAssociations("cyimequok")
+        val entry = store.install("cayboardquokka\n".toByteArray())
+        suspend fun found() = "cayboardquokka" in prediction.getEnglishAssociations("cayboardquok")
         check(!found())
         store.select(entry.id, true)
         store.selectEnglish(true)

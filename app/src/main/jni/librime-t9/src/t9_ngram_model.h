@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_NGRAM_MODEL_H_
-#define CYIME_T9_NGRAM_MODEL_H_
+#ifndef CAYBOARD_T9_NGRAM_MODEL_H_
+#define CAYBOARD_T9_NGRAM_MODEL_H_
 
 // Memory-mapped word trigram model for the T9 joint decoder: every word weight and every
 // collocation is ln P(word | previous words) from one set of corpus counts (t9_ngram_format.h).
@@ -63,22 +63,22 @@ class T9NgramModel {
   bool MapV3(const char* bytes);
 
   double LnLower(int32_t word) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(words3_[word * 3]) : words_[word].ln_lower;
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(words3_[word * 3]) : words_[word].ln_lower;
   }
   double LnMl(int32_t word) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(words3_[word * 3 + 1]) : words_[word].ln_ml;
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(words3_[word * 3 + 1]) : words_[word].ln_ml;
   }
   double LnBackoff(int32_t word) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(words3_[word * 3 + 2]) : words_[word].ln_backoff;
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(words3_[word * 3 + 2]) : words_[word].ln_backoff;
   }
   double BigramLogp(uint64_t i) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(logp3_[i]) : logp_[i];
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(logp3_[i]) : logp_[i];
   }
   double BigramBackoff(uint64_t i) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(bigram_backoff3_[i]) : bigram_backoff_[i];
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(bigram_backoff3_[i]) : bigram_backoff_[i];
   }
   double TriLogp(uint64_t i) const {
-    return compact_ ? cyime_t9_ngram::DequantizeLog(tri_logp3_[i]) : tri_logp_[i];
+    return compact_ ? cayboard_t9_ngram::DequantizeLog(tri_logp3_[i]) : tri_logp_[i];
   }
   uint64_t TriBegin(uint64_t b) const {
     return compact_ ? static_cast<uint64_t>(tri_base_[b >> tri_block_shift_]) + tri_lo_[b] : tri_begin_[b];
@@ -99,8 +99,8 @@ class T9NgramModel {
   float unseen_ml_ = 0;
   uint32_t tri_block_shift_ = 0;
   // Version 2 tables.
-  const cyime_t9_ngram::HashSlot* slots_ = nullptr;
-  const cyime_t9_ngram::WordEntry* words_ = nullptr;
+  const cayboard_t9_ngram::HashSlot* slots_ = nullptr;
+  const cayboard_t9_ngram::WordEntry* words_ = nullptr;
   const uint32_t* next_ = nullptr;
   const float* logp_ = nullptr;
   const float* bigram_backoff_ = nullptr;
@@ -123,4 +123,4 @@ class T9NgramModel {
   size_t size_ = 0;
 };
 
-#endif  // CYIME_T9_NGRAM_MODEL_H_
+#endif  // CAYBOARD_T9_NGRAM_MODEL_H_

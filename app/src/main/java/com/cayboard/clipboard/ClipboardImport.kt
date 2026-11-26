@@ -31,7 +31,7 @@ internal object ClipboardImport {
         val content = normalize(raw)
         val head = content.trimStart()
         if (head.startsWith("{") || head.startsWith("[")) parseJson(head)?.let { return it }
-        if (head.startsWith(MD_TITLE) || head.startsWith("# CyIME 剪贴板")) return parseMarkdown(content)
+        if (head.startsWith(MD_TITLE) || head.startsWith("# Cayboard 剪贴板")) return parseMarkdown(content)
         return parseText(content)
     }
 

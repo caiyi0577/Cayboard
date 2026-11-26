@@ -18,7 +18,7 @@
 //
 // Usage: continuation_build out.tsv seg1.txt[,seg2.txt...] [--contexts 40000] [--top 10]
 //        [--min-total 80] [--min-count 3] [--max-context 3] [--restart]
-// Output rows: context \t continuation \t count \t total (header "# cyime-base-associations-v1"),
+// Output rows: context \t continuation \t count \t total (header "# cayboard-base-associations-v1"),
 // the format BaseAssociationModel.read expects. Only Han words take part: the segmenter writes
 // out-of-vocabulary runs as "<unk>", and anything else ends the context like punctuation.
 #include <algorithm>
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
   for (const auto& [key, c] : pairs)
     if (c >= o.min_count) by_context[key.first].emplace_back(key.second, c);
   std::ofstream out(out_path + ".tmp");
-  out << "# cyime-base-associations-v1\n";
+  out << "# cayboard-base-associations-v1\n";
   uint64_t rows = 0;
   for (size_t i = 0; i < ranked.size(); ++i) {
     auto& list = by_context[i];

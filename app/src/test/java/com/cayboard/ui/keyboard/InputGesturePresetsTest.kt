@@ -77,13 +77,9 @@ class InputGesturePresetsTest {
         assertEquals(CursorGestureMode.KEYBOARD, CursorChoices.withKeyboardSwipe(repeat.copy(cursorGesture = CursorGestureMode.NONE), true).cursorGesture)
     }
 
-    @Test fun `keyboard swipe switch says why it cannot be turned on`() {
-        assertNotNull(CursorChoices.keyboardSwipeLock(base))
-        assertEquals("已被「英文滑行」锁定", CursorChoices.keyboardSwipeLock(
-            base.copy(cursorGesture = CursorGestureMode.NONE, glideTyping = true)))
+    @Test fun `keyboard swipe is independent from retired glide input`() {
         assertNull(CursorChoices.keyboardSwipeLock(base.copy(cursorGesture = CursorGestureMode.NONE)))
-        // 已经开着时不锁，关掉总行。
-        assertNull(CursorChoices.keyboardSwipeLock(base.copy(cursorGesture = CursorGestureMode.KEYBOARD, glideTyping = true)))
+        assertNull(CursorChoices.keyboardSwipeLock(base.copy(cursorGesture = CursorGestureMode.KEYBOARD)))
     }
 
     /** 合成一个选择的几对不再产生锁；剩下的锁照旧。 */
@@ -96,10 +92,6 @@ class InputGesturePresetsTest {
         for (settings in listOf(base, everything)) {
             assertTrue(InputGestureLocks.of(settings).none { it.option in merged })
         }
-        assertNotNull(InputGestureLocks.lockFor(base.copy(glideTyping = true),
-            InputGestureLock.Option.CURSOR_GESTURE, CursorGestureMode.KEYBOARD))
-        assertEquals("已被「键盘面板滑动光标」锁定", InputGestureLocks.lockFor(base.copy(cursorGesture = CursorGestureMode.KEYBOARD),
-            InputGestureLock.Option.GLIDE_TYPING, true)?.message)
         // Shift：先开的锁住另一个。
         assertEquals("已被「ing 放在 Shift 键上」锁定", InputGestureLocks.lockFor(base.copy(doublePinyinSemicolonOnShift = true),
             InputGestureLock.Option.SHIFT_SYLLABLE_SPLIT, true)?.message)
@@ -109,21 +101,4 @@ class InputGesturePresetsTest {
         assertNull(InputGestureLocks.lockFor(base, InputGestureLock.Option.SEMICOLON_ON_SHIFT, true))
     }
 
-    @Test fun `twenty six key glide locks corner symbols to long press and says which glide`() {
-        val glide = base.copy(glideTyping = true)
-        assertEquals(CornerInputChoice.LONG_PRESS, CornerInputChoice.of(glide))
-        assertEquals("已被「英文滑行」锁定", InputGestureLocks.glideCornerLock(glide)?.message)
-        assertEquals("已被「中文滑行」锁定", InputGestureLocks.glideCornerLock(base.copy(chineseGlideTyping = true))?.message)
-        // 用户 11-11「只有九键不会跳转」：九键滑行占了 2～9 键的滑动，同样锁成长按；整个键盘滑动移光标时九键不滑行，不锁。
-        val nine = base.copy(t9GlideTyping = true)
-        assertEquals("已被「九键滑行」锁定", InputGestureLocks.glideCornerLock(nine)?.message)
-        assertEquals(CornerInputChoice.LONG_PRESS, CornerInputChoice.of(CornerInputChoice.SWIPE.applyTo(nine)))
-        assertEquals("关掉九键滑行，存的选择照旧", CornerInputChoice.SWIPE, CornerInputChoice.of(nine.copy(t9GlideTyping = false)))
-        assertNull(InputGestureLocks.glideCornerLock(nine.copy(cursorGesture = CursorGestureMode.KEYBOARD)))
-        assertNull(InputGestureLocks.glideCornerLock(base))
-        assertEquals(CornerInputChoice.SWIPE, CornerInputChoice.of(base))
-    }
-
-
-    
 }

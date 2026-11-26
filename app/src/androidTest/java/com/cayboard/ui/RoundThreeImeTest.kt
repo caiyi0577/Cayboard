@@ -15,8 +15,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.SettingsPreferences
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -39,16 +39,16 @@ class RoundThreeImeTest {
         val previousIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         val ime = "${context.packageName}/com.cayboard.service.CayboardInputMethodService"
         val enabledBefore = shell("ime list -s").lineSequence().any { it == ime }
-        val engine = RimeEngine.getInstance()
+        val engine = InputEngine.getInstance()
         var previousSchema = ""
         var previousAscii = false
         var previousSavedAscii = false
         lateinit var editor: EditText
         try {
             SettingsPreferences.setShowCandidateCancelButton(context, true)
-            val (userDir, sharedDir) = RimeConfigHelper.initializeRimeDataAsync(context)
+            val (userDir, sharedDir) = EngineConfig.initializeInputDataAsync(context)
             engine.initialize(userDir, sharedDir)
-            assertTrue(RimeConfigHelper.ensureDeployment(context))
+            assertTrue(EngineConfig.ensureDeployment(context))
             assertTrue(engine.ensureSession())
             previousSchema = engine.getCurrentSchema()
             previousAscii = engine.isAsciiMode()
@@ -293,7 +293,7 @@ class RoundThreeImeTest {
             rule.onNodeWithText("ABC", ignoreCase = true).assertIsDisplayed()
             rule.onNodeWithTag("shift-key").assertDoesNotExist()
             screenshot("round3-handwriting-english-t9")
-            // 从九键再进入手写：英文与九键共用同一个 Rime schema 时也必须正确退出 ASCII。
+            // 从九键再进入手写：英文与九键共用同一个 input schema 时也必须正确退出 ASCII。
             rule.onNodeWithContentDescription("手写").performClick()
             rule.onNodeWithTag("handwriting-key:ime_switch").performTouchInput { down(center); up() }
             rule.waitUntil(10_000) { engine.isAsciiMode() && rule.onAllNodesWithText("英文").fetchSemanticsNodes().isNotEmpty() }

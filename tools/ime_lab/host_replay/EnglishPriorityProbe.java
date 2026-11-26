@@ -1,16 +1,16 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
 /** Isolated production-engine probe; no personal dictionary is learned or copied. */
 public class EnglishPriorityProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     try {
       if (!engine.nativeCreateSession()) throw new Exception("session unavailable");
-      if (!engine.nativeSwitchSchema("rime_ice")) throw new Exception("schema unavailable");
+      if (!engine.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("schema unavailable");
       engine.nativeSetOption("ascii_mode", false);
       engine.nativeSetNeighborMap("");
       for (String input : new String[]{"fuck", "hello", "thanks", "world", "please", "computer", "you", "shi", "nihao", "fuchanke"}) {

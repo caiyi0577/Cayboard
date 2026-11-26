@@ -2,7 +2,7 @@ package com.cayboard.settings
 
 /**
  * 一套双拼键位：zh/ch/sh 各占一个键，每个韵母（按词库里的拼写，如 jue 的 ue、lüe 的 ve）占一个键，
- * 零声母音节各有两键编码。由它生成 Rime 拼写规则和编码显示规则；词库、符号和按键排列沿用小鹤双拼方案
+ * 零声母音节各有两键编码。由它生成拼写规则和编码显示规则；词库、符号和按键排列沿用小鹤双拼方案
  * （26 键、九键、14 键各一个版本）。
  */
 data class DoublePinyinScheme(
@@ -12,7 +12,7 @@ data class DoublePinyinScheme(
     val finals: Map<String, Char>,
     val zero: Map<String, String>,
 ) {
-    /** 微软、搜狗双拼把 ing 放在分号键上：Rime 字母表加分号，26 键第二排补一个分号键，不生成九键、14 键版本。 */
+    /** 微软、搜狗双拼把 ing 放在分号键上：字母表加分号，26 键第二排补一个分号键，不生成九键、14 键版本。 */
     val usesSemicolon: Boolean get() = ';' in finals.values
 
     /** 音节的双拼编码；表里缺键或不是标准音节时为空。 */
@@ -69,7 +69,7 @@ data class DoublePinyinScheme(
     }
 
     /**
-     * ju、qu、xu、yu 的 u 读 ü：除了按 u 的键，也能按 ü（v）的键打（首道、自然码 jv 出居），与 Rime 官方双拼方案和
+     * ju、qu、xu、yu 的 u 读 ü：除了按 u 的键，也能按 ü（v）的键打（首道、自然码 jv 出居），与常见双拼方案和
      * 内置小鹤双拼的 derive/^([jqxy])u$/$1v/ 相同。ü 和 u 同键、或 j/q/x/y 加 ü 键已是别的音节的编码时不加，不多出同码。
      */
     private fun umlautInitials(): String {
@@ -96,7 +96,7 @@ data class DoublePinyinScheme(
     fun preeditFormat(): List<String> = buildList {
         // 编码里的键：字母，ing 在分号键上的方案还有分号。
         val keys = if (usesSemicolon) "[a-z;]" else "[a-z]"
-        // 连续输入的字母按两个一组隔开，与 Rime 在音节间插入的分隔符一样处理。
+        // 连续输入的字母按两个一组隔开，与方案在音节间插入的分隔符一样处理。
         add("xform/($keys{2})(?=$keys)/\$1 /")
         for (syllable in ZERO_SYLLABLES) add("xform/(^|[ '])${zero.getValue(syllable)}(?=$|[ '])/\$1${syllable.lowerCircled()}/")
         val readings = LinkedHashMap<Pair<Char, Char>, String>()
@@ -151,8 +151,8 @@ data class DoublePinyinScheme(
 
     /**
      * 九键版本：每个音节的两个双拼键换成所在的数字键（如小鹤 zhong = vs → 87）。
-     * 只用 Rime 的拼写运算和词库，不开九键拼音的整句解码与左侧拼音栏（它们按全拼计算）。
-     * 词库、学习记录与 26 键双拼共用 rime_ice。
+     * 只用方案拼写运算和词库，不开九键拼音的整句解码与左侧拼音栏（它们按全拼计算）。
+     * 词库、学习记录与 26 键双拼共用 cayboard_pinyin。
      */
     fun t9Schema(): String {
         require(this == FLYPY || valid())
@@ -161,7 +161,7 @@ data class DoublePinyinScheme(
         val laiLe = listOfNotNull(code("lai"), code("le")).takeIf { it.size == 2 }?.joinToString("")
             ?.takeIf { keys -> keys.all { it in 'a'..'z' } }
             ?.map { key -> T9_DIGITS.first { key in it.first }.second }?.joinToString("")
-        val particleChoice = laiLe?.let { "cyime_particle_shortcuts:\n  exact: [\"$it 来了\"]" }.orEmpty()
+        val particleChoice = laiLe?.let { "cayboard_particle_shortcuts:\n  exact: [\"$it 来了\"]" }.orEmpty()
         return """
             |$GENERATED_MARK$t9
             |$particleChoice
@@ -174,7 +174,7 @@ data class DoublePinyinScheme(
             |  description: |
             |    Cayboard 双拼方案（由键位表生成）的九键版本：每个字按它的两个双拼键所在的数字键输入。
             |  dependencies:
-            |    - cyime_t9_english
+            |    - cayboard_t9_english
             |
             |switches:
             |  - name: ascii_mode
@@ -208,7 +208,7 @@ data class DoublePinyinScheme(
             |    - script_translator
             |    - t9_english_translator@t9_english
             |  filters:
-            |    - cyime_candidate_policy
+            |    - cayboard_candidate_policy
             |    - t9_filter
             |    - uniquifier
             |
@@ -219,7 +219,7 @@ data class DoublePinyinScheme(
             |  algebra:
             |${algebra.joinToString("") { "    - \"" + it.replace("\\", "\\\\").replace("\"", "\\\"") + "\"\n" }}
             |translator:
-            |  dictionary: rime_ice
+            |  dictionary: cayboard_pinyin
             |  prism: $t9
             |  max_homophones: 32
             |  spelling_hints: 100
@@ -232,7 +232,7 @@ data class DoublePinyinScheme(
             |  double_pinyin: true
             |  isDisplayOriginalPreedit: false
             |
-            |cyime:
+            |cayboard:
             |  candidate_policy: true
             |
             |punctuator:
@@ -251,7 +251,7 @@ data class DoublePinyinScheme(
             |    space: confirm
             |
             |t9_english:
-            |  dictionary: cyime_t9_english
+            |  dictionary: cayboard_t9_english
             |  enable_completion: false
             |  enable_sentence: false
             |  enable_user_dict: true
@@ -264,7 +264,7 @@ data class DoublePinyinScheme(
 
     /**
      * 14 键版本：以已部署的 14 键小鹤双拼方案为底，换上本方案的拼写规则。每个字两个键，每一位都可以是
-     * 精确字母（侧滑选的字母）或合并键（点按，大写代表字母），与 14 键小鹤双拼相同；词库和学习记录共用 rime_ice。
+     * 精确字母（侧滑选的字母）或合并键（点按，大写代表字母），与 14 键小鹤双拼相同；词库和学习记录共用 cayboard_pinyin。
      */
     fun k14Schema(base: String): String {
         require(valid())
@@ -295,7 +295,7 @@ data class DoublePinyinScheme(
      */
     fun layoutSchema(base26: String, layoutVariantId: String, layoutName: String, groups: List<String>): String {
         require(this == FLYPY || valid())
-        var text = base26.replace("\r\n", "\n").lineSequence().dropWhile { it.startsWith(GENERATED_MARK) || it.startsWith("# CyIME 双拼方案生成：") }.joinToString("\n")
+        var text = base26.replace("\r\n", "\n").lineSequence().dropWhile { it.startsWith(GENERATED_MARK) || it.startsWith("# Cayboard 双拼方案生成：") }.joinToString("\n")
         val header = Regex("(?ms)^schema:\\n.*?(?=^\\S)").find(text) ?: error("双拼方案缺少 schema 段")
         val schemaBlock = header.value
             .replaceFirst(Regex("(?m)^  schema_id: .*$"), "  schema_id: $layoutVariantId")
@@ -315,7 +315,7 @@ data class DoublePinyinScheme(
         val prism = Regex("(?m)^  prism: \\S+.*$")
         check(prism.containsMatchIn(translator.value)) { "双拼方案缺少 prism" }
         val translatorBlock = translator.value
-            .replace(Regex("(?m)^  (enable_correction|cyime_neighbor_correction|spelling_hints|always_show_comments):.*\\n"), "")
+            .replace(Regex("(?m)^  (enable_correction|cayboard_neighbor_correction|spelling_hints|always_show_comments):.*\\n"), "")
             .replace(Regex("(?m)^  preedit_format:[^\\n]*\\n(?:    [^\\n]*\\n)*"), "  preedit_format: []\n")
             .replaceFirst(prism, "  prism: $layoutVariantId\n  spelling_hints: 8\n  always_show_comments: true")
         text = text.replaceRange(translator.range, translatorBlock)
@@ -366,7 +366,7 @@ data class DoublePinyinScheme(
         const val ZIRANMA_ID = "double_pinyin_ziranma"
         const val ZNABC_ID = "double_pinyin_znabc"
         const val JIAJIA_ID = "double_pinyin_jiajia"
-        /** 不用 Rime 的 double_pinyin_mspy，免得和导入的同名方案冲突。 */
+        /** 使用独立生成的方案 ID，避免和导入的同名方案冲突。 */
         const val MICROSOFT_ID = "double_pinyin_microsoft"
         private val ID_PATTERN = Regex("$SHOUDAO_ID|$ZIRANMA_ID|$ZNABC_ID|$JIAJIA_ID|$MICROSOFT_ID|${CUSTOM_PREFIX}[a-f0-9]{32}")
         val SPECIAL_INITIALS = listOf("zh", "ch", "sh")
@@ -396,7 +396,7 @@ data class DoublePinyinScheme(
         /** 拆出 (双拼方案 id, 布局 id)；不是布局版本的 id 为 null。 */
         fun splitLayoutVariant(id: String): Pair<String, String>? =
             LAYOUT_VARIANT.matchEntire(id)?.let { it.groupValues[1] to it.groupValues[2] }
-        /** 14 键的合并键（与 xime.yaml qwerty_14 和 14 键小鹤双拼的拼写运算相同）：点按送大写代表字母，l、m 单独一键。 */
+        /** 14 键的合并键（与 cayboard.yaml qwerty_14 和 14 键小鹤双拼的拼写运算相同）：点按送大写代表字母，l、m 单独一键。 */
         private val K14_GROUPS = listOf("qw" to 'Q', "er" to 'E', "ty" to 'T', "ui" to 'U', "op" to 'O', "as" to 'A',
             "df" to 'D', "gh" to 'G', "jk" to 'J', "zx" to 'Z', "cv" to 'C', "bn" to 'B')
         /** 九键的字母分组，与中文九键 t9_pinyin 的拼写运算相同。 */

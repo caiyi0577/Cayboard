@@ -50,7 +50,7 @@ class EmojiBundleRenderTest {
         }
         val missing = expected.filterNot { paint.hasGlyph(it) }
         assertTrue("Missing Android glyphs: $missing", missing.isEmpty())
-        val keywords = app.assets.open("rime_chinese/opencc/emoji.txt").bufferedReader().useLines { rows ->
+        val keywords = app.assets.open("cayboard_chinese/opencc/emoji.txt").bufferedReader().useLines { rows ->
             rows.associate { it.substringBefore('\t') to it.substringAfter('\t').split(' ') }
         }
         assertEquals(listOf("喷泉", "⛲"), keywords["喷泉"])
@@ -105,7 +105,7 @@ class EmojiBundleRenderTest {
             val bitmap=Bitmap.createBitmap(root.width,root.height,Bitmap.Config.ARGB_8888)
             rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }
             frames += bitmap
-            System.getenv("CYIME_RENDER_OUT")?.let { dir ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let { dir ->
                 File(dir).mkdirs()
                 File(dir,"emoji-${style.name}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
             }

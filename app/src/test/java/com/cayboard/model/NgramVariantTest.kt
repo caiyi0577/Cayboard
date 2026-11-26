@@ -24,7 +24,7 @@ class NgramVariantTest {
     @Test fun runtimeLinkIdentifiesTheVariantInUse() {
         val fullDir = stored("full", "full model")
         val smallDir = stored("small", "small model")
-        val runtime = temporary.newFolder("rime")
+        val runtime = temporary.newFolder("cayboard_input")
         Files.createLink(File(runtime, "t9_ngram.lm").toPath(), File(smallDir, "t9_ngram.lm").toPath())
         assertEquals(small, activeVariant(runtime, listOf(full to fullDir, small to smallDir)))
     }
@@ -32,7 +32,7 @@ class NgramVariantTest {
     @Test fun copiedOrMissingRuntimeFileIsNotAttributed() {
         val fullDir = stored("full", "full model")
         val smallDir = stored("small", "small model")
-        val runtime = temporary.newFolder("rime")
+        val runtime = temporary.newFolder("cayboard_input")
         assertNull(activeVariant(runtime, listOf(full to fullDir, small to smallDir)))
         // 拷贝安装的内容即使相同也无法确认归属，不能据此删掉另一档。
         File(fullDir, "t9_ngram.lm").copyTo(File(runtime, "t9_ngram.lm"))
@@ -43,8 +43,8 @@ class NgramVariantTest {
         val content = "bundled model"
         val hash = java.security.MessageDigest.getInstance("SHA-256").digest(content.toByteArray())
             .joinToString("") { "%02x".format(it) }
-        val manifest = "$hash\t${content.length}\trime_chinese/t9_ngram.lm\tt9_ngram.lm\n"
-        val runtime = temporary.newFolder("rime")
+        val manifest = "$hash\t${content.length}\tcayboard_chinese/t9_ngram.lm\tt9_ngram.lm\n"
+        val runtime = temporary.newFolder("cayboard_input")
         val file = File(runtime, "t9_ngram.lm").apply { writeText(content) }
         assertTrue(isBundledCopy(manifest, "t9_ngram.lm", file))
         file.writeText("bundled modeL") // 同样大小、内容不同：用户自己的文件，不能当成自带的换掉
@@ -57,7 +57,7 @@ class NgramVariantTest {
         val hash = java.security.MessageDigest.getInstance("SHA-256").digest(bundled.toByteArray())
             .joinToString("") { "%02x".format(it) }
         val known = mapOf("t9_ngram.lm" to listOf(hash to bundled.length.toLong()))
-        val runtime = temporary.newFolder("rime")
+        val runtime = temporary.newFolder("cayboard_input")
         val file = File(runtime, "t9_ngram.lm").apply { writeText(bundled) }
         assertTrue(isEarlierBundledCopy("t9_ngram.lm", file, known))
         assertFalse(isEarlierBundledCopy("other.lm", file, known))
@@ -75,7 +75,7 @@ class NgramVariantTest {
         val version = ModelVersion("v1", files = listOf(
             ModelFile("t9_ngram.lm", digest(downloaded), downloaded.length.toLong())))
         val source = stored("download", downloaded)
-        val runtime = temporary.newFolder("rime")
+        val runtime = temporary.newFolder("cayboard_input")
         val target = File(runtime, "t9_ngram.lm").apply { writeText(bundled) }
         assertTrue(installCandidateModel(source, runtime, version) { name, file -> isEarlierBundledCopy(name, file, known) })
         assertEquals(downloaded, target.readText())

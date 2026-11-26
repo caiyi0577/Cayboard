@@ -1,5 +1,5 @@
-# Rime user dictionary
-#@/db_name	rime_ice
+# Input engine user dictionary
+#@/db_name	cayboard_pinyin.userdb
 #@/db_type	userdb
 #@/rime_version	1.13.1
 #@/tick	500

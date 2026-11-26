@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param([Parameter(Mandatory)][string]$NotesFile, [string]$ReleaseTag = "")
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -42,9 +42,9 @@ try {
         (git ls-files --others --exclude-standard -- @sourcePaths)) {
         throw 'Release blocked: source changed since validation. Commit and rebuild.'
     }
-    foreach ($source in @(@('app/src/main/jni/librime', 'cyime-librime.patch'),
-        @('app/src/main/jni/librime-lua-deps', 'cyime-lua-android.patch'),
-        @('app/src/main/assets/rime', 'cyime-rime-schema.patch'))) {
+    foreach ($source in @(@('app/src/main/jni/librime', 'cayboard-librime.patch'),
+        @('app/src/main/jni/librime-lua-deps', 'cayboard-lua-android.patch'),
+        @('app/src/main/assets/cayboard_base', 'cayboard-base-schema.patch'))) {
         & git -C $source[0] apply --reverse --check (Join-Path $root "patches/$($source[1])")
         if ($LASTEXITCODE) { throw "Release blocked: source patch does not match $($source[0])" }
     }

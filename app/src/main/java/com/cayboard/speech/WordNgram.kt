@@ -18,7 +18,7 @@ internal interface WordLanguageModel {
 }
 
 /**
- * Read-only view of the 九键词组模型 word trigram (rime/t9_ngram.lm, format in
+ * Read-only view of the 九键词组模型 word trigram (the input-data t9_ngram.lm, format in
  * app/src/main/jni/librime-t9/src/t9_ngram_format.h, versions 2 and compact 3), memory-mapped:
  * the file stays on disk and only the pages a lookup touches are read. Same lookups as
  * tools/ime_lab/ngram/ngram_query.py. Absolute reads only, so threads may share one instance.

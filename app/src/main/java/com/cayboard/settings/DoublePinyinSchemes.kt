@@ -8,7 +8,7 @@ import java.io.File
 
 /**
  * 首道、自然码等内置键位表和用户自定义的双拼方案（键位表 custom-double-pinyin.json 是唯一来源）。
- * Rime 方案（26 键、九键、14 键）和中英混输词表每次初始化时由已部署的小鹤双拼方案重新生成；不删除词库和学习记录。
+ * 输入方案（26 键、九键、14 键）和中英混输词表每次初始化时由已部署的小鹤双拼方案重新生成；不删除词库和学习记录。
  */
 object DoublePinyinSchemes {
     private const val TAG = "DoublePinyinSchemes"
@@ -95,46 +95,46 @@ object DoublePinyinSchemes {
     }
 
     /**
-     * 写出一个方案的 Rime 配置（含九键、14 键版本）；内容没变时不写，避免触发重新部署。
+     * 写出一个方案配置（含九键、14 键版本）；内容没变时不写，避免触发重新部署。
      * 小鹤双拼的 26 键和 14 键随应用内置，只写九键版本。
      */
-    private fun writeSchema(rimeDir: File, scheme: DoublePinyinScheme, layouts: List<CustomKeyboardLayout>) {
-        val base = File(rimeDir, "$BASE.schema.yaml")
+    private fun writeSchema(inputDataDir: File, scheme: DoublePinyinScheme, layouts: List<CustomKeyboardLayout>) {
+        val base = File(inputDataDir, "$BASE.schema.yaml")
         check(base.isFile) { "请先完成小鹤双拼部署" }
-        writeLayoutVariants(rimeDir, scheme, base.readText(), layouts)
+        writeLayoutVariants(inputDataDir, scheme, base.readText(), layouts)
         if (scheme.id != BASE) {
-            writeIfChanged(File(rimeDir, "${scheme.id}.schema.yaml"), scheme.schema(base.readText()))
-            val base14 = File(rimeDir, "${DoublePinyinScheme.k14Id(BASE)}.schema.yaml")
+            writeIfChanged(File(inputDataDir, "${scheme.id}.schema.yaml"), scheme.schema(base.readText()))
+            val base14 = File(inputDataDir, "${DoublePinyinScheme.k14Id(BASE)}.schema.yaml")
             // 14 键、九键没有分号键，ing 在分号上的方案（微软双拼）不生成这两个版本。
-            if (base14.isFile && !scheme.usesSemicolon) writeIfChanged(File(rimeDir, "${DoublePinyinScheme.k14Id(scheme.id)}.schema.yaml"),
+            if (base14.isFile && !scheme.usesSemicolon) writeIfChanged(File(inputDataDir, "${DoublePinyinScheme.k14Id(scheme.id)}.schema.yaml"),
                 scheme.k14Schema(base14.readText()))
-            val flypyTable = File(rimeDir, "en_dicts/cn_en_flypy.txt")
+            val flypyTable = File(inputDataDir, "en_dicts/cn_en_flypy.txt")
             if (flypyTable.isFile) {
-                val table = File(rimeDir, "en_dicts/${DoublePinyinScheme.cnEnName(scheme.id)}.txt")
+                val table = File(inputDataDir, "en_dicts/${DoublePinyinScheme.cnEnName(scheme.id)}.txt")
                 writeIfChanged(table, scheme.cnEnTable(flypyTable.readText()))
             }
         }
-        if (!scheme.usesSemicolon) writeIfChanged(File(rimeDir, "${DoublePinyinScheme.t9Id(scheme.id)}.schema.yaml"), scheme.t9Schema())
+        if (!scheme.usesSemicolon) writeIfChanged(File(inputDataDir, "${DoublePinyinScheme.t9Id(scheme.id)}.schema.yaml"), scheme.t9Schema())
     }
 
     /**
      * 每个有合并键的自建布局各写一个本方案的版本，不再有合并键或已删除的布局的旧版本删掉。
      * ing 在分号上的方案（微软双拼）和 14 键一样不生成：合并键布局不一定有分号键。
      */
-    private fun writeLayoutVariants(rimeDir: File, scheme: DoublePinyinScheme, flypyBase: String, layouts: List<CustomKeyboardLayout>) {
+    private fun writeLayoutVariants(inputDataDir: File, scheme: DoublePinyinScheme, flypyBase: String, layouts: List<CustomKeyboardLayout>) {
         val wanted = if (scheme.usesSemicolon) emptyList() else layouts.filter { it.mergedGroups.isNotEmpty() }
         val base26 by lazy { if (scheme.id == BASE) flypyBase else scheme.schema(flypyBase) }
         for (layout in wanted) {
             val id = DoublePinyinScheme.layoutVariantId(scheme.id, layout.id)
-            writeIfChanged(File(rimeDir, "$id.schema.yaml"), scheme.layoutSchema(base26, id, layout.name, layout.mergedGroups))
+            writeIfChanged(File(inputDataDir, "$id.schema.yaml"), scheme.layoutSchema(base26, id, layout.name, layout.mergedGroups))
         }
         val keep = wanted.map { it.id }.toSet()
-        layoutVariantFiles(rimeDir, scheme.id).filter { (_, layoutId) -> layoutId !in keep }.forEach { (file, _) -> file.delete() }
+        layoutVariantFiles(inputDataDir, scheme.id).filter { (_, layoutId) -> layoutId !in keep }.forEach { (file, _) -> file.delete() }
     }
 
-    /** rime 目录里 [schemeId] 的各布局版本文件和它们的布局 id。 */
-    private fun layoutVariantFiles(rimeDir: File, schemeId: String): List<Pair<File, String>> =
-        rimeDir.listFiles().orEmpty().mapNotNull { file ->
+    /** 输入数据目录里 [schemeId] 的各布局版本文件和它们的布局 id。 */
+    private fun layoutVariantFiles(inputDataDir: File, schemeId: String): List<Pair<File, String>> =
+        inputDataDir.listFiles().orEmpty().mapNotNull { file ->
             val id = file.name.removeSuffix(".schema.yaml").takeIf { file.name.endsWith(".schema.yaml") } ?: return@mapNotNull null
             DoublePinyinScheme.splitLayoutVariant(id)?.takeIf { it.first == schemeId }?.let { file to it.second }
         }
@@ -143,11 +143,11 @@ object DoublePinyinSchemes {
         runCatching { CustomKeyboardLayouts.load(context) }.getOrDefault(emptyList()).filter { it.mergedGroups.isNotEmpty() }
 
     /** 初始化时调用：小鹤双拼方案随版本更新后，其他内置、自定义方案和各九键、14 键、布局版本跟着更新。 */
-    @Synchronized fun install(context: Context, rimeDir: File) {
-        if (!File(rimeDir, "$BASE.schema.yaml").isFile) return
+    @Synchronized fun install(context: Context, inputDataDir: File) {
+        if (!File(inputDataDir, "$BASE.schema.yaml").isFile) return
         val layouts = mergedLayouts(context)
         for (scheme in DoublePinyinScheme.BUILTINS + runCatching { load(context) }.getOrDefault(emptyList())) {
-            try { writeSchema(rimeDir, scheme, layouts) }
+            try { writeSchema(inputDataDir, scheme, layouts) }
             catch (e: Exception) { Log.w(TAG, "Cannot generate ${scheme.id}", e) }
         }
     }
@@ -157,18 +157,18 @@ object DoublePinyinSchemes {
      * 布局不再有合并键或已删除时删掉旧版本；正在用被删掉的版本时换回这个双拼方案的 26 键。
      */
     fun syncLayouts(context: Context) {
-        val rimeDir = SchemaManager.getRimeDir(context)
+        val inputDataDir = SchemaManager.getInputDataDir(context)
         synchronized(this) {
-            if (!File(rimeDir, "$BASE.schema.yaml").isFile) return
-            val base = File(rimeDir, "$BASE.schema.yaml").readText()
+            if (!File(inputDataDir, "$BASE.schema.yaml").isFile) return
+            val base = File(inputDataDir, "$BASE.schema.yaml").readText()
             val layouts = mergedLayouts(context)
             for (scheme in DoublePinyinScheme.BUILTINS + runCatching { load(context) }.getOrDefault(emptyList())) {
-                try { writeLayoutVariants(rimeDir, scheme, base, layouts) }
+                try { writeLayoutVariants(inputDataDir, scheme, base, layouts) }
                 catch (e: Exception) { Log.w(TAG, "Cannot generate layout variants of ${scheme.id}", e) }
             }
         }
         val current = SettingsPreferences.getCurrentSchema(context)
-        if (isOnLayout(current) && !File(rimeDir, "$current.schema.yaml").isFile)
+        if (isOnLayout(current) && !File(inputDataDir, "$current.schema.yaml").isFile)
             SettingsPreferences.setCurrentSchema(context, baseId(current))
     }
 
@@ -179,7 +179,7 @@ object DoublePinyinSchemes {
             val after = current.indexOf(if (isT9(id)) "t9_pinyin" else BASE)
             if (id in current) current else if (after < 0) current + id
             else current.take(after + 1) + id + current.drop(after + 1)
-        } else current.filterNot { it == id }.ifEmpty { listOf("rime_ice") }
+        } else current.filterNot { it == id }.ifEmpty { listOf("cayboard_pinyin") }
         if (updated == current) return
         // 隐藏方案时它的 14 键版本跟着隐藏，正在用 14 键版本也要换掉。
         if (!enabled && SettingsPreferences.getCurrentSchema(context).let { it == id || it == DoublePinyinScheme.k14Id(id) ||
@@ -195,11 +195,11 @@ object DoublePinyinSchemes {
             val old = load(context)
             require((DoublePinyinScheme.BUILTINS + old).none { it.id != scheme.id && it.name == scheme.name.trim() }) { "已有同名方案" }
             val updated = if (old.any { it.id == scheme.id }) old.map { if (it.id == scheme.id) scheme else it } else old + scheme
-            val rimeDir = SchemaManager.getRimeDir(context)
-            val schemaFile = File(rimeDir, "${scheme.id}.schema.yaml")
+            val inputDataDir = SchemaManager.getInputDataDir(context)
+            val schemaFile = File(inputDataDir, "${scheme.id}.schema.yaml")
             val previous = schemaFile.takeIf { it.isFile }?.readText()
             try {
-                writeSchema(rimeDir, scheme, mergedLayouts(context))
+                writeSchema(inputDataDir, scheme, mergedLayouts(context))
                 persist(context, updated)
                 cached = updated
             } catch (e: Exception) {
@@ -218,16 +218,16 @@ object DoublePinyinSchemes {
             require(old.any { it.id == id })
             persist(context, old.filterNot { it.id == id })
             cached = old.filterNot { it.id == id }
-            val rimeDir = SchemaManager.getRimeDir(context)
+            val inputDataDir = SchemaManager.getInputDataDir(context)
             // 只删本方案的配置和混输词表；词库、用户词和学习记录都保留。
-            File(rimeDir, "$id.schema.yaml").delete()
-            File(rimeDir, "${DoublePinyinScheme.t9Id(id)}.schema.yaml").delete()
-            File(rimeDir, "${DoublePinyinScheme.k14Id(id)}.schema.yaml").delete()
-            File(rimeDir, "en_dicts/${DoublePinyinScheme.cnEnName(id)}.txt").delete()
-            layoutVariantFiles(rimeDir, id).forEach { (file, _) -> file.delete() }
+            File(inputDataDir, "$id.schema.yaml").delete()
+            File(inputDataDir, "${DoublePinyinScheme.t9Id(id)}.schema.yaml").delete()
+            File(inputDataDir, "${DoublePinyinScheme.k14Id(id)}.schema.yaml").delete()
+            File(inputDataDir, "en_dicts/${DoublePinyinScheme.cnEnName(id)}.txt").delete()
+            layoutVariantFiles(inputDataDir, id).forEach { (file, _) -> file.delete() }
         }
         val ids = setOf(id, DoublePinyinScheme.t9Id(id), DoublePinyinScheme.k14Id(id))
-        val fallback = if (File(SchemaManager.getRimeDir(context), "$BASE.schema.yaml").isFile) BASE else "rime_ice"
+        val fallback = if (File(SchemaManager.getInputDataDir(context), "$BASE.schema.yaml").isFile) BASE else "cayboard_pinyin"
         fun removed(schemaId: String) = schemaId in ids || isOnLayout(schemaId) && baseId(schemaId) == id
         if (removed(SettingsPreferences.getCurrentSchema(context))) SettingsPreferences.setCurrentSchema(context, fallback)
         SchemaManager.setEnabledSchemas(context, SchemaManager.getEnabledSchemas(context).filterNot(::removed)

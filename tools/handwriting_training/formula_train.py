@@ -1,7 +1,7 @@
 """手写公式模型的正式训练：按电脑忙闲自动调负载，带早期检查、异常自动回滚和断点续跑。
 
 用法：
-    python formula_train.py --data D:/CyIME-Data/datasets/mathwriting/prepared --out <目录> [--arch segments-rel-t] [--epochs 22]
+    python formula_train.py --data D:/Cayboard-Data/datasets/mathwriting/prepared --out <目录> [--arch segments-rel-t] [--epochs 22]
 
 负载：每 15 秒读一次键鼠最后操作时间（Windows GetLastInputInfo）。
     有人在用（10 分钟内动过键鼠）：每步算完歇“本步耗时 × busy_throttle”，显卡大部分时间空闲，进程优先级调低；

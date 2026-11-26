@@ -172,7 +172,7 @@ internal class EditorSessionInputPolicy {
     fun engineAsciiOverride(): Boolean? = asciiOverride ?: restoreAscii
 
     fun completePreparation(engineAscii: Boolean, engineSchema: String) {
-        // On a cold start the saved language and layout are available only after Rime is ready.
+        // On a cold start the saved language and layout are available only after the input engine is ready.
         if (keepsLanguage && asciiOverride == null)
             original = EditorSessionPresentation(engineAscii, engineSchema)
         if (!scoped) restoreAscii = null

@@ -1,13 +1,13 @@
 #!/bin/bash
-# 26-key full pinyin (rime_ice) first-candidate check, plain and with the same grammar as T9.
+# 26-key full pinyin (cayboard_pinyin) first-candidate check, plain and with the same grammar as T9.
 # Uses the engine library of an existing host run. Run inside WSL.
 set -u
 REPO=/mnt/d/GitHub/Cayboard
 RUN=$1   # a completed host run directory (engine library + deployed user data)
 OUT=$REPO/.codex-artifacts/t9-ngram-20261010/pinyin
-W=$HOME/cyime-work/pinyin
+W=$HOME/cayboard-work/pinyin
 JAR=/mnt/c/Users/<user>/.gradle/caches/modules-2/files-2.1/org.json/json/20240303/ebb88e8fb5122b7506d5cf1d69f1ccdb790d22a/json-20240303.jar
-JAVAC=$HOME/.cache/cyime-t9-host/dependencies/javac
+JAVAC=$HOME/.cache/cayboard-t9-host/dependencies/javac
 LIB=$(python3 -c "import json;print(json.load(open('$RUN/engine-build.json'))['library_dir'])" 2>/dev/null || true)
 [ -n "$LIB" ] || LIB=$(python3 -c "import json;d=json.load(open('$RUN/build-result.txt'));print(d['library_dir'])")
 mkdir -p "$OUT" "$W/classes"
@@ -15,12 +15,12 @@ mkdir -p "$OUT" "$W/classes"
 for variant in plain gram; do
   rm -rf "$W/$variant"; mkdir -p "$W/$variant"
   rsync -a --exclude build --exclude '*.userdb' "$RUN/native-run/user/" "$W/$variant/"
-  sed -i 's/^    - schema: t9_pinyin$/    - schema: rime_ice/' "$W/$variant/default.custom.yaml"
+  sed -i 's/^    - schema: t9_pinyin$/    - schema: cayboard_pinyin/' "$W/$variant/default.custom.yaml"
   if [ "$variant" = gram ]; then
-    printf 'patch:\n  grammar:\n    language: wanxiang-lts-zh-hans\n    collocation_max_length: 6\n    collocation_min_length: 2\n    collocation_penalty: -14\n    non_collocation_penalty: -6\n    rear_penalty: -18\n    weak_collocation_penalty: -100\n' > "$W/$variant/rime_ice.custom.yaml"
+    printf 'patch:\n  grammar:\n    language: wanxiang-lts-zh-hans\n    collocation_max_length: 6\n    collocation_min_length: 2\n    collocation_penalty: -14\n    non_collocation_penalty: -6\n    rear_penalty: -18\n    weak_collocation_penalty: -100\n' > "$W/$variant/cayboard_pinyin.custom.yaml"
   fi
   cd "$REPO"
-  nice -n 19 /usr/bin/java -cp "$W/classes:$RUN/runner/classes:$JAR" com.cyime.audit.PinyinReplay "$LIB" "$W/$variant" rime_ice \
+  nice -n 19 /usr/bin/java -cp "$W/classes:$RUN/runner/classes:$JAR" com.cayboard.audit.PinyinReplay "$LIB" "$W/$variant" cayboard_pinyin \
     "$OUT/$variant.jsonl" \
     tools/ime_lab/fixtures/user_reported_20261009.json .codex-artifacts/t9-ngram-20261010/anota/fixture.json \
     tools/ime_lab/fixtures/everyday_clauses_20261009.json .codex-artifacts/t9-ngram-20261010/gen/everyday/fixture.json \

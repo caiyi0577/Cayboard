@@ -39,7 +39,7 @@ class MergedKeyboardGestureTest {
     @get:Rule val rule = createComposeRule()
 
     @After fun restoreStandardRows() {
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 
     private fun verifyFourteenKeyRow(compact: Boolean) {

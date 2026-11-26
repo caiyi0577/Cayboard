@@ -42,7 +42,7 @@ class LexiconSourceTest(unittest.TestCase):
         self.assertEqual(result["reference_match"], 2)
         self.assertEqual(result["needs_review"], 1)
         exported = lex.export(self.db, self.root, "common", "常用词")
-        data = json.loads((Path(exported["directory"]) / "common.cyime-dict.json").read_text(encoding="utf-8"))
+        data = json.loads((Path(exported["directory"]) / "common.cayboard-dict.json").read_text(encoding="utf-8"))
         self.assertEqual({(e["word"], e["code"]) for e in data["entries"]}, {("银行", "yin hang"), ("行走", "xing zou")})
         self.assertEqual(exported["pending"], 1)
 
@@ -74,7 +74,7 @@ class LexiconSourceTest(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT status FROM entries").fetchone()[0], "rejected")
         result = lex.export(self.db, self.root, "common", "词库")
         self.assertEqual(result["entries"], 0)
-        self.assertFalse((output / "common.cyime-dict.json").exists())
+        self.assertFalse((output / "common.cayboard-dict.json").exists())
         self.assertFalse((output / "common.dict.yaml").exists())
         self.assertTrue(unrelated.exists())
         self.assertEqual(json.loads((output / "manifest.json").read_text())["files"], {})
@@ -117,7 +117,7 @@ class LexiconSourceTest(unittest.TestCase):
     def test_export_is_repeatable_and_scoped_to_requested_collection(self):
         self.ingest(entry(), collection="finance")
         self.ingest(entry("行走", "xing2 zou3"), collection="daily")
-        path = Path(lex.export(self.db, self.root, "finance", "金融")['directory']) / "finance.cyime-dict.json"
+        path = Path(lex.export(self.db, self.root, "finance", "金融")['directory']) / "finance.cayboard-dict.json"
         first = path.read_bytes()
         lex.export(self.db, self.root, "finance", "金融")
         self.assertEqual(first, path.read_bytes())

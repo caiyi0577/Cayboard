@@ -62,8 +62,7 @@ class ShiftHoldTypingTest {
                 LocalKeyboardInputPreferences provides prefs) {
                 MaterialTheme {
                     Box(Modifier.requiredSize(width.dp, height.dp)) {
-                        KeyboardLayout(onKeyPress, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {},
-                            onGlideWord = { _, _ -> }),
+                        KeyboardLayout(onKeyPress, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
                             KeyboardUiState(currentSchemaId = schema, isAsciiMode = ascii), ascii,
                             Modifier.requiredSize(width.dp, height.dp))
                     }
@@ -135,7 +134,7 @@ class ShiftHoldTypingTest {
 
     @Test fun english26() { show(ascii = true); typeCyLM() }
 
-    @Test fun english26WithGlide() { show(ascii = true, prefs = KeyboardInputPreferences(glideTyping = true)); typeCyLM() }
+    @Test fun english26WithRetainedSettings() { show(ascii = true); typeCyLM() }
 
     @Test fun pinyin14() { show("pinyin_14jian"); typeCyLM(expected = "CtyLM") }
 
@@ -146,9 +145,7 @@ class ShiftHoldTypingTest {
 
     @Test fun heldFingerDrifts14() { show("pinyin_14jian"); typeCyLM(Offset(12f, -6f), "CtyLM") }
 
-    @Test fun heldFingerDriftsEnglishGlide() {
-        show(ascii = true, prefs = KeyboardInputPreferences(glideTyping = true)); typeCyLM(Offset(12f, -6f))
-    }
+    @Test fun heldFingerDriftsEnglish() { show(ascii = true); typeCyLM(Offset(12f, -6f)) }
 
     /** 一直按住 Shift 连打多个字母。 */
     @Test fun manyLettersWhileHeld() {

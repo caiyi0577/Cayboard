@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.ui.keyboard.CandidateBar
@@ -56,7 +56,7 @@ import java.io.File
  * 最小高度下图标键的文字（清空、重输）与图标是否重叠。
  * 几何：九键 / 26 / 14 / 笔画 / 数字 / 常用符号 × 手机、平板 × 竖横屏 × 固定下限 228dp、悬浮绝对下限 160dp
  * × 实色 / 玻璃 × 字号 1.0 / 1.3；配色：全部主题 × 深浅色 × 实色 / 玻璃（九键、26 键，手机竖屏下限）。
- * 只在设了 CYIME_RENDER_OUT 时出图；CYIME_RENDER_STAGE 给文件名前缀（默认 current）。
+ * 只在设了 CAYBOARD_RENDER_OUT 时出图；CAYBOARD_RENDER_STAGE 给文件名前缀（默认 current）。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1300dp-h900dp-xhdpi")
@@ -67,9 +67,9 @@ class IconHintFitRenderTest {
     private data class Screen(val name: String, val width: Int, val screenW: Int, val screenH: Int)
 
     @Test fun renderMinimumHeight() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
-        val stage = System.getenv("CYIME_RENDER_STAGE")?.takeIf { it.isNotBlank() } ?: "current"
+        val stage = System.getenv("CAYBOARD_RENDER_STAGE")?.takeIf { it.isNotBlank() } ?: "current"
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app); KeyboardThemes.reload(app)
         com.cayboard.ui.keyboard.AppFonts.initialize(app)
@@ -143,7 +143,7 @@ class IconHintFitRenderTest {
         }
         val prefs = SettingsPreferences.getPrefsPublic(app)
         fun show(l: String, t: String, d: Boolean, g: Boolean, s: Screen, h: Int, fs: Float) {
-            val id = when (l) { "26" -> "rime_ice"; "14" -> "pinyin_14jian"; "stroke" -> "stroke"; else -> "t9_pinyin" }
+            val id = when (l) { "26" -> "cayboard_pinyin"; "14" -> "pinyin_14jian"; "stroke" -> "stroke"; else -> "t9_pinyin" }
             KeysConfigHelper.setActiveKeyboardSchema(id)
             prefs.edit().putString("keyboard_theme", t).commit()
             rule.runOnIdle {
@@ -155,7 +155,7 @@ class IconHintFitRenderTest {
         val layouts = listOf("t9", "26", "14", "stroke", "num", "sym")
         val screens = listOf(Screen("phone-portrait", 400, 400, 860), Screen("phone-landscape", 860, 860, 400),
             Screen("tablet-portrait", 800, 800, 1280), Screen("tablet-landscape", 1280, 1280, 800))
-        val heights = (System.getenv("CYIME_RENDER_HEIGHTS")?.split(',')?.map { it.trim().toInt() }) ?: listOf(228, 160)
+        val heights = (System.getenv("CAYBOARD_RENDER_HEIGHTS")?.split(',')?.map { it.trim().toInt() }) ?: listOf(228, 160)
         for (l in layouts) for (s in screens) for (h in heights) for (g in listOf(false, true))
             for (fs in listOf(1f, 1.3f)) {
                 show(l, "soft_blue", false, g, s, h, fs)

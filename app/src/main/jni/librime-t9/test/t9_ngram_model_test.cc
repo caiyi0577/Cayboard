@@ -14,8 +14,8 @@
 #include "../../../../../../tools/ime_lab/ngram/ngram_write.h"
 
 namespace {
-using cyime_t9_ngram::ModelTables;
-using cyime_t9_ngram::WordEntry;
+using cayboard_t9_ngram::ModelTables;
+using cayboard_t9_ngram::WordEntry;
 
 // Words: 0 我, 1 们, 2 的, 3 </s>, 4 <s>.  Bigrams: 我→们 -0.5, 我→的 -2.0, 们→的 -0.25,
 // <s>→我 -1.0.  Trigram under (我,们): 的 -0.125; bigram (我,们) backoff -0.75.
@@ -24,7 +24,7 @@ ModelTables TinyModel() {
   m.eos = 3; m.bos = 4;
   m.unseen_lower = -12.0f; m.unseen_ml = -13.0f;
   const char* texts[] = {"我", "们", "的"};
-  for (const char* t : texts) m.keys.push_back(cyime_t9_ngram::Hash(t, std::char_traits<char>::length(t)));
+  for (const char* t : texts) m.keys.push_back(cayboard_t9_ngram::Hash(t, std::char_traits<char>::length(t)));
   m.keys.push_back(0); m.keys.push_back(0);
   m.entries = {WordEntry{-1.5f, -2.5f, -0.3f, 0}, WordEntry{-3.0f, -4.0f, -0.6f, 0},
                WordEntry{-1.0f, -1.25f, -0.9f, 0}, WordEntry{-5.0f, -6.0f, 0.0f, 0},
@@ -44,7 +44,7 @@ class NgramModelTest : public ::testing::Test {
   std::filesystem::path directory;
   void SetUp() override {
     directory = std::filesystem::temp_directory_path() /
-        ("cyime-ngram-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+        ("cayboard-ngram-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(directory);
   }
   void TearDown() override { std::filesystem::remove_all(directory); }
@@ -59,7 +59,7 @@ class NgramModelTest : public ::testing::Test {
     const int32_t wo = model->Id("我"), men = model->Id("们"), de = model->Id("的");
     EXPECT_EQ(0, wo); EXPECT_EQ(1, men); EXPECT_EQ(2, de);
     EXPECT_EQ(T9NgramModel::kUnseen, model->Id("你"));
-    const double tol = 1.5 / cyime_t9_ngram::kLogScale;
+    const double tol = 1.5 / cayboard_t9_ngram::kLogScale;
     EXPECT_NEAR(-2.5, model->Start(wo, false), tol);          // ln_ml
     EXPECT_NEAR(-1.0, model->Start(wo, true), tol);           // <s>→我 stored
     EXPECT_NEAR(-0.1 + -3.0, model->Start(men, true), tol);   // <s> backoff + lower(们)
@@ -91,16 +91,16 @@ class NgramModelTest : public ::testing::Test {
 
 TEST_F(NgramModelTest, OriginalAndCompactLayoutsGiveTheSameProbabilities) {
   const ModelTables m = TinyModel();
-  cyime_t9_ngram::WriteStats v2, v3;
+  cayboard_t9_ngram::WriteStats v2, v3;
   const std::string p2 = (directory / "v2.lm").string(), p3 = (directory / "v3.lm").string();
-  ASSERT_TRUE(cyime_t9_ngram::WriteV2(p2, m, &v2));
-  ASSERT_TRUE(cyime_t9_ngram::WriteV3(p3, m, &v3));
+  ASSERT_TRUE(cayboard_t9_ngram::WriteV2(p2, m, &v2));
+  ASSERT_TRUE(cayboard_t9_ngram::WriteV3(p3, m, &v3));
   EXPECT_EQ(0u, v2.hash_collisions);
   EXPECT_EQ(0u, v3.hash_collisions);
   EXPECT_EQ(0u, v3.clamped);
   EXPECT_LT(v3.bytes, v2.bytes);
-  CheckModel(p2, cyime_t9_ngram::kVersion);
-  CheckModel(p3, cyime_t9_ngram::kVersion3);
+  CheckModel(p2, cayboard_t9_ngram::kVersion);
+  CheckModel(p3, cayboard_t9_ngram::kVersion3);
 }
 
 TEST_F(NgramModelTest, CompactTrigramIndexSurvivesBlockBoundaries) {
@@ -110,7 +110,7 @@ TEST_F(NgramModelTest, CompactTrigramIndexSurvivesBlockBoundaries) {
   m.eos = 70; m.bos = 71; m.unseen_lower = -10; m.unseen_ml = -11;
   for (uint32_t w = 0; w < 70; ++w) {
     const std::string text = "w" + std::to_string(w);
-    m.keys.push_back(cyime_t9_ngram::Hash(text.data(), text.size()));
+    m.keys.push_back(cayboard_t9_ngram::Hash(text.data(), text.size()));
     m.entries.push_back(WordEntry{-3.0f, -4.0f, -0.5f, 0});
     m.begin.push_back(w);
     m.next.push_back((w + 1) % 70);
@@ -124,13 +124,13 @@ TEST_F(NgramModelTest, CompactTrigramIndexSurvivesBlockBoundaries) {
   for (uint32_t b = 1; b <= 70; ++b) m.tri_begin[b] = b <= 69 ? 1 : 2;
   m.tri_next = {5, 7};
   m.tri_logp = {-0.03f, -0.07f};
-  cyime_t9_ngram::WriteStats stats;
+  cayboard_t9_ngram::WriteStats stats;
   const std::string p3 = (directory / "blocks.lm").string();
-  ASSERT_TRUE(cyime_t9_ngram::WriteV3(p3, m, &stats));
+  ASSERT_TRUE(cayboard_t9_ngram::WriteV3(p3, m, &stats));
   EXPECT_EQ(6u, stats.tri_block_shift);
   auto model = T9NgramModel::Open(p3);
   ASSERT_TRUE(model);
-  const double tol = 1.5 / cyime_t9_ngram::kLogScale;
+  const double tol = 1.5 / cayboard_t9_ngram::kLogScale;
   EXPECT_NEAR(-0.03, model->LogProb3(0, 1, 5), tol);                // trigram under bigram 0
   EXPECT_NEAR(-0.07, model->LogProb3(69, 0, 7), tol);               // trigram under bigram 69
   EXPECT_NEAR(-0.2 + (-0.5 + -3.0), model->LogProb3(69, 0, 8), tol);  // backoff under bigram 69

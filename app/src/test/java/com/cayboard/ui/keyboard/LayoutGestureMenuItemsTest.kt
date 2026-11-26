@@ -12,7 +12,7 @@ class LayoutGestureMenuItemsTest {
         assertTrue(ToolbarButton.CUSTOMIZABLE.none { it.id in setOf("t9_flick", "flick_disc") })
     }
     @Test fun retainedGesturesStayAvailable() {
-        assertEquals(listOf(ToolbarButton.GLIDE), ToolbarButton.LAYOUT_GESTURES.filter { it.appliesTo(LayoutKind.T9) })
         assertEquals(listOf(ToolbarButton.FOURTEEN_SWIPE), ToolbarButton.LAYOUT_GESTURES.filter { it.appliesTo(LayoutKind.MERGED) })
+        assertTrue(ToolbarButton.LAYOUT_GESTURES.none { it.id.contains("glide") })
     }
 }

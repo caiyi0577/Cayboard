@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_DECODE_CACHE_H_
-#define CYIME_T9_DECODE_CACHE_H_
+#ifndef CAYBOARD_T9_DECODE_CACHE_H_
+#define CAYBOARD_T9_DECODE_CACHE_H_
 
 #include <atomic>
 #include <cstdint>

@@ -51,7 +51,7 @@ def add_host_fingerprints(path, runtime="host", **protocol_extra):
     manifest = audit.read_json(path / "run.json")
     manifest["engine"] = {"source": "host-source-build", "resources_sha256": "a" * 64,
                           "apk_sha256": "a" * 64, "resource_type": "resource_zip",
-                          "libraries": {"librime_jni.so": "b" * 64, "libonnxruntime.so": "c" * 64}}
+                          "libraries": {"cayboard_jni.so": "b" * 64, "libonnxruntime.so": "c" * 64}}
     manifest["protocol_settings"].update(runtime=runtime, **protocol_extra)
     rows = [json.loads(line) for line in (path / "replay.jsonl").read_text(encoding="utf-8").splitlines()]
     rows[0].update(runtime="host", resources_sha256="a" * 64, apk_sha256="a" * 64,
@@ -154,7 +154,7 @@ class ReplayComparisonTest(unittest.TestCase):
         write_run(self.candidate)
         good = add_host_fingerprints(self.candidate)
         cases = [("resources_sha256", "d" * 64), ("apk_sha256", "d" * 64),
-                 ("libraries", {"librime_jni.so": "d" * 64}), ("libraries", {})]
+                 ("libraries", {"cayboard_jni.so": "d" * 64}), ("libraries", {})]
         for field, value in cases:
             with self.subTest(field=field, value=value):
                 manifest = deepcopy(good)

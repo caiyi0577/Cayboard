@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -7,27 +7,27 @@ import java.util.List;
 
 /**
  * Typed-letter typos in whole 26-key sentences (2026-10-31). Arguments: the built library directory, a fresh
- * test user directory listing rime_ice (never an installed app's data), a cases TSV (id, input, target) from
+ * test user directory listing cayboard_pinyin (never an installed app's data), a cases TSV (id, input, target) from
  * typo_bench.py, the output TSV, and the measured neighbour map (typo_bench.py neighbors). Each case is typed
  * key by key; a row records the per-key time, the first 10 candidates, the target's place (-1 when absent) and,
  * With a sixth argument --idle-omission, run the same idle correction used by the IME before reading the final list.
- * With a host build (CYIME_T9_WORK_COUNTERS), the per-key dictionary work (all counters but cache hits, summed).
+ * With a host build (CAYBOARD_T9_WORK_COUNTERS), the per-key dictionary work (all counters but cache hits, summed).
  */
 public final class TypoSentenceProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
     List<String> cases = Files.readAllLines(new File(args[2]).toPath(), StandardCharsets.UTF_8);
     String neighbors = args.length > 4 ? args[4] : "";
-    RimeEngine e = new RimeEngine();
+    InputEngine e = new InputEngine();
     e.nativeInitialize(user.getPath(), user.getPath());
     try (PrintStream out = new PrintStream(new File(args[3]), "UTF-8")) {
-      if (!new File(user, "build/rime_ice.schema.yaml").isFile()) {
+      if (!new File(user, "build/cayboard_pinyin.schema.yaml").isFile()) {
         e.nativeStartMaintenance(true);
         while (e.nativeIsMaintaining()) Thread.sleep(100);
       }
       if (!e.nativeCreateSession()) throw new Exception("session unavailable");
-      if (!e.nativeSwitchSchema("rime_ice")) throw new Exception("schema unavailable");
+      if (!e.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("schema unavailable");
       e.nativeSetOption("ascii_mode", false);
       e.nativeSetNeighborMap(neighbors);
       String[] names = null;

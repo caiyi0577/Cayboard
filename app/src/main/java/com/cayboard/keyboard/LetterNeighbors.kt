@@ -21,8 +21,8 @@ fun encodeLetterNeighbors(keys: Map<Char, LetterKeyRect>): String {
 }
 
 /**
- * What the engine gets (Rime property cyime_neighbors): the layout with correction on, nothing with it off. With
- * [unreadableOnly] (双拼邻键纠错 off) the layout goes marked "~;", and librime's NearSearchCorrector then corrects only
+ * What the decoder gets (property cayboard_neighbors): the layout with correction on, nothing with it off. With
+ * [unreadableOnly] (双拼邻键纠错 off) the layout goes marked "~;", and the decoder's near-search correction then handles only
  * where the typed letters start no spelling at all, so a slip into a pair that spells nothing still gives candidates
  * while every pair that reads stays as typed.
  */

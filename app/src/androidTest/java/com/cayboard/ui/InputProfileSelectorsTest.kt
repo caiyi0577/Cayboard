@@ -32,7 +32,7 @@ import kotlin.math.abs
 class InputProfileSelectorsTest {
     @get:Rule val rule = createComposeRule()
     private val entries = listOf(
-        SchemaInfo("rime_ice", "雾凇拼音", "", "", ""),
+        SchemaInfo("cayboard_pinyin", "雾凇拼音", "", "", ""),
         SchemaInfo("t9_pinyin", "九键拼音", "", "", ""),
         SchemaInfo("pinyin_14jian", "14键拼音", "", "", ""),
         SchemaInfo("double_pinyin_flypy", "小鹤双拼", "", "", ""),
@@ -61,9 +61,9 @@ class InputProfileSelectorsTest {
         rule.runOnIdle { assertEquals(listOf("t9_pinyin"), confirmed) }
         rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("qwerty")
         rule.onNodeWithTag("panel-layout:qwerty").performClick()
-        rule.runOnIdle { assertEquals(listOf("t9_pinyin", "rime_ice"), confirmed) }
+        rule.runOnIdle { assertEquals(listOf("t9_pinyin", "cayboard_pinyin"), confirmed) }
         rule.onNodeWithTag("panel-scheme:double_pinyin_flypy").assertIsDisplayed().performClick()
-        rule.runOnIdle { assertEquals(listOf("t9_pinyin", "rime_ice", "double_pinyin_flypy"), confirmed) }
+        rule.runOnIdle { assertEquals(listOf("t9_pinyin", "cayboard_pinyin", "double_pinyin_flypy"), confirmed) }
         rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("qwerty_14")
         rule.onNodeWithTag("panel-layout:qwerty_14").performClick()
         rule.runOnIdle { assertEquals("pinyin_14jian", confirmed.last()) }
@@ -132,7 +132,7 @@ class InputProfileSelectorsTest {
     }
 
     @Test fun keyboardPanelPreviewsAndSchemesStayReachableWithinShortWindow() {
-        var current by mutableStateOf("rime_ice")
+        var current by mutableStateOf("cayboard_pinyin")
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 MaterialTheme(colorScheme = darkColorScheme()) {
@@ -144,12 +144,12 @@ class InputProfileSelectorsTest {
             }
         }
         saveUiEvidence("input-layout-ime-wide", rule.onNodeWithTag("input-profile-panel"))
-        rule.onNodeWithTag("panel-scheme:rime_ice").assertTextContains("拼音")
+        rule.onNodeWithTag("panel-scheme:cayboard_pinyin").assertTextContains("拼音")
         rule.onNodeWithText("中文26键").assertDoesNotExist()
         rule.onNodeWithText("输入方式").assertDoesNotExist()
         rule.onAllNodesWithText("方案管理").assertCountEquals(1)
         val layoutCard = rule.onNodeWithTag("panel-layout:qwerty").fetchSemanticsNode().boundsInRoot
-        val schemeCard = rule.onNodeWithTag("panel-scheme:rime_ice").fetchSemanticsNode().boundsInRoot
+        val schemeCard = rule.onNodeWithTag("panel-scheme:cayboard_pinyin").fetchSemanticsNode().boundsInRoot
         rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("layout-management")
         rule.onAllNodesWithText("布局管理").assertCountEquals(1)
         val layoutAction = rule.onNodeWithTag("profile-layout-management").fetchSemanticsNode().boundsInRoot
@@ -164,7 +164,7 @@ class InputProfileSelectorsTest {
         assertTrue(layoutAction.width < layoutCard.width)
         assertTrue(schemeAction.width < schemeCard.width)
         assertTrue(schemeCard.bottom <= rule.onNodeWithTag("input-profile-panel").fetchSemanticsNode().boundsInRoot.bottom)
-        rule.onNodeWithTag("panel-scheme:rime_ice").assertIsDisplayed()
+        rule.onNodeWithTag("panel-scheme:cayboard_pinyin").assertIsDisplayed()
         rule.onNodeWithTag("profile-layout-management").assertIsDisplayed()
         rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("qwerty_14")
         rule.onNodeWithTag("panel-layout:qwerty_14").performScrollTo().performClick()
@@ -197,7 +197,7 @@ class InputProfileSelectorsTest {
     @Test fun minimumImeKeepsBothRowsVisibleAndManagementAtTheirEnds() {
         var width by mutableStateOf(380.dp)
         var height by mutableStateOf(164.dp)
-        var selected by mutableStateOf("rime_ice")
+        var selected by mutableStateOf("cayboard_pinyin")
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 MaterialTheme(colorScheme = darkColorScheme()) {
@@ -212,7 +212,7 @@ class InputProfileSelectorsTest {
         for ((w, h) in listOf(380.dp to 164.dp, 280.dp to 164.dp, 760.dp to 204.dp, 760.dp to 340.dp)) {
             rule.runOnIdle { width = w; height = h }
             rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("qwerty")
-            rule.onNodeWithTag("profile-scheme-list:list").performScrollToKey("rime_ice")
+            rule.onNodeWithTag("profile-scheme-list:list").performScrollToKey("cayboard_pinyin")
             val panel = rule.onNodeWithTag("input-profile-panel").fetchSemanticsNode().boundsInRoot
             val layout = rule.onNodeWithTag("profile-layout-list").getUnclippedBoundsInRoot()
             val scheme = rule.onNodeWithTag("profile-scheme-list").getUnclippedBoundsInRoot()
@@ -220,7 +220,7 @@ class InputProfileSelectorsTest {
             assertTrue("The scheme row fits without vertical scrolling at $w x $h", scheme.bottom.value <= panel.bottom + 1f)
             assertEquals((layout.bottom - layout.top).value / 1.5f, (scheme.bottom - scheme.top).value, 2f)
             assertTrue("No dead space below the choices", panel.bottom - scheme.bottom.value <= 8f)
-            rule.onNodeWithTag("panel-scheme:rime_ice").assertIsDisplayed()
+            rule.onNodeWithTag("panel-scheme:cayboard_pinyin").assertIsDisplayed()
             saveUiEvidence("input-layout-initial-${w.value.toInt()}", rule.onNodeWithTag("input-profile-panel"))
             rule.onNodeWithTag("profile-layout-list:list").performScrollToKey("layout-management")
             rule.onNodeWithTag("profile-layout-management").assertIsDisplayed()
@@ -241,7 +241,7 @@ class InputProfileSelectorsTest {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 MaterialTheme {
                     Box(Modifier.size(380.dp, height)) {
-                        if (visible) SchemaListView(entries, "rime_ice", Color(0xff20212b), Color.Cyan,
+                        if (visible) SchemaListView(entries, "cayboard_pinyin", Color(0xff20212b), Color.Cyan,
                             Color.White, Color.DarkGray, {}, Modifier.fillMaxSize())
                     }
                 }
@@ -256,7 +256,7 @@ class InputProfileSelectorsTest {
             assertEquals(target.value, panel.height, 1f)
             assertEquals(layout.height / 1.5f, scheme.height, 2f)
             assertTrue(panel.bottom - scheme.bottom <= 8f)
-            rule.onNodeWithTag("panel-scheme:rime_ice").assertIsDisplayed()
+            rule.onNodeWithTag("panel-scheme:cayboard_pinyin").assertIsDisplayed()
         }
         saveUiEvidence("input-layout-reopened-taller", rule.onNodeWithTag("input-profile-panel"))
     }
@@ -266,7 +266,7 @@ class InputProfileSelectorsTest {
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 MaterialTheme(colorScheme = darkColorScheme()) {
-                    SchemaListView(entries, "rime_ice", Color(0xff20212b), Color(0xffc6b0f4),
+                    SchemaListView(entries, "cayboard_pinyin", Color(0xff20212b), Color(0xffc6b0f4),
                         Color.White, Color.DarkGray, {}, Modifier.size(380.dp, height))
                 }
             }

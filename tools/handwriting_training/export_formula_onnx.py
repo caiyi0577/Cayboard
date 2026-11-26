@@ -1,7 +1,7 @@
 """把训练好的手写公式模型（segments-rel-t）导出成手机能跑的 ONNX，并核对导出前后结果一致。
 
 用法：
-    python export_formula_onnx.py --ckpt …/best.pt --data D:/CyIME-Data/datasets/mathwriting/prepared --out <目录>
+    python export_formula_onnx.py --ckpt …/best.pt --data D:/Cayboard-Data/datasets/mathwriting/prepared --out <目录>
 
 输出：
     formula_encoder.onnx  输入 P[1,S,16,6] 段内点、PM[1,S,16] 段内点掩码、C[1,S,8] 段特征、SM[1,S] 段掩码 → mem[1,S,256]

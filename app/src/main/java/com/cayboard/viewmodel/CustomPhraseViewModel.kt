@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.cayboard.settings.DictEntry
 import com.cayboard.settings.PersonalDictManager
 import com.cayboard.settings.PhraseLineBreaks
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,12 +80,12 @@ class CustomPhraseViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    /** 固定的词从引擎读（cyime_pins.txt 由引擎管，长按固定和这里改的是同一份）。读不到就空着。 */
+    /** 固定的词从引擎读（cayboard_pins.txt 由引擎管，长按固定和这里改的是同一份）。读不到就空着。 */
     private suspend fun loadPins() {
         val pins = withContext(Dispatchers.IO) {
             try {
-                if (!RimeConfigHelper.prepareEngine(context)) return@withContext null
-                RimeEngine.getInstance().listPins().map { PinnedWord(it.code, it.text, it.place) }
+                if (!EngineConfig.prepareEngine(context)) return@withContext null
+                InputEngine.getInstance().listPins().map { PinnedWord(it.code, it.text, it.place) }
                     .sortedWith(compareBy({ it.code }, { it.place }))
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
@@ -109,8 +109,8 @@ class CustomPhraseViewModel(application: Application) : AndroidViewModel(applica
         if (!oldPinned && (new == null || place == null)) return
         withContext(Dispatchers.IO) {
             try {
-                if (!RimeConfigHelper.prepareEngine(context)) return@withContext
-                val engine = RimeEngine.getInstance()
+                if (!EngineConfig.prepareEngine(context)) return@withContext
+                val engine = InputEngine.getInstance()
                 if (old != null && oldPinned)
                     PersonalDictManager.phraseTypedCodes(context, old.code).forEach { engine.unpinCode(it, old.word) }
                 if (new != null && place != null)
@@ -127,7 +127,7 @@ class CustomPhraseViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
-                    if (RimeConfigHelper.prepareEngine(context)) RimeEngine.getInstance().unpinCode(pin.code, pin.word)
+                    if (EngineConfig.prepareEngine(context)) InputEngine.getInstance().unpinCode(pin.code, pin.word)
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {}

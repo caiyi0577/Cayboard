@@ -2,7 +2,7 @@
 
 用法：
     python tools/handwriting_training/extract_english.py <projects>/English \
-        D:/CyIME-Data/handwriting_training/banks/english.tsv
+        D:/Cayboard-Data/handwriting_training/banks/english.tsv
 
 - 单词（words/**）：题目是单词，提示是音标和中文；每个单词再取一条最短的例句；
 - 短语（phrases/）：题目是短语，提示是中文，外加例句；

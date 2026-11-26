@@ -597,9 +597,9 @@ object PerformanceCosts {
         InputProfiles.describe(SettingsPreferences.getCurrentSchema(context)).layout.kind == LayoutKind.T9
     }.getOrDefault(false)
 
-    /** 九键词组模型装着且没被停用（rime/ 里有 t9_ngram.lm）。 */
+    /** 九键词组模型装着且没被停用（输入数据目录里有 t9_ngram.lm）。 */
     fun t9ModelActive(context: Context): Boolean = runCatching {
-        java.io.File(context.filesDir, "rime/t9_ngram.lm").isFile &&
+        java.io.File(context.filesDir, "cayboard_input/t9_ngram.lm").isFile &&
             listOf(com.cayboard.model.CandidateModelCatalog.NGRAM, com.cayboard.model.CandidateModelCatalog.NGRAM_SMALL)
                 .none { SettingsPreferences.getPrefsPublic(context).getBoolean("candidate_model_disabled_$it", false) }
     }.getOrDefault(false)

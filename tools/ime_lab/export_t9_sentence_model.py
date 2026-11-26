@@ -27,7 +27,7 @@ def sha(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, default=Path(".gradle/t9-sentence-model"))
-    parser.add_argument("--output-dir", type=Path, default=Path("app/src/main/assets/rime_chinese"))
+    parser.add_argument("--output-dir", type=Path, default=Path("app/src/main/assets/cayboard_chinese"))
     args = parser.parse_args()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     for name, expected in HASHES.items():

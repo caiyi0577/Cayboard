@@ -143,16 +143,16 @@ data class KeyboardInputPreferences(
      * 打了声母等韵母时左下角的 Shift 键变成 ing；见 KeysConfigHelper.setSemicolonOnShift、[SemicolonShiftKey]。
      */
     val doublePinyinSemicolonOnShift: Boolean = false,
-    /** 中文全拼 26 键中英混输（nihaohello → 你好hello），默认关；见 app/data/cyime_mixed_input.lua。 */
+    /** 中文全拼 26 键中英混输（nihaohello → 你好hello），默认关；见 app/data/cayboard_mixed_input.lua。 */
     val mixedInput: Boolean = false,
-    /** 中文全拼 26 键、双拼和九键补出生僻字（瀺 chan、槻 gui），默认关；见 app/data/cyime_rare_chars.lua。 */
+    /** 中文全拼 26 键、双拼和九键补出生僻字（瀺 chan、槻 gui），默认关；见 app/data/cayboard_rare_chars.lua。 */
     val rareCharacters: Boolean = false,
     /**
-     * 中文候选和上屏用台湾正体（台灣、計畫），默认关；Rime 选项 traditionalization，转换表见 assets/rime_chinese/opencc。
+     * 中文候选和上屏用台湾正体（台灣、計畫），默认关；traditionalization 选项控制，转换表见 assets/cayboard_chinese/opencc。
      * 注音也跟这一个开关（11-09 合并了原来单独的「注音输出简体」）：关时注音方案开 zhuyin_simplified 转简体。
      */
     val traditionalOutput: Boolean = false,
-    /** 打出“时间、日期、星期”时紧跟着给当前时间和日期（15:35、2026-10-31），默认开；Rime 滤镜 cyime_datetime（librime-t9 datetime_filter.h）。 */
+    /** 打出“时间、日期、星期”时紧跟着给当前时间和日期（15:35、2026-10-31），默认开；由 cayboard_datetime 滤镜处理。 */
     val datetimeCandidates: Boolean = DEFAULT_CHINESE_CANDIDATE_EXTRAS,
     /** 英文选词后自动加空格（别人请求，默认关）；见 service/EnglishAutoSpace.kt。 */
     val englishAutoSpace: Boolean = false,
@@ -162,11 +162,11 @@ data class KeyboardInputPreferences(
     val emailSuffixes: Boolean = true,
     /** 网址、邮箱框一进去就是英文（默认开，原有行为）；关掉后沿用当前语言，密码框照旧锁英文。见 service/EditorSessionInputPolicy.kt。 */
     val addressFieldsEnglish: Boolean = true,
-    /** 中文候选在词后面多出对应表情（开心 😄），默认开；Rime 选项 emoji，表情表 opencc/emoji.json（雾凇）。 */
+    /** 中文候选在词后面多出对应表情（开心 😄），默认开；emoji 选项控制，表情表 opencc/emoji.json（雾凇）。 */
     val candidateEmoji: Boolean = DEFAULT_CHINESE_CANDIDATE_EXTRAS,
-    /** 打符号名出符号（加号 +、问号 ？ ?），默认开；Rime 选项 cyime_symbol_names，符号表 assets/rime_chinese/opencc/cyime_symbols.txt。 */
+    /** 打符号名出符号（加号 +、问号 ？ ?），默认开；cayboard_symbol_names 选项控制，符号表 assets/cayboard_chinese/opencc/cayboard_symbols.txt。 */
     val symbolNames: Boolean = DEFAULT_CHINESE_CANDIDATE_EXTRAS,
-    /** 打希腊字母名出希腊字母（xita θ、pi π、alpha α），默认开；Rime 选项 cyime_greek_letters，见 app/data/cyime_greek_letters.lua。 */
+    /** 打希腊字母名出希腊字母（xita θ、pi π、alpha α），默认开；cayboard_greek_letters 选项控制，见 app/data/cayboard_greek_letters.lua。 */
     val greekLetters: Boolean = DEFAULT_CHINESE_CANDIDATE_EXTRAS,
     val cylmLongAlternative: Boolean = false,
     val symbolInputMode: SymbolInputMode = SymbolInputMode.SWIPE_UP,
@@ -268,7 +268,7 @@ data class KeyboardInputPreferences(
         /** 字母键帽显示大写。 */
         const val UPPERCASE_KEY_LABELS_KEY = "uppercase_key_labels"
         const val CHINESE_UPPERCASE_KEY_LABELS_KEY = "chinese_uppercase_key_labels"
-        /** 时间日期候选开关；同中英混输，输入法按键前读它（ImeKeyRouter），关掉时设 Rime 选项 _cyime_datetime_off。 */
+        /** 时间日期候选开关；同中英混输，输入法按键前读它（ImeKeyRouter），关掉时设 _cayboard_datetime_off 选项。 */
         const val DATETIME_CANDIDATES_KEY = "datetime_candidates"
         const val DEFAULT_CHINESE_CANDIDATE_EXTRAS = true
         /** 中文滑行输入；新键，旧版本没写过，读不到就是关。 */
@@ -284,7 +284,7 @@ data class KeyboardInputPreferences(
         const val DOUBLE_PINYIN_KEY_HINTS_WITH_CORNERS_KEY = "double_pinyin_key_hints_with_corners"
         /** ing 放在 Shift 键上开关；设置在「双拼方案」页的微软双拼一栏。 */
         const val DOUBLE_PINYIN_SEMICOLON_ON_SHIFT_KEY = "double_pinyin_semicolon_on_shift"
-        /** 日语长音键位置（JapaneseLongVowelKey 的名字）；输入法每键前读它写进引擎选项 `_cyime_l_letter`。 */
+        /** 日语长音键位置（JapaneseLongVowelKey 的名字）；输入法每键前读它写进引擎选项 `_cayboard_l_letter`。 */
         const val JAPANESE_LONG_VOWEL_KEY = "japanese_long_vowel_key"
         /** 英文选词后自动加空格开关；输入法选词时读它，改了下一次选词就生效。 */
         const val ENGLISH_AUTO_SPACE_KEY = "english_auto_space"
@@ -299,9 +299,9 @@ data class KeyboardInputPreferences(
         const val ADDRESS_FIELDS_ENGLISH_KEY = "address_fields_english"
         /** 候选里显示表情开关；同繁体输出，输入法按键前读它（ImeKeyRouter）。 */
         const val CANDIDATE_EMOJI_KEY = "candidate_emoji"
-        /** 打符号名出符号开关；同表情，输入法按键前读它（ImeKeyRouter），写 Rime 选项 cyime_symbol_names。 */
+        /** 打符号名出符号开关；同表情，输入法按键前读它（ImeKeyRouter），写入 cayboard_symbol_names 选项。 */
         const val SYMBOL_NAMES_KEY = "symbol_name_candidates"
-        /** 打希腊字母名出希腊字母开关；同符号名，写 Rime 选项 cyime_greek_letters。 */
+        /** 打希腊字母名出希腊字母开关；同符号名，写入 cayboard_greek_letters 选项。 */
         const val GREEK_LETTERS_KEY = "greek_letter_candidates"
         const val CYLM_LONG_ALTERNATIVE_KEY = "cylm_long_alternative"
         /** 底部留白滑动移动光标，见 [bottomLiftCursor]。 */

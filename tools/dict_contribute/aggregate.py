@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""合并用户贡献的词库文件（App 里「词库 › 贡献」分享或上传的 cyime_dict_contribute_*.txt）。
+"""合并用户贡献的词库文件（App 里「词库 › 贡献」分享或上传的 cayboard_dict_contribute_*.txt）。
 
 脱敏（App 里已经做过一遍，这里按同样规则再做一遍，旧版或改过的文件也挡得住）：
 - 只收 2～4 个汉字、拼音、1～999 次的行；只认格式版本 1，别的版本整份跳过（以后改格式在这里加分支）。
@@ -11,7 +11,7 @@
 
 用法：
   python tools/dict_contribute/aggregate.py <文件或目录>... --out merged.tsv [--known 词库.dict.yaml ...]
---known 默认用仓库 app/src/main/assets/rime/ 下的全部 .dict.yaml。
+--known 默认用仓库 app/src/main/assets/cayboard_base/ 下的全部 .dict.yaml。
 输出每行：词<TAB>拼音<TAB>人数<TAB>次数合计<TAB>新词(词库里没有时为 new)；旁边写 <out>.report.txt 记各类去掉了多少。
 """
 import argparse
@@ -20,14 +20,14 @@ import pathlib
 import re
 import sys
 
-FORMAT = "cyime-dict-contribute"
+FORMAT = "cayboard-dict-contribute"
 VERSIONS = {"1"}
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 RULES = ROOT / "app/src/main/java/com/cayboard/settings/DictContributionRules.kt"
-DEFAULT_KNOWN = ROOT / "app/src/main/assets/rime"
+DEFAULT_KNOWN = ROOT / "app/src/main/assets/cayboard_base"
 NUMBER_CHARS = set("零〇一二三四五六七八九十两百千万亿幺壹贰叁肆伍陆柒捌玖拾佰仟")
 NICKNAME_PREFIXES = set("小老阿")
-NAME = re.compile(r"cyime_dict_contribute_([0-9a-f]{16})_(\d{8})\.txt$")
+NAME = re.compile(r"cayboard_dict_contribute_([0-9a-f]{16})_(\d{8})\.txt$")
 HAN = re.compile(r"^[㐀-鿿\U00020000-\U0003ffff]{2,4}$")
 PINYIN = re.compile(r"^([a-z]+( [a-z]+)*)?$")
 
@@ -104,7 +104,7 @@ def main(argv=None):
     files = []
     for item in args.inputs:
         path = pathlib.Path(item)
-        files += sorted(path.rglob("cyime_dict_contribute_*.txt")) + sorted(path.rglob("*.txt.gz")) \
+        files += sorted(path.rglob("cayboard_dict_contribute_*.txt")) + sorted(path.rglob("*.txt.gz")) \
             if path.is_dir() else [path]
 
     latest = {}

@@ -78,7 +78,7 @@ class ModeNavigationTest {
     @Test fun splitEnglishCommaTapAndPeriodSwipe() = verifyComma(true, split = true)
 
     private fun verifyComma(english: Boolean, split: Boolean = false) {
-        mount("rime_ice", english = english, split = split, width = if (split) 1000 else 400)
+        mount("cayboard_pinyin", english = english, split = split, width = if (split) 1000 else 400)
         val comma = rule.onNodeWithText(if (english) "," else "，", useUnmergedTree = true)
         comma.performTouchInput { click() }
         comma.performTouchInput { swipe(center, center - androidx.compose.ui.geometry.Offset(0f, 80f), 180) }
@@ -105,7 +105,7 @@ class ModeNavigationTest {
     }
 
     @Test fun heldShiftSupportsTwoFingersAndRepeatedLetters() {
-        mount("rime_ice", english = true)
+        mount("cayboard_pinyin", english = true)
         val root = rule.onNodeWithTag("navigation-keyboard", true)
         val origin = root.fetchSemanticsNode().boundsInRoot.topLeft
         val shift = rule.onNodeWithTag("shift-key").fetchSemanticsNode().boundsInRoot.center - origin
@@ -125,7 +125,7 @@ class ModeNavigationTest {
     @Test fun shiftSlideTypesOneUppercaseAndReleases() = verifyShiftSlide(false)
     @Test fun splitShiftSlideCrossesTheGapAndReleases() = verifyShiftSlide(true)
     @Test fun shiftDragWaitsForReleaseDespiteLongHoldAndVerticalMovement() {
-        mount("rime_ice", english = true)
+        mount("cayboard_pinyin", english = true)
         val shift = rule.onNodeWithTag("shift-key")
         val origin = shift.fetchSemanticsNode().boundsInRoot.topLeft
         val p = rule.onNodeWithText("p").fetchSemanticsNode().boundsInRoot.center - origin
@@ -141,7 +141,7 @@ class ModeNavigationTest {
     }
 
     @Test fun shiftDragReturningToShiftOrReleasedOutsideTypesNothingAndDoesNotToggle() {
-        mount("rime_ice", english = true)
+        mount("cayboard_pinyin", english = true)
         val shift = rule.onNodeWithTag("shift-key")
         val origin = shift.fetchSemanticsNode().boundsInRoot.topLeft
         val p = rule.onNodeWithText("p").fetchSemanticsNode().boundsInRoot.center - origin
@@ -166,7 +166,7 @@ class ModeNavigationTest {
         rule.runOnIdle { assertEquals(listOf("Q", "W"), keys); assertEquals(ShiftMode.OFF, vm.shiftMode.value) }
     }
     private fun verifyShiftSlide(split: Boolean) {
-        mount("rime_ice", english = true, split = split, width = if (split) 1000 else 400)
+        mount("cayboard_pinyin", english = true, split = split, width = if (split) 1000 else 400)
         val key = rule.onNodeWithTag("shift-key")
         val node = key.fetchSemanticsNode()
         val target = rule.onNodeWithText("p").fetchSemanticsNode().positionOnScreen
@@ -175,7 +175,7 @@ class ModeNavigationTest {
         rule.runOnIdle { assertEquals(listOf("P", "q"), keys); assertEquals(ShiftMode.OFF, vm.shiftMode.value) }
     }
     @Test fun shiftTapDoubleTapAndCancelledSlideRetainTheirMeanings() {
-        mount("rime_ice", english = true)
+        mount("cayboard_pinyin", english = true)
         val shift = rule.onNodeWithTag("shift-key")
         shift.performTouchInput { click() }
         rule.onNodeWithText("A").performTouchInput { click() }
@@ -255,14 +255,14 @@ class ModeNavigationTest {
         }
     }
 
-    @Test fun chinese26UsesDirectPeerNavigation() { mount("rime_ice"); verifyTriangle("中文", "chinese26") }
-    @Test fun englishReturnNeverUsesGlobeOrChangesLanguage() { mount("rime_ice", true); verifyTriangle("ABC", "english") }
+    @Test fun chinese26UsesDirectPeerNavigation() { mount("cayboard_pinyin"); verifyTriangle("中文", "chinese26") }
+    @Test fun englishReturnNeverUsesGlobeOrChangesLanguage() { mount("cayboard_pinyin", true); verifyTriangle("ABC", "english") }
     @Test fun chinese14KeepsTheSameTwoSlots() { mount("pinyin_14jian"); verifyTriangle("中文", "chinese14") }
     @Test fun doublePinyinKeepsTheSameTwoSlots() { mount("double_pinyin_flypy"); verifyTriangle("中文", "double-pinyin") }
     @Test fun nineKeyOnTabletKeepsExactNavigationBounds() { mount("t9_pinyin", width = 1000); verifyTriangle("中文", "tablet-t9") }
     @Test fun strokeKeepsExactNavigationBounds() { mount("stroke"); verifyTriangle("中文", "stroke") }
-    @Test fun splitKeyboardKeepsTheTwoSlotsAtTheLeftEdge() { mount("rime_ice", true, 1000, true); verifyTriangle("ABC", "split") }
-    @Test fun floatingKeyboardKeepsItsSlotCoordinates() { mount("rime_ice", false, 1000, floating = true); verifyTriangle("中文", "floating") }
+    @Test fun splitKeyboardKeepsTheTwoSlotsAtTheLeftEdge() { mount("cayboard_pinyin", true, 1000, true); verifyTriangle("ABC", "split") }
+    @Test fun floatingKeyboardKeepsItsSlotCoordinates() { mount("cayboard_pinyin", false, 1000, floating = true); verifyTriangle("中文", "floating") }
     @Test fun japanese26ReturnsToJapanese() { mount("jaroomaji"); verifyTriangle("あいう", "japanese26") }
 
     @Test fun japaneseFlickKeepsItsKeysAndOpensCommonSymbolsInOneTap() {
@@ -283,7 +283,7 @@ class ModeNavigationTest {
     }
 
     @Test fun handwritingReturnsToTheCanvasFromEitherSecondaryPage() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         rule.runOnIdle { vm.switchMain(MainType.HANDWRITING) }
         val first = rule.onNodeWithTag("handwriting-key:symbol", true).fetchSemanticsNode().boundsInRoot
         val second = rule.onNodeWithTag("handwriting-key:number", true).fetchSemanticsNode().boundsInRoot

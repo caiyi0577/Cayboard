@@ -11,14 +11,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 /**
- * 英文单词方案（cyime_english）不开 ascii 也是英文键盘：角标和英文直接输入一样是英文半角符号，
+ * 英文单词方案（cayboard_english）不开 ascii 也是英文键盘：角标和英文直接输入一样是英文半角符号，
  * 不套中文符号（11-12 反馈：英文键盘没改设置就自动套用中文符号布局、全角）。
  */
 class EnglishWordsSymbolsTest {
     @get:Rule val temp = TemporaryFolder()
 
     private fun repoFile(rel: String) = listOf(File(rel), File("app/$rel"), File("../$rel")).first { it.isFile }
-    private val yaml by lazy { repoFile("src/main/assets/xime.yaml").readText() }
+    private val yaml by lazy { repoFile("src/main/assets/cayboard.yaml").readText() }
 
     @After fun reset() {
         KeysConfigHelper.setActiveKeyboardSchema("")
@@ -27,12 +27,12 @@ class EnglishWordsSymbolsTest {
 
     private fun loadKeyboards() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { yaml.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { yaml.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         val context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         KeysConfigHelper.loadConfig(context)
     }

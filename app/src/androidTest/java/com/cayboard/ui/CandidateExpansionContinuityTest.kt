@@ -22,7 +22,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.*
 import com.cayboard.viewmodel.KeyboardUiState
@@ -45,7 +45,7 @@ class CandidateExpansionContinuityTest {
         val candidates = mutableStateOf(com.cayboard.service.CandidateState(
             candidates = words.take(15), inputText = "746", preeditText = "pin", isComposing = true,
             expandedCandidatesLoaded = true,
-            expandedCandidates = words.map { com.cayboard.rime.RimeCandidate(it, "") },
+            expandedCandidates = words.map { com.cayboard.engine.EngineCandidate(it, "") },
         ))
         var selected = -1
         var panelWidth by mutableStateOf(360.dp)
@@ -114,7 +114,7 @@ class CandidateExpansionContinuityTest {
         rule.runOnIdle {
             candidates.value = candidates.value.copy(
                 associationCandidates = listOf("无关联想刷新"),
-                expandedCandidates = candidates.value.expandedCandidates + com.cayboard.rime.RimeCandidate("补页候选", ""),
+                expandedCandidates = candidates.value.expandedCandidates + com.cayboard.engine.EngineCandidate("补页候选", ""),
             )
         }
         rule.onNodeWithTag("expanded-candidate:$prefixCount").performTouchInput { up() }

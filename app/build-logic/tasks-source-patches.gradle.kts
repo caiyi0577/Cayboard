@@ -1,9 +1,9 @@
 // Keep local engine changes reproducible without publishing commits to upstream submodules.
 val applyCayboardSourcePatches by tasks.registering {
     val patches = listOf(
-        "src/main/jni/librime" to "cyime-librime.patch",
-        "src/main/jni/librime-lua-deps" to "cyime-lua-android.patch",
-        "src/main/assets/rime" to "cyime-rime-schema.patch",
+        "src/main/jni/librime" to "cayboard-librime.patch",
+        "src/main/jni/librime-lua-deps" to "cayboard-lua-android.patch",
+        "src/main/assets/cayboard_base" to "cayboard-base-schema.patch",
     )
     doLast {
         for ((directory, name) in patches) {

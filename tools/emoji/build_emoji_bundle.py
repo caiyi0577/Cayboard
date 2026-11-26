@@ -64,7 +64,7 @@ for name in ['Noto-OFL.txt','Unicode-LICENSE.txt','Apple-README.md','sources.jso
     'Do not publish the Apple font as open-source or redistribute without appropriate rights.\n',encoding='utf-8')
 
 # Preserve curated upstream translations; supplement with CLDR short names and keywords.
-upstream = root/'app/build/generated/chinese-assets/rime_ice/opencc/emoji.txt'
+upstream = root/'app/build/generated/chinese-assets/cayboard_pinyin/opencc/emoji.txt'
 mapping = {}
 for line in upstream.read_text(encoding='utf-8').splitlines():
     if '\t' in line and not line.startswith('#'):
@@ -81,9 +81,9 @@ for name in ['zh.xml','zh-derived.xml']:
             values = mapping.setdefault(word,[word])
             if emoji not in values and len(values) < 4: values.append(emoji)
 mapping['喷泉'] = ['喷泉','⛲']
-opencc = assets/'rime_chinese/opencc'
+opencc = assets/'cayboard_chinese/opencc'
 (opencc/'emoji.txt').write_text('\n'.join(k+'\t'+' '.join(v) for k,v in sorted(mapping.items()))+'\n',encoding='utf-8')
-shutil.copyfile(root/'app/build/generated/chinese-assets/rime_ice/opencc/emoji.json',opencc/'emoji.json')
+shutil.copyfile(root/'app/build/generated/chinese-assets/cayboard_pinyin/opencc/emoji.json',opencc/'emoji.json')
 report = {'unicode':'18.0','emoji_count':sum(map(len,groups.values())),
           'groups':{k:len(v) for k,v in groups.items()},'keyword_count':len(mapping),
           'font_outputs':{name:{'bytes':(out/name).stat().st_size,'sha256':hashlib.sha256((out/name).read_bytes()).hexdigest()} for name in ['Android.ttf','iOS.ttf']}}

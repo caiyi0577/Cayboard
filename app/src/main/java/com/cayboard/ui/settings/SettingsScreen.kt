@@ -136,7 +136,7 @@ fun SettingsScreen(
             BackHandler(enabled = initialRoute == "schema", onBack = leaveSchema)
             SchemaSettingsContent(
                 onBack = leaveSchema,
-                onNavigateToRimeFileBrowser = { navController.navigate(SettingsRoutes.RimeFileBrowser) },
+                onNavigateToEngineFileBrowser = { navController.navigate(SettingsRoutes.EngineFileBrowser) },
             )
         }
         composable(SettingsRoutes.ModelLocal) {
@@ -181,8 +181,8 @@ fun SettingsScreen(
                 }
             }
         }
-        composable(SettingsRoutes.RimeFileBrowser) {
-            RimeFileBrowserContent(
+        composable(SettingsRoutes.EngineFileBrowser) {
+            EngineFileBrowserContent(
                 onBack = { navController.popBackStack() }
             )
         }

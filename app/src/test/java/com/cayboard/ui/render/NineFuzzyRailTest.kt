@@ -15,7 +15,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.DoublePinyinScheme
 import com.cayboard.settings.NineKeyFuzzyReadings
@@ -45,7 +45,7 @@ class NineFuzzyRailTest {
         rule.onNodeWithText("模糊音", useUnmergedTree = true).performScrollTo()
         rule.onNodeWithText("z 和 zh", useUnmergedTree = true).performScrollTo().performTouchInput { click() }
         rule.runOnIdle { org.junit.Assert.assertTrue(SpellingPatches.Fuzzy.Z in SpellingPatches.fuzzy(rule.activity)) }
-        System.getenv("CYIME_RENDER_OUT")?.let {
+        System.getenv("CAYBOARD_RENDER_OUT")?.let {
             val root = rule.activity.window.decorView
             val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
             rule.runOnIdle { root.draw(Canvas(bitmap)) }
@@ -78,7 +78,7 @@ class NineFuzzyRailTest {
         rule.onAllNodesWithText("≈", substring = true, useUnmergedTree = true).assertCountEquals(0)
         rule.onNodeWithContentDescription("相近读音 shi", useUnmergedTree = true).performTouchInput { click() }
         verify(controller).onChoiceSelected(selected)
-        System.getenv("CYIME_RENDER_OUT")?.let {
+        System.getenv("CAYBOARD_RENDER_OUT")?.let {
             val root = rule.activity.window.decorView
             val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
             val bounds = rule.onNodeWithTag("keyboard").fetchSemanticsNode().boundsInWindow

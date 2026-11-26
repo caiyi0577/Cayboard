@@ -100,7 +100,7 @@ class DictContributionRulesTest {
     @Test fun fileHasHeaderAndRowsOnly() {
         val text = DictContributionRules.encode(listOf(DictContributionRules.Word("通话", "tong hua", 3)),
             "0123456789abcdef", "pinyin_simp", "1.15.64")
-        assertEquals("# cyime-dict-contribute 1\n# contributor\t0123456789abcdef\n# schema\tpinyin_simp\n" +
+        assertEquals("# cayboard-dict-contribute 1\n# contributor\t0123456789abcdef\n# schema\tpinyin_simp\n" +
             "# app\t1.15.64\n通话\ttong hua\t3\n", text)
         assertFalse("user_id" in text)
     }

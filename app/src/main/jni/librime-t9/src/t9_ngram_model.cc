@@ -12,10 +12,10 @@
 #include <mutex>
 #include <vector>
 
-using cyime_t9_ngram::HashSlot;
-using cyime_t9_ngram::Header;
-using cyime_t9_ngram::Header3;
-using cyime_t9_ngram::WordEntry;
+using cayboard_t9_ngram::HashSlot;
+using cayboard_t9_ngram::Header;
+using cayboard_t9_ngram::Header3;
+using cayboard_t9_ngram::WordEntry;
 
 namespace {
 std::mutex& OpenMutex() {
@@ -66,8 +66,8 @@ bool T9NgramModel::Map(const std::string& path) {
   size_ = static_cast<size_t>(st.st_size);
   const auto* bytes = static_cast<const char*>(data_);
   bool valid = false;
-  if (std::memcmp(bytes, cyime_t9_ngram::kMagic, sizeof(cyime_t9_ngram::kMagic)) == 0) valid = MapV2(bytes);
-  else if (std::memcmp(bytes, cyime_t9_ngram::kMagic3, sizeof(cyime_t9_ngram::kMagic3)) == 0 &&
+  if (std::memcmp(bytes, cayboard_t9_ngram::kMagic, sizeof(cayboard_t9_ngram::kMagic)) == 0) valid = MapV2(bytes);
+  else if (std::memcmp(bytes, cayboard_t9_ngram::kMagic3, sizeof(cayboard_t9_ngram::kMagic3)) == 0 &&
            size_ >= sizeof(Header3)) valid = MapV3(bytes);
   if (!valid) { munmap(data_, size_); data_ = nullptr; return false; }
   return true;
@@ -76,7 +76,7 @@ bool T9NgramModel::Map(const std::string& path) {
 bool T9NgramModel::MapV2(const char* bytes) {
   const Header& h = *reinterpret_cast<const Header*>(bytes);
   const uint64_t words = h.words, bigrams = h.bigrams, trigrams = h.trigrams;
-  const bool valid = h.version == cyime_t9_ngram::kVersion && h.hash_capacity &&
+  const bool valid = h.version == cayboard_t9_ngram::kVersion && h.hash_capacity &&
       !(h.hash_capacity & (h.hash_capacity - 1)) && h.eos < words && h.bos < words &&
       h.hash_offset + h.hash_capacity * sizeof(HashSlot) <= size_ &&
       h.word_offset + words * sizeof(WordEntry) <= size_ &&
@@ -114,9 +114,9 @@ bool T9NgramModel::MapV3(const char* bytes) {
   const Header3& h = *reinterpret_cast<const Header3*>(bytes);
   const uint64_t words = h.words, bigrams = h.bigrams, trigrams = h.trigrams;
   const uint64_t blocks = (bigrams >> h.tri_block_shift) + 1;
-  const bool valid = h.version == cyime_t9_ngram::kVersion3 && h.hash_capacity &&
+  const bool valid = h.version == cayboard_t9_ngram::kVersion3 && h.hash_capacity &&
       !(h.hash_capacity & (h.hash_capacity - 1)) && h.eos < words && h.bos < words &&
-      words <= cyime_t9_ngram::kMaxCompactWords && h.tri_block_shift <= 16 &&
+      words <= cayboard_t9_ngram::kMaxCompactWords && h.tri_block_shift <= 16 &&
       h.hash_offset + h.hash_capacity * sizeof(uint64_t) <= size_ &&
       h.word_offset + words * 3 * sizeof(int16_t) <= size_ &&
       h.begin_offset + (words + 1) * sizeof(uint32_t) <= size_ &&
@@ -153,13 +153,13 @@ bool T9NgramModel::MapV3(const char* bytes) {
 }
 
 int32_t T9NgramModel::Id(const char* text, size_t size) const {
-  const uint64_t key = cyime_t9_ngram::Hash(text, size);
+  const uint64_t key = cayboard_t9_ngram::Hash(text, size);
   if (compact_) {
-    const uint64_t high = key & cyime_t9_ngram::kKeyMask;
+    const uint64_t high = key & cayboard_t9_ngram::kKeyMask;
     for (uint64_t i = key & hash_mask_;; i = (i + 1) & hash_mask_) {
       const uint64_t slot = slots3_[i];
       if (!slot) return kUnseen;
-      if ((slot & cyime_t9_ngram::kKeyMask) == high) return static_cast<int32_t>((slot & 0xFFFFFF) - 1);
+      if ((slot & cayboard_t9_ngram::kKeyMask) == high) return static_cast<int32_t>((slot & 0xFFFFFF) - 1);
     }
   }
   for (uint64_t i = key & hash_mask_;; i = (i + 1) & hash_mask_) {
@@ -176,9 +176,9 @@ int64_t T9NgramModel::FindBigram(uint64_t first, uint64_t last, uint32_t word) c
   const uint64_t end = last;
   while (first < last) {
     const uint64_t mid = first + (last - first) / 2;
-    if (cyime_t9_ngram::ReadId24(next3_ + mid * 3) < word) first = mid + 1; else last = mid;
+    if (cayboard_t9_ngram::ReadId24(next3_ + mid * 3) < word) first = mid + 1; else last = mid;
   }
-  return first < end && cyime_t9_ngram::ReadId24(next3_ + first * 3) == word ? static_cast<int64_t>(first) : -1;
+  return first < end && cayboard_t9_ngram::ReadId24(next3_ + first * 3) == word ? static_cast<int64_t>(first) : -1;
 }
 
 int64_t T9NgramModel::FindTrigram(uint64_t first, uint64_t last, uint32_t word) const {
@@ -189,9 +189,9 @@ int64_t T9NgramModel::FindTrigram(uint64_t first, uint64_t last, uint32_t word) 
   const uint64_t end = last;
   while (first < last) {
     const uint64_t mid = first + (last - first) / 2;
-    if (cyime_t9_ngram::ReadId24(tri_next3_ + mid * 3) < word) first = mid + 1; else last = mid;
+    if (cayboard_t9_ngram::ReadId24(tri_next3_ + mid * 3) < word) first = mid + 1; else last = mid;
   }
-  return first < end && cyime_t9_ngram::ReadId24(tri_next3_ + first * 3) == word ? static_cast<int64_t>(first) : -1;
+  return first < end && cayboard_t9_ngram::ReadId24(tri_next3_ + first * 3) == word ? static_cast<int64_t>(first) : -1;
 }
 
 double T9NgramModel::Start(int32_t word, bool sentence_start) const {

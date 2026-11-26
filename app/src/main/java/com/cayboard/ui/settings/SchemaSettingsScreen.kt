@@ -88,7 +88,7 @@ import com.cayboard.ui.menubar.dragOrderItem
 @Composable
 fun SchemaSettingsContent(
     onBack: () -> Unit,
-    onNavigateToRimeFileBrowser: () -> Unit = {},
+    onNavigateToEngineFileBrowser: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val viewModel: SchemaSettingsViewModel = viewModel()
@@ -150,7 +150,7 @@ fun SchemaSettingsContent(
                 Column {
                     Text("可以导入：", style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        "· Rime 方案压缩包(.zip、.tar.gz)，比如从 GitHub 下载的方案仓库\n" +
+                        "· 输入方案压缩包(.zip、.tar.gz)，比如从 GitHub 下载的方案仓库\n" +
                             "· 单个方案或词库文件(.schema.yaml、.dict.yaml)",
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -429,13 +429,13 @@ fun SchemaSettingsContent(
                         }
                     }
                 }
-                // 直接看、改 Rime 文件只用来排错，放在高级方案后面。
+                // 直接查看或编辑方案文件只用于排错，放在高级方案后面。
                 item {
-                    TextButton(onClick = onNavigateToRimeFileBrowser) {
-                        Text("Rime 配置文件(高级)")
+                    TextButton(onClick = onNavigateToEngineFileBrowser) {
+                        Text("输入方案文件(高级)")
                     }
                 }
-                // 启停、导入已自动应用（#340）；全量重新部署只用来修坏掉的编译结果，或手动改了 Rime 文件之后。
+                // 启停、导入已自动应用（#340）；全量重新部署只用来修坏掉的编译结果，或手动改了方案文件之后。
                 item {
                     TextButton(onClick = { viewModel.deploySchema() }, enabled = !uiState.isDeploying) {
                         if (uiState.isDeploying) {

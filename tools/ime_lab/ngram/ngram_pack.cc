@@ -18,7 +18,7 @@
 #include "ngram_write.h"
 #include "t9_ngram_model.h"
 
-using namespace cyime_t9_ngram;
+using namespace cayboard_t9_ngram;
 
 namespace {
 template <class T>

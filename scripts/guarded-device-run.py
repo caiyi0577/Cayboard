@@ -1,7 +1,7 @@
 """Runs an automated typing/test command on a device so it leaves the device exactly as it found it.
 
-Before: snapshot Cayboard's settings (全角, scheme, layout and every other kime_settings key), custom layouts,
-Rime saved options and the user dictionary.
+Before: snapshot Cayboard's settings (全角, scheme, layout and every other saved setting), custom layouts,
+input-engine options and the user dictionary.
 After (also when the command fails or is interrupted): put all of it back, restart the IME process (only when a
 file kept in memory had to be put back, and after the keyboard is hidden), reselect the IME, and check everything matches the snapshot.
 Refuses to start unless Cayboard is the default keyboard, and after the restart sets it again until it sticks.
@@ -99,7 +99,7 @@ def main():
             time.sleep(20)
             restored = dev_op(args.serial, "restore")
         print(restored)
-        # Rime options also live in memory; when one had to be put back,
+        # Engine options also live in memory; when one had to be put back,
         # a fresh process reads it. Builds that say restart=no need none: a restart while the user is
         # typing on the device kills the keyboard under their fingers.
         ime_back = True

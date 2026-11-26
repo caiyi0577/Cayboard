@@ -21,7 +21,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.CustomKeyboardLayouts
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
@@ -51,7 +51,7 @@ import java.io.File
 /**
  * 「合并键均匀排布」改前 / 改后：自建 18 键（参考图的 Q WE RT Y U IO P）、20 键布局和内置 14 键，手机竖屏 320dp、360dp 宽，
  * 键盘体高 232dp。列是 宽度-strict（严格对齐 26 键）/ 宽度-even（均匀排布）/ 宽度-even-rounder（再加大圆角）。
- * 每个主题组合一张总图。只在设了 CYIME_RENDER_OUT 时出图。
+ * 每个主题组合一张总图。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w420dp-h900dp-xhdpi")
@@ -77,7 +77,7 @@ class EvenMergedKeysRenderTest {
         Triple("sakura_pink", false, true))
 
     @Test fun renderEvenMergedKeys() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         File(app.filesDir, "custom-keyboard-layouts.json").writeText(org.json.JSONArray().apply {

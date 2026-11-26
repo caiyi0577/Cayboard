@@ -10,7 +10,7 @@ import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.AppFonts
 import com.cayboard.ui.theme.KeyboardThemes
 
-/** Real Compose rendering without starting ARM-only inference/Rime services on an x86 emulator.
+/** Real Compose rendering without starting ARM-only inference/input-engine services on an x86 emulator.
  * Only isolated UI tests may use this runner; it cannot verify IME or model integration.
  */
 class UiRenderingTestRunner : AndroidJUnitRunner() {

@@ -1,10 +1,10 @@
-# 谷歌开发者验证与 CyIME 安装
+# 谷歌开发者验证与 Cayboard 安装
 
 记录时间：2026-10-31。依据 [谷歌官方说明](https://developer.android.com/developer-verification) 和 [官方 FAQ](https://developer.android.com/developer-verification/guides/faq)。规则还在推进，落地前要再核对一次。
 
 ## 结论
 
-CyIME 不在谷歌登记开发者身份（作者 2026-10-31 决定）。不登记不影响国行手机，也不影响 adb 安装；带谷歌服务的手机从 2027 年起需要用户自己开一次「高级安装」，之后安装和更新照常。
+Cayboard 不在谷歌登记开发者身份（作者 2026-10-31 决定）。不登记不影响国行手机，也不影响 adb 安装；带谷歌服务的手机从 2027 年起需要用户自己开一次「高级安装」，之后安装和更新照常。
 
 ## 谷歌的规定
 
@@ -35,20 +35,20 @@ CyIME 不在谷歌登记开发者身份（作者 2026-10-31 决定）。不登�
 3. 按提示重启手机，重新解锁。
 4. 等待 24 小时（只需要等一次）。
 5. 回到这个开关，用指纹、面容或锁屏密码确认，选择开启 7 天或一直开启。
-6. 之后像平常一样从 [Releases](https://github.com/Cyletix/CyIME/releases) 下载安装包安装。
+6. 之后像平常一样从 [Cayboard Releases](https://github.com/caiyi0577/Cayboard/releases) 下载安装包安装。
 
-建议选一直开启：选 7 天的话，到期后 CyIME 的更新会装不上，要再开一次。
+建议选一直开启：选 7 天的话，到期后 Cayboard 的更新会装不上，要再开一次。
 
 也可以用电脑 adb 安装，不用等待：
 
 ```bash
-adb install -r CyIME-<版本>-arm64-v8a.apk
+adb install -r Cayboard-<版本>-arm64-v8a.apk
 ```
 
-## 对 CyIME 功能的影响
+## 对 Cayboard 功能的影响
 
 - 应用内「检查更新」下载安装包后调用系统安装程序。在带谷歌服务的手机上，2027 年以后要先开高级安装才能装上；没开时要提示用户看这份说明。
-- F-Droid 公开拒绝配合，也不会替开发者登记（[公开信](https://f-droid.org/en/2026/02/24/open-letter-opposing-developer-verification.html)）。CyIME 上了 F-Droid 也一样要走高级安装，不能绕过。
+- F-Droid 公开拒绝配合，也不会替开发者登记（[公开信](https://f-droid.org/en/2026/02/24/open-letter-opposing-developer-verification.html)）。Cayboard 上了 F-Droid 也一样要走高级安装，不能绕过。
 
 ## 待办
 

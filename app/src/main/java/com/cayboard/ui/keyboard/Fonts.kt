@@ -14,8 +14,8 @@ import java.io.File
  *
  * 字体路径查找规则：
  * 1. 绝对路径（以 / 开头）：从根目录找起，如 /fonts/myfont.ttf
- * 2. 相对路径（包含 / 但不以 / 开头）：相对于 rime/ 目录，如 fonts/myfont.ttf
- * 3. 仅文件名（不包含 /）：相对于 rime/ 目录查找，如 myfont.ttf
+ * 2. 相对路径（包含 / 但不以 / 开头）：相对于 Cayboard 输入数据目录，如 fonts/myfont.ttf
+ * 3. 仅文件名（不包含 /）：相对于 Cayboard 输入数据目录查找，如 myfont.ttf
  */
 object AppFonts {
     private const val TAG = "AppFonts"
@@ -24,7 +24,7 @@ object AppFonts {
     private var initialized = false
     private lateinit var assetManager: AssetManager
     private lateinit var filesDir: File
-    private lateinit var rimeDir: File
+    private lateinit var inputDataDir: File
 
     // 当前已加载的字体配置（用于跳过未变更的重复加载）
     private var loadedConfigHash: Int = 0
@@ -87,7 +87,7 @@ object AppFonts {
         initialized = true
         assetManager = context.assets
         filesDir = context.filesDir
-        rimeDir = File(filesDir, "rime")
+        inputDataDir = File(filesDir, "cayboard_input")
     }
 
     /**
@@ -123,16 +123,16 @@ object AppFonts {
      * 解析字体路径为 File 对象。
      * 支持四种格式：
      * - 绝对路径（以 / 开头）：相对于应用数据根目录，如 /fonts/myfont.ttf → files/fonts/myfont.ttf
-     * - rime/ 开头：相对于应用数据根目录，如 rime/fonts/myfont.ttf → files/rime/fonts/myfont.ttf
-     * - 其他相对路径（包含 /）：相对于 rime/ 目录，如 fonts/myfont.ttf → files/rime/fonts/myfont.ttf
-     * - 仅文件名（不包含 /）：仅在 rime/ 目录（配置文件同目录）查找
+     * - cayboard_input/ 开头：相对于应用数据根目录，如 cayboard_input/fonts/myfont.ttf
+     * - 其他相对路径（包含 /）：相对于 Cayboard 输入数据目录，如 fonts/myfont.ttf
+     * - 仅文件名（不包含 /）：仅在 Cayboard 输入数据目录查找
      */
     private fun resolveFontPath(fontPath: String): File {
         return when {
             fontPath.startsWith("/") -> File(filesDir, fontPath.removePrefix("/"))
-            fontPath.startsWith("rime/") -> File(filesDir, fontPath)
-            fontPath.contains("/") -> File(rimeDir, fontPath)
-            else -> File(rimeDir, fontPath)
+            fontPath.startsWith("cayboard_input/") -> File(filesDir, fontPath)
+            fontPath.contains("/") -> File(inputDataDir, fontPath)
+            else -> File(inputDataDir, fontPath)
         }
     }
 

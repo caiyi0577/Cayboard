@@ -1,22 +1,22 @@
 package com.cayboard.service
 
-import com.cayboard.rime.PinyinEditBuffer
-import com.cayboard.rime.editOffset
-import com.cayboard.rime.PinyinEditSession
-import com.cayboard.rime.PinyinEditDisplay
+import com.cayboard.engine.PinyinEditBuffer
+import com.cayboard.engine.editOffset
+import com.cayboard.engine.PinyinEditSession
+import com.cayboard.engine.PinyinEditDisplay
 import com.cayboard.ui.keyboard.isT9Schema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** No InputConnection writes: only the unconfirmed Rime code can be edited. */
+/** No InputConnection writes: only the unconfirmed engine code can be edited. */
 internal class ImePreeditEditor(private val service: CayboardInputMethodService) {
-    private val multiTap = com.cayboard.rime.PinyinMultiTap()
+    private val multiTap = com.cayboard.engine.PinyinMultiTap()
     private var liveOwner: PinyinEditSession? = null
     private var liveSession: PinyinEditSession? = null
 
     private fun enqueue(schema: String, block: suspend () -> Unit) {
         val t9Queue = if (isT9Schema(schema)) service.keyboardCallbacks?.onT9RunLiteralInput else null
-        if (t9Queue != null) t9Queue(block) else service.keyRouter.postRimeJob { block() }
+        if (t9Queue != null) t9Queue(block) else service.keyRouter.postEngineJob { block() }
     }
 
     fun open(reply: (PinyinEditSession?) -> Unit) {
@@ -27,7 +27,7 @@ internal class ImePreeditEditor(private val service: CayboardInputMethodService)
             withContext(Dispatchers.Main) { Unit }
             if (service.uiState.value.inputSessionId != state.inputSessionId ||
                 service.uiState.value.currentSchemaId != state.currentSchemaId) return@enqueue
-            val engine = service.rimeEngine
+            val engine = service.inputEngine
             val snapshot = engine.readPinyinEditSnapshot()
             val input = snapshot.getOrNull(0).orEmpty()
             val confirmed = snapshot.getOrNull(2)?.toIntOrNull()?.coerceIn(0, input.length) ?: 0
@@ -37,14 +37,14 @@ internal class ImePreeditEditor(private val service: CayboardInputMethodService)
             val unsupportedCode = rawText.any { it !in 'a'..'z' && it !in 'A'..'Z' && it != '\'' && !it.isWhitespace() && it != 'ü' }
             val prefix = if (t9) service.t9PartialSegments.joinToString("") { it.text }
                 else snapshot.getOrNull(3).orEmpty()
-            val display = PinyinEditDisplay(normalized, snapshot.getOrNull(4).orEmpty().removePrefix(prefix).trim(), t9, isMerged14 = com.cayboard.settings.InputProfiles.describe(state.currentSchemaId).layout == com.cayboard.settings.InputLayout.MERGED14, groups = com.cayboard.settings.CustomKeyboardLayouts.forSchema(state.currentSchemaId)?.rows?.flatten() ?: if (com.cayboard.settings.InputProfiles.describe(state.currentSchemaId).layout == com.cayboard.settings.InputLayout.MERGED14) com.cayboard.rime.merged14Groups else emptyList())
+            val display = PinyinEditDisplay(normalized, snapshot.getOrNull(4).orEmpty().removePrefix(prefix).trim(), t9, isMerged14 = com.cayboard.settings.InputProfiles.describe(state.currentSchemaId).layout == com.cayboard.settings.InputLayout.MERGED14, groups = com.cayboard.settings.CustomKeyboardLayouts.forSchema(state.currentSchemaId)?.rows?.flatten() ?: if (com.cayboard.settings.InputProfiles.describe(state.currentSchemaId).layout == com.cayboard.settings.InputLayout.MERGED14) com.cayboard.engine.merged14Groups else emptyList())
             val text = display.text
             // Keep the visible separators in the editor buffer. Merely opening/moving
-            // does not rewrite Rime or lock a nine-key translation; a real edit does.
+            // does not rewrite engine state or lock a nine-key translation; a real edit does.
             val session = if (input.isEmpty() || text.isEmpty() || unsupportedCode) null
             else PinyinEditSession(state.inputSessionId, state.currentSchemaId, input,
                 if (t9) "" else input.take(confirmed), prefix, text,
-                if (t9) com.cayboard.rime.offsetAfterCodeKeys(text, com.cayboard.rime.codeKeysBefore(input, snapshot.getOrNull(1)?.toIntOrNull() ?: input.length)) else display.displayOffset(((snapshot.getOrNull(1)?.toIntOrNull() ?: input.length) - confirmed).coerceIn(0, normalized.length)), t9, if (t9) engine.t9GetRemainingDigits() else "", service.uiState.value.t9RightCandidateSelectedCount)
+                if (t9) com.cayboard.engine.offsetAfterCodeKeys(text, com.cayboard.engine.codeKeysBefore(input, snapshot.getOrNull(1)?.toIntOrNull() ?: input.length)) else display.displayOffset(((snapshot.getOrNull(1)?.toIntOrNull() ?: input.length) - confirmed).coerceIn(0, normalized.length)), t9, if (t9) engine.t9GetRemainingDigits() else "", service.uiState.value.t9RightCandidateSelectedCount)
             withContext(Dispatchers.Main) {
                 if (service.uiState.value.inputSessionId == state.inputSessionId &&
                     service.uiState.value.currentSchemaId == state.currentSchemaId) {
@@ -71,13 +71,13 @@ internal class ImePreeditEditor(private val service: CayboardInputMethodService)
             // 14 键：与编辑缓冲逐字对齐的按键（合并键大写），删改时跟着改，送进引擎的是它而不是显示的读音。
             val merged14 = !session.isT9 && com.cayboard.settings.InputProfiles.describe(session.schemaId).layout ==
                 com.cayboard.settings.InputLayout.MERGED14
-            var keys = if (merged14) com.cayboard.rime.merged14KeysOf(text,
+            var keys = if (merged14) com.cayboard.engine.merged14KeysOf(text,
                 session.expectedInput.drop(session.protectedInput.length)) ?: text else null
             // 编码中间点了 14 键的合并键（qw）：插在光标处，仍是合并键，不关掉编辑。
-            val mergedTap = merged14 && key != null && com.cayboard.rime.MergedLetterInput.isGroup(key, true)
+            val mergedTap = merged14 && key != null && com.cayboard.engine.MergedLetterInput.isGroup(key, true)
             val letters = when {
                 com.cayboard.settings.InputProfiles.describe(session.schemaId).layout == com.cayboard.settings.InputLayout.MERGED14 && key?.length == 1 ->
-                    com.cayboard.rime.merged14Groups.firstOrNull { it.first().toString() == key }
+                    com.cayboard.engine.merged14Groups.firstOrNull { it.first().toString() == key }
                 else -> null
             }
             // A nine-key digit typed at the code caret is the same ambiguous key as one typed
@@ -130,9 +130,9 @@ internal class ImePreeditEditor(private val service: CayboardInputMethodService)
             } else if (key != null) {
                 // 英文单词方案的编码分大小写：Shift 打的大写字母原样插进去。
                 val insertion = if (session.isT9 && key == "1") "'"
-                    else if (mergedTap) com.cayboard.rime.merged14TapDisplay(key)
+                    else if (mergedTap) com.cayboard.engine.merged14TapDisplay(key)
                     else if (PinyinEditBuffer.keepsCase(session.schemaId)) key else key.lowercase()
-                val pressed = if (mergedTap) com.cayboard.rime.merged14TapKey(key) else insertion
+                val pressed = if (mergedTap) com.cayboard.engine.merged14TapKey(key) else insertion
                 keys = keys?.let { it.take(caret) + pressed + it.drop(caret) }
                 text = text.take(caret) + insertion + text.drop(caret)
                 caret += insertion.length
@@ -151,21 +151,21 @@ internal class ImePreeditEditor(private val service: CayboardInputMethodService)
                     caret = trimmed.second
                 }
             }
-            val engine = service.rimeEngine
+            val engine = service.inputEngine
             val changed = text != session.text
             val result = engine.editPinyinAndReadState {
                 // Candidates follow the caret. Merely moving it must not lock an ambiguous
                 // nine-key reading, so only the engine caret moves; an edit rebuilds the keys first.
                 if (session.isT9) (!changed || engine.applyT9PinyinEdit(session.expectedInput, text,
                     session.t9RemainingDigits, session.schemaId) { owner.isActive() && isOwnerCurrent(session) }) &&
-                    engine.placeT9CodeCaret(com.cayboard.rime.codeKeysBefore(text, caret),
+                    engine.placeT9CodeCaret(com.cayboard.engine.codeKeysBefore(text, caret),
                         if (changed) null else session.expectedInput, session.schemaId) { owner.isActive() && isOwnerCurrent(session) }
                 else {
                     val engineText = if (changed) session.protectedInput + (com.cayboard.settings.CustomKeyboardLayouts.find(session.schemaId)?.encode(text)
                         ?: keys?.takeIf { it.length == text.length } ?: text) else session.expectedInput
                     val engineCaret = if (changed) caret else PinyinEditDisplay(
-                        session.expectedInput.drop(session.protectedInput.length), session.text, isMerged14 = com.cayboard.settings.InputProfiles.describe(session.schemaId).layout == com.cayboard.settings.InputLayout.MERGED14, groups = com.cayboard.settings.CustomKeyboardLayouts.forSchema(session.schemaId)?.rows?.flatten() ?: if (com.cayboard.settings.InputProfiles.describe(session.schemaId).layout == com.cayboard.settings.InputLayout.MERGED14) com.cayboard.rime.merged14Groups else emptyList()).rawOffset(caret)
-                    // 光标在编码最前面时，候选按整段编码给：Rime 的光标放在 0 时前面没有编码，
+                        session.expectedInput.drop(session.protectedInput.length), session.text, isMerged14 = com.cayboard.settings.InputProfiles.describe(session.schemaId).layout == com.cayboard.settings.InputLayout.MERGED14, groups = com.cayboard.settings.CustomKeyboardLayouts.forSchema(session.schemaId)?.rows?.flatten() ?: if (com.cayboard.settings.InputProfiles.describe(session.schemaId).layout == com.cayboard.settings.InputLayout.MERGED14) com.cayboard.engine.merged14Groups else emptyList()).rawOffset(caret)
+                    // 光标在编码最前面时，候选按整段编码给：引擎光标放在 0 时前面没有编码，
                     // 候选是空的，空格选不了字（11-09 平板）。显示的光标仍在最前面。
                     val placedCaret = if (engineCaret == 0) engineText.length - session.protectedInput.length else engineCaret
                     engine.applyPinyinEdit(session.expectedInput, engineText,

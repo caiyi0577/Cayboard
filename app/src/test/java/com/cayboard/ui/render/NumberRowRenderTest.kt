@@ -44,7 +44,7 @@ import java.io.File
 
 /**
  * 「数字行」：打开后数字行在字母上方、和 q 行同一列宽，分体时中缝和字母行对齐；关着时键盘和原来一样。
- * 设了 CYIME_RENDER_OUT 时另出一张对比图：行是 26 键、14 键、英文 26 键、26 键分体，
+ * 设了 CAYBOARD_RENDER_OUT 时另出一张对比图：行是 26 键、14 键、英文 26 键、26 键分体，
  * 列是手机 360x232 关/开、平板 800x320 关/开。
  */
 @RunWith(AndroidJUnit4::class)
@@ -65,7 +65,7 @@ class NumberRowRenderTest {
     private lateinit var vm: KeyboardViewModel
     private lateinit var app: Application
 
-    private fun schemaFor(layout: String) = if (layout == "14") "pinyin_14jian" else "rime_ice"
+    private fun schemaFor(layout: String) = if (layout == "14") "pinyin_14jian" else "cayboard_pinyin"
 
     private fun show() {
         app = ApplicationProvider.getApplicationContext()
@@ -139,7 +139,7 @@ class NumberRowRenderTest {
     }
 
     @Test fun renderNumberRow() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         org.junit.Assume.assumeTrue(!out.isNullOrEmpty())
         val dir = File(out!!).apply { mkdirs() }
         show()

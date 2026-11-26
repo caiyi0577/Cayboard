@@ -1,8 +1,8 @@
 /* Windows host replay only: force-included into every translation unit so the production sources' POSIX calls
  * build against the MSVC runtime. Each system header is included here first, so the macros below never rewrite a
  * later declaration. C and C++ compatible. */
-#ifndef CYIME_HOST_POSIX_COMPAT_H
-#define CYIME_HOST_POSIX_COMPAT_H
+#ifndef CAYBOARD_HOST_POSIX_COMPAT_H
+#define CAYBOARD_HOST_POSIX_COMPAT_H
 #ifdef _WIN32
 #include <time.h>
 #include <sys/types.h>
@@ -22,14 +22,14 @@ static inline int posix_fadvise(int fd, long long offset, long long len, int adv
 #define O_CLOEXEC 0
 #endif
 
-static inline struct tm* cyime_localtime_r(const time_t* t, struct tm* out) {
+static inline struct tm* cayboard_localtime_r(const time_t* t, struct tm* out) {
   return localtime_s(out, t) == 0 ? out : 0;
 }
-static inline struct tm* cyime_gmtime_r(const time_t* t, struct tm* out) {
+static inline struct tm* cayboard_gmtime_r(const time_t* t, struct tm* out) {
   return gmtime_s(out, t) == 0 ? out : 0;
 }
 
-/* Android crash handler (rime_jni.cc): inert on the Windows host replay; sigaction() installs nothing. */
+/* Android crash handler (cayboard_jni.cc): inert on the Windows host replay; sigaction() installs nothing. */
 #include <signal.h>
 #ifndef SA_SIGINFO
 #define SA_SIGINFO 4
@@ -48,8 +48,8 @@ static inline int sigaction(int sig, const struct sigaction* act, struct sigacti
   (void)sig; (void)act; (void)old; return 0;
 }
 static inline int fsync(int fd) { return _commit(fd); }
-#define localtime_r cyime_localtime_r
-#define gmtime_r cyime_gmtime_r
+#define localtime_r cayboard_localtime_r
+#define gmtime_r cayboard_gmtime_r
 #ifndef S_ISDIR
 #define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
 #endif

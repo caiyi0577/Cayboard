@@ -1,5 +1,5 @@
-#ifndef CYIME_PINYIN_SYLLABLE_SELECTION_H_
-#define CYIME_PINYIN_SYLLABLE_SELECTION_H_
+#ifndef CAYBOARD_PINYIN_SYLLABLE_SELECTION_H_
+#define CAYBOARD_PINYIN_SYLLABLE_SELECTION_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -22,15 +22,15 @@
 #include <rime/schema.h>
 #include <rime/ticket.h>
 
-namespace cyime {
+namespace cayboard {
 namespace pinyin_selection {
 
 // A session-local constraint, never a spelling rewrite. The underscore makes
 // Rime discard it at the schema boundary. The engine update hook preserves
 // an unchanged selected prefix across suffix edits, while dropping damaged
 // readings immediately so that clearing/retyping cannot revive an old selection.
-inline constexpr const char* kProperty = "_cyime_pinyin_syllable_lock_v1";
-inline constexpr const char* kAppliedProperty = "_cyime_pinyin_syllable_applied_v1";
+inline constexpr const char* kProperty = "_cayboard_pinyin_syllable_lock_v1";
+inline constexpr const char* kAppliedProperty = "_cayboard_pinyin_syllable_applied_v1";
 
 // One chosen reading. Like nine-key choices, readings are chosen one after
 // another: each span starts where the previous one ended (after delimiters).
@@ -495,9 +495,9 @@ inline std::vector<Option> OptionsAt(rime::Context* context, rime::Schema* schem
   // Use the same schema and live keyboard geometry as the script translator.
   // Corrections are graph edges, not necessarily entries in the prism itself.
   // The schemas always enable correction; the keyboard switch only decides whether
-  // a neighbor map is sent (cyime_neighbors), so skip the extra graph when it is empty.
+  // a neighbor map is sent (cayboard_neighbors), so skip the extra graph when it is empty.
   bool correction = false;
-  if (engine && !context->get_property("cyime_neighbors").empty() &&
+  if (engine && !context->get_property("cayboard_neighbors").empty() &&
       schema->config()->GetBool("translator/enable_correction", &correction) && correction) {
     auto component = rime::Corrector::Require("corrector");
     std::unique_ptr<rime::Corrector> corrector(component
@@ -665,5 +665,5 @@ inline bool Undo(rime::Context* context, rime::Schema* schema,
 }
 
 }  // namespace pinyin_selection
-}  // namespace cyime
-#endif  // CYIME_PINYIN_SYLLABLE_SELECTION_H_
+}  // namespace cayboard
+#endif  // CAYBOARD_PINYIN_SYLLABLE_SELECTION_H_

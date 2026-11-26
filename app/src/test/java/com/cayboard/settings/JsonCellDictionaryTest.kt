@@ -9,7 +9,12 @@ import org.junit.rules.TemporaryFolder
 
 class JsonCellDictionaryTest {
     @get:Rule val temp = TemporaryFolder()
-    private val valid = """{"format":"cyime.dictionary.v1","name":"多音字词组","language":"zh","scheme":"pinyin","entries":[{"word":"银行","code":"yin hang"},{"word":"银行","code":"yin hang"},{"word":"行走","code":"xing zou"}]}"""
+    private val valid = """{"format":"cayboard.dictionary.v1","name":"多音字词组","language":"zh","scheme":"pinyin","entries":[{"word":"银行","code":"yin hang"},{"word":"银行","code":"yin hang"},{"word":"行走","code":"xing zou"}]}"""
+
+    @Test fun `legacy JSON dictionary parses to the same entries`() {
+        val legacy = valid.replace("cayboard.dictionary.v1", "cyime.dictionary.v1")
+        assertEquals(JsonCellDictionary.parse(valid.toByteArray()), JsonCellDictionary.parse(legacy.toByteArray()))
+    }
 
     @Test fun `open dictionary format installs in the existing opt-in collection store`() {
         val store = CellDictionaryStore(temp.newFolder())
@@ -33,23 +38,23 @@ class JsonCellDictionaryTest {
     }
 
     @Test fun `raw model reply cannot bypass the export and validation stage`() {
-        val reply = """{"format":"cyime.lexicon.v1","entries":[{"word":"银行","pinyin":"yin2 xing2"}]}"""
+        val reply = """{"format":"cayboard.lexicon.v1","entries":[{"word":"银行","pinyin":"yin2 xing2"}]}"""
         assertThrows(Exception::class.java) { JsonCellDictionary.parse(reply.toByteArray()) }
     }
 
     /** Optional local integration corpus, produced by real Cline calls; tests never call the API. */
     @Test fun `real generated exports install and preserve exactly the validated word codes`() {
-        val configured = System.getenv("CYIME_GENERATED_LEXICON_CORPUS")
+        val configured = System.getenv("CAYBOARD_GENERATED_LEXICON_CORPUS")
         val directory = if (configured.isNullOrBlank()) sequenceOf(File(".codex-artifacts/generated-lexicon-corpus"),
             File("../.codex-artifacts/generated-lexicon-corpus")).firstOrNull { it.isDirectory }
         else File(configured).also { require(it.isDirectory) { "Generated corpus directory missing: $it" } }
         assumeTrue("Local generated corpus unavailable", directory != null)
-        val files = requireNotNull(directory).listFiles { file -> file.name.endsWith(".cyime-dict.json") }!!.sorted()
+        val files = requireNotNull(directory).listFiles { file -> file.name.endsWith(".cayboard-dict.json") }!!.sorted()
         assertTrue("No exported collections", files.isNotEmpty())
         val store = CellDictionaryStore(temp.newFolder())
         val counts = files.map { file ->
-            val expectedRime = File(directory, file.name.removeSuffix(".cyime-dict.json") + ".dict.yaml")
-            val expected = PersonalDictManager.parsePersonalDictEntries(expectedRime.readText())
+            val expectedDictionary = File(directory, file.name.removeSuffix(".cayboard-dict.json") + ".dict.yaml")
+            val expected = PersonalDictManager.parsePersonalDictEntries(expectedDictionary.readText())
             assertTrue("Empty ${file.name}", expected.isNotEmpty())
             val installed = store.install(file.readBytes())
             val actual = PersonalDictManager.parsePersonalDictEntries(store.dictionaryFile(installed.id).readText())

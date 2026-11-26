@@ -51,13 +51,13 @@ class ClipboardManager private constructor(private val context: Context) {
         private const val KEY_HISTORY_DEDUPED = "history_deduped_v1"
         
         /** Label of text written by clipboard sync, so history files it as received from another device. */
-        internal const val RECEIVED_CLIP_LABEL = "cyime_received"
+        internal const val RECEIVED_CLIP_LABEL = "cayboard_received"
         /** 短信验证码只用一次：自动复制 10 分钟后从系统剪贴板删掉。 */
         internal const val SMS_CODE_LIFETIME_MS = 10 * 60_000L
         /** 候选栏只在短信到达后的 3 分钟内提示验证码；之后仍可从系统剪贴板粘贴，直到 10 分钟清掉。 */
         internal const val SMS_CODE_SUGGESTION_MS = 3 * 60_000L
         /** 别的设备发来的验证码：剪贴板描述里记着几点清掉（System.currentTimeMillis），见 VerificationCodeRelay。 */
-        internal const val CODE_EXPIRES_EXTRA = "cyime.code_expires_at"
+        internal const val CODE_EXPIRES_EXTRA = "cayboard.code_expires_at"
 
         /** 验证码几点从剪贴板清掉：本机短信 10 分钟；别的设备发来的按它带的时间，最多也是 10 分钟。 */
         internal fun smsCodeExpiresAt(timestamp: Long, expiresAt: Long): Long =
@@ -683,7 +683,7 @@ class ClipboardManager private constructor(private val context: Context) {
     }
 
     fun copyToSystemClipboard(text: String) {
-        val clip = ClipData.newPlainText("kime_clipboard", text)
+        val clip = ClipData.newPlainText("cayboard_clipboard", text)
         androidClipboardManager.setPrimaryClip(clip)
     }
 

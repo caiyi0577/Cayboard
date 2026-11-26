@@ -1,7 +1,7 @@
 // T9 方案补丁工具函数集
 //
 // 设计目标：
-//   1. 为 nativeEnsureT9SchemaPatches（rime_jni.cc）提供个人词库
+//   1. 为 nativeEnsureT9SchemaPatches（cayboard_jni.cc）提供个人词库
 //      （translator/packs）补丁的纯判定函数。
 //   2. 保证 pack 名确定性派生（user_<schemaId>，仅保留 [A-Za-z0-9_]），
 //      从根源杜绝 user_"" 类畸形（如第三方九键方案 custom_phrase.dictionary: ""

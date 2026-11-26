@@ -1,5 +1,6 @@
 package com.cayboard.settings
 
+import com.cayboard.engine.compat.LegacyNames
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -28,7 +29,8 @@ object JsonCellDictionary {
     fun parse(bytes: ByteArray): ScelDictionary.Parsed {
         require(bytes.size <= ScelDictionary.MAX_BYTES) { "词库超过 16 MB" }
         val document = Json.decodeFromString<Document>(bytes.toString(Charsets.UTF_8))
-        require(document.format == "cyime.dictionary.v1") { "不支持的 JSON 词库格式" }
+        require(document.format == "cayboard.dictionary.v1" ||
+            document.format == LegacyNames.OLD_CELL_DICTIONARY_FORMAT) { "不支持的 JSON 词库格式" }
         require(document.language == "zh" && document.scheme == "pinyin") { "此词库入口仅支持中文拼音词条" }
         require(document.name.isNotBlank() && document.name.length <= 100 && document.name.none { it.isISOControl() }) {
             "词库名称无效"

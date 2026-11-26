@@ -43,7 +43,7 @@ import java.io.File
 /**
  * 开着但拨不动的开关要看得出是开着的（「语言与方案」里英文始终开启，深色下曾经像关着）。
  * 左边是真实的「语言与方案」页，右边四种状态并排：开、关、锁住开、锁住关，再加已安装方案里的内置英文。
- * 浅色、深色、玻璃各一张。只在设置了 CYIME_RENDER_OUT 时出图。
+ * 浅色、深色、玻璃各一张。只在设置了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w880dp-h900dp-mdpi")
@@ -52,7 +52,7 @@ class SettingsSwitchStatesRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderSwitchStates() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

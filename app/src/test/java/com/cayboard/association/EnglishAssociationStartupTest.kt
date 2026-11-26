@@ -91,7 +91,7 @@ class EnglishAssociationStartupTest {
         val bytes = bundledTrie()
         val opens = AtomicInteger()
         val app = context { opens.incrementAndGet(); bytes.inputStream() }
-        whenever(app.getSharedPreferences("kime_settings", Context.MODE_PRIVATE)).thenReturn(mock<SharedPreferences>())
+        whenever(app.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE)).thenReturn(mock<SharedPreferences>())
         val job = Job()
         try {
             PredictionManager(app, CoroutineScope(job), {}).initialize()

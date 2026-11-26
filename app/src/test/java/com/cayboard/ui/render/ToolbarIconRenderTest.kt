@@ -81,7 +81,7 @@ class ToolbarIconRenderTest {
         }
         rule.onAllNodesWithTag("toolbar-leading")[0].performClick()
         rule.runOnIdle { assertEquals(1, opens) }
-        System.getenv("CYIME_RENDER_OUT")?.let { dir ->
+        System.getenv("CAYBOARD_RENDER_OUT")?.let { dir ->
             val out = File(dir, "toolbar-app-icon.png")
             out.parentFile?.mkdirs()
             val height = (logos.last().boundsInRoot.bottom + logos.first().boundsInRoot.top).toInt()

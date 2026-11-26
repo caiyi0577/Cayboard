@@ -16,7 +16,7 @@ import org.mockito.kotlin.whenever
  */
 class LetterLayoutsTest {
     @get:Rule val temporary = TemporaryFolder()
-    private val chinese = listOf("rime_ice", "t9_pinyin", "pinyin_14jian", Cyletix10Layout.ID, ColemakLayout.ID)
+    private val chinese = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian", Cyletix10Layout.ID, ColemakLayout.ID)
     private val entries = (chinese + listOf("japanese", "japanese_kana")).map { SchemaInfo(it, it, "", "", "") } + InputModes.english
     private fun entry(id: String) = entries.first { it.schemaId == id }
 
@@ -41,12 +41,12 @@ class LetterLayoutsTest {
         LetterLayouts.setForTest(InputLanguage.CHINESE, ColemakLayout.ID)
         val profile = InputProfiles.current(DoublePinyinScheme.ZIRANMA_ID)
         assertEquals(InputScheme.DOUBLE_PINYIN, profile.scheme)
-        assertEquals(EngineProfile.Rime(DoublePinyinScheme.ZIRANMA_ID), profile.engineProfile)
+        assertEquals(EngineProfile.Decoder(DoublePinyinScheme.ZIRANMA_ID), profile.engineProfile)
         assertEquals(ColemakLayout.ID, profile.layout.id)
         assertEquals(ColemakLayout.preset.typingRows(), KeysConfigHelper.letterLayout("double_pinyin_flypy", false)?.typingRows())
         // 拼音的布局在方案里，英文有自己的排列，都不受影响。
-        assertNull(KeysConfigHelper.letterLayout("rime_ice", false))
-        assertEquals(InputLayout.QWERTY.id, InputProfiles.current("rime_ice", asciiMode = true).layout.id)
+        assertNull(KeysConfigHelper.letterLayout("cayboard_pinyin", false))
+        assertEquals(InputLayout.QWERTY.id, InputProfiles.current("cayboard_pinyin", asciiMode = true).layout.id)
         // 五笔和导入的中文码表（音形等）用同一个选择；没标语言的导入方案不跟中文走。
         assertEquals(ColemakLayout.ID, InputProfiles.current("wubi86").layout.id)
         assertEquals(ColemakLayout.ID, InputProfiles.arranged(InputProfiles.describe("my_yinxing",
@@ -75,7 +75,7 @@ class LetterLayoutsTest {
     }
 
     @Test fun englishAndJapaneseOfferExactlyTheChineseLetterLayouts() {
-        val chineseLetterLayouts = InputProfileSelection.layouts(entries, entry("rime_ice"))
+        val chineseLetterLayouts = InputProfileSelection.layouts(entries, entry("cayboard_pinyin"))
             .filter { CustomKeyboardLayouts.find(it.id)?.let(LetterLayouts::typable) == true }
         assertEquals(listOf(Cyletix10Layout.ID, ColemakLayout.ID), chineseLetterLayouts.map { it.id })
         for (id in listOf(InputModes.ENGLISH, "japanese")) {
@@ -85,29 +85,29 @@ class LetterLayoutsTest {
             assertEquals(chineseLetterLayouts, offered.drop(1))
         }
         // Kana and Chinese entries offer only their own layout (which one depends on loaded bindings).
-        for (id in listOf("japanese_kana", "pinyin_14jian", "rime_ice"))
+        for (id in listOf("japanese_kana", "pinyin_14jian", "cayboard_pinyin"))
             assertEquals(listOf(entry(id).profile.layout), InputProfileSelection.layoutsOf(entry(id), entries))
     }
 
     @Test fun anArrangementChangesKeysNotLanguageSchemeOrEngine() {
         LetterLayouts.setForTest(InputLanguage.ENGLISH, Cyletix10Layout.ID)
         LetterLayouts.setForTest(InputLanguage.JAPANESE, ColemakLayout.ID)
-        val english = InputProfiles.current("rime_ice", asciiMode = true)
+        val english = InputProfiles.current("cayboard_pinyin", asciiMode = true)
         assertEquals(InputLanguage.ENGLISH, english.language)
         assertEquals(InputScheme.DIRECT, english.scheme)
         assertEquals(EngineProfile.Direct, english.engineProfile)
         assertEquals(Cyletix10Layout.ID, english.layout.id)
-        assertEquals(Cyletix10Layout.preset.typingRows(), KeysConfigHelper.letterLayout("rime_ice", true)?.typingRows())
+        assertEquals(Cyletix10Layout.preset.typingRows(), KeysConfigHelper.letterLayout("cayboard_pinyin", true)?.typingRows())
 
         val japanese = InputProfiles.current("japanese")
         assertEquals(InputScheme.ROMAJI, japanese.scheme)
-        assertEquals(EngineProfile.Rime("japanese"), japanese.engineProfile)
+        assertEquals(EngineProfile.Decoder("japanese"), japanese.engineProfile)
         assertEquals(ColemakLayout.ID, japanese.layout.id)
         assertEquals(ColemakLayout.ID, entry("japanese").profile.layout.id)
         assertEquals(ColemakLayout.preset.typingRows(), KeysConfigHelper.letterLayout("japanese", false)?.typingRows())
 
         // Chinese keeps its layout in the schema; kana keeps its keypad.
-        assertNull(KeysConfigHelper.letterLayout("rime_ice", false))
+        assertNull(KeysConfigHelper.letterLayout("cayboard_pinyin", false))
         assertEquals(Cyletix10Layout.ID, KeysConfigHelper.letterLayout(Cyletix10Layout.ID, false)?.id)
         assertNull(KeysConfigHelper.letterLayout("japanese_kana", false))
 
@@ -117,8 +117,8 @@ class LetterLayoutsTest {
             entry("japanese").baseProfile.layout.id)?.schemaId)
 
         LetterLayouts.setForTest(InputLanguage.ENGLISH, null)
-        assertEquals(InputLayout.QWERTY.id, InputProfiles.current("rime_ice", asciiMode = true).layout.id)
-        assertNull(KeysConfigHelper.letterLayout("rime_ice", true))
+        assertEquals(InputLayout.QWERTY.id, InputProfiles.current("cayboard_pinyin", asciiMode = true).layout.id)
+        assertNull(KeysConfigHelper.letterLayout("cayboard_pinyin", true))
     }
 
     @Test fun mergedKeysAreNotOfferedAndAStaleChoiceFallsBack() {
@@ -131,12 +131,12 @@ class LetterLayoutsTest {
             file.writeText("""[{"formatVersion":2,"id":"$merged","name":"我的合并","rows":"qw,e,r,t,y,u,i,o,p/a,s,d,f,g,h,j,k,l/z,x,c,v,b,n,m"}]""")
             CustomKeyboardLayouts.load(context)
             val all = entries + SchemaInfo(merged, "我的合并", "", "", "")
-            assertTrue(InputProfileSelection.layouts(all, all.first { it.schemaId == "rime_ice" }).any { it.id == merged })
+            assertTrue(InputProfileSelection.layouts(all, all.first { it.schemaId == "cayboard_pinyin" }).any { it.id == merged })
             assertFalse(InputProfileSelection.layouts(all, entry(InputModes.ENGLISH)).any { it.id == merged })
             LetterLayouts.setForTest(InputLanguage.ENGLISH, merged)
-            assertEquals(InputLayout.QWERTY.id, InputProfiles.current("rime_ice", asciiMode = true).layout.id)
+            assertEquals(InputLayout.QWERTY.id, InputProfiles.current("cayboard_pinyin", asciiMode = true).layout.id)
             LetterLayouts.setForTest(InputLanguage.ENGLISH, "custom_pinyin_" + "b".repeat(32))
-            assertEquals(InputLayout.QWERTY.id, InputProfiles.current("rime_ice", asciiMode = true).layout.id)
+            assertEquals(InputLayout.QWERTY.id, InputProfiles.current("cayboard_pinyin", asciiMode = true).layout.id)
         } finally {
             file.writeText("[]")
             CustomKeyboardLayouts.load(context)
@@ -163,7 +163,7 @@ class LetterLayoutsTest {
         for (id in listOf(InputModes.ENGLISH, "japanese"))
             assertTrue(InputProfileSelection.layouts(all, all.first { it.schemaId == id }).any { it.id == TypewiseLayout.ID })
         LetterLayouts.setForTest(InputLanguage.ENGLISH, TypewiseLayout.ID)
-        assertEquals(typewise.typingRows(), KeysConfigHelper.letterLayout("rime_ice", true)?.typingRows())
+        assertEquals(typewise.typingRows(), KeysConfigHelper.letterLayout("cayboard_pinyin", true)?.typingRows())
     }
 
     /** Romaji needs only letters: each arrangement has all 26, and swipes stay where the finger expects them. */

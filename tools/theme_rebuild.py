@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HERE = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else os.path.join(ROOT, ".codex-artifacts", "theme-rebuild-20261016")
 SRC = os.path.join(ROOT, "app", "src", "main", "assets", "themes")
 SRC_URI = "file:///" + SRC.replace(os.sep, "/")
-KOTLIN = os.path.join(ROOT, "app", "src", "main", "java", "com", "kingzcheung", "xime", "ui", "theme", "TonalThemes.kt")
+KOTLIN = os.path.join(ROOT, "app", "src", "main", "java", "com", "cayboard", "ui", "theme", "TonalThemes.kt")
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 # ---------- color math ----------
@@ -49,7 +49,7 @@ def contrast(a, b):
     la, lb = lum(a), lum(b); return (max(la, lb) + .05) / (min(la, lb) + .05)
 def mix(a, b, t): return tuple(a[i]*(1-t) + b[i]*t for i in range(3))
 
-# ---------- themes (ids/names/sources from HEAD xime.yaml, removed in 1.9.15) ----------
+# ---------- themes (ids/names/sources from HEAD cayboard.yaml, removed in 1.9.15) ----------
 THEMES = [
     # id, name, family, source color, original gradient stops (unused for color), image
     ("ocean_blue", "海洋蔚蓝", "solid", 0x1A73E8),
@@ -297,7 +297,7 @@ def clip_panel():
     return f"""{toolbar()}<div class="clip">
 <div class="ctabs"><span class="on">全部</span><span>文本</span><span>链接</span><span>地址</span><span>电话</span><span style="margin-left:auto">固定 3</span></div>
 <div class="cards"><div class="card">明天上午十点开会，记得带资料<span class="pin">{icon("pin",13)}</span><small>固定</small></div>
-<div class="card">https://github.com/Cyletix/CyIME<span class="pin">{icon("pin",13)}</span><small>链接 · 固定</small></div></div>
+<div class="card">https://github.com/caiyi0577/Cayboard<span class="pin">{icon("pin",13)}</span><small>链接 · 固定</small></div></div>
 <div class="more"><i></i><span>还有 1 条固定 ⌄</span><i></i></div>
 <div class="cards"><div class="card">收货地址：东京都新宿区…<small>2 分钟前</small></div>
 <div class="card">长按菜单：复制 · 固定 · <span class="forget">删除</span><small>刚刚</small></div></div></div>"""

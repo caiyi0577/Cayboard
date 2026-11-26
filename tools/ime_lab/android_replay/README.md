@@ -3,7 +3,7 @@
 Use [`../t9_replay.py`](../t9_replay.py) as the normal entry point:
 
 ```powershell
-python tools/ime_lab/t9_replay.py run --output D:/CyIME-Data/t9-runs/new-run
+python tools/ime_lab/t9_replay.py run --output <experiment-data>/t9-runs/new-run
 ```
 
 The normal `run` compiles/reuses the existing project native source on this
@@ -19,7 +19,7 @@ a new root directory and forbids reuse. Host compilation uses the real project
 JNI, T9 plugin, candidate policy and model, with Android logging sent to stderr.
 
 `ChatReplay.java` runs through Android `app_process` without building, installing,
-or modifying the application APK. `RimeEngine.java` declares only the existing JNI
+or modifying the application APK. `InputEngine.java` declares only the existing JNI
 ABI. Compile these two Java files against the Android SDK's `android.jar`, then
 dex the class files with the SDK's D8 tool. The installed native library directory
 must be on `LD_LIBRARY_PATH` if its dependencies are not resolved automatically.
@@ -27,14 +27,14 @@ must be on `LD_LIBRARY_PATH` if its dependencies are not resolved automatically.
 Example device command, after pushing the dex JAR and corpus:
 
 ```sh
-CLASSPATH=/data/local/tmp/cyime-chat-audit-20261003/replay.jar \
+CLASSPATH=/data/local/tmp/cayboard-chat-audit-20261003/replay.jar \
 LD_LIBRARY_PATH=/data/app/APP_PATH/lib/arm64 \
-app_process /system/bin com.cyime.audit.ChatReplay \
+app_process /system/bin com.cayboard.audit.ChatReplay \
   --apk /data/app/APP_PATH/base.apk \
   --lib-dir /data/app/APP_PATH/lib/arm64 \
-  --root /data/local/tmp/cyime-chat-audit-20261003 \
-  --corpus /data/local/tmp/cyime-chat-audit-20261003/corpus.json \
-  --output /data/local/tmp/cyime-chat-audit-20261003/replay.jsonl
+  --root /data/local/tmp/cayboard-chat-audit-20261003 \
+  --corpus /data/local/tmp/cayboard-chat-audit-20261003/corpus.json \
+  --output /data/local/tmp/cayboard-chat-audit-20261003/replay.jsonl
 ```
 
 The corpus is an array, or an object with `cases` or `clauses` containing:
@@ -53,12 +53,12 @@ Unknown case IDs, malformed flags, duplicate flags/modes, and existing outputs
 are rejected before extraction. Supply a reviewed pinyin reading for polyphones;
 the runner does not guess pronunciation from expected text.
 
-The runner extracts the APK's base `assets/rime` resources, then applies the
+The runner extracts the APK's base `assets/cayboard_base` resources, then applies the
 bundled manifest's source-to-destination mapping and verifies each manifest hash
 and byte count. It copies the app's `default.custom.yaml`, restricts deployment
 to `t9_pinyin`, applies the production JNI schema patches, and deploys the fresh
 resources. It never reads application data or copies a user dictionary. The
-dedicated root must start with `/data/local/tmp/cyime-chat-audit-`. An existing
+dedicated root must start with `/data/local/tmp/cayboard-chat-audit-`. An existing
 `user` directory is rejected unless `--reuse` explicitly reuses this runner's
 marked resources. Output files are never overwritten. Normal regression runs
 must use a fresh root. `--reuse` is for deliberate ablations and diagnostics;
@@ -123,9 +123,9 @@ validate UI hitboxes or actual application text delivery.
 
 ## 26-key latency (`--variant letters`)
 
-`t9_replay.py android-run --variant letters --schema rime_ice --fixture <pinyin fixture> --apk <apk>` types each case's
+`t9_replay.py android-run --variant letters --schema cayboard_pinyin --fixture <pinyin fixture> --apk <apk>` types each case's
 full pinyin (no separators) into the 26-key schema and writes `latency.json` (per-key process time after the first
 case: mean, p50, p95, p99; final first choices). `--schema-patch "translator/max_sentences=1;t9/sentence_rescore=false"`
-writes `rime_ice.custom.yaml` before deployment, so the same build can be measured with the sentence rescoring on and
+writes `cayboard_pinyin.custom.yaml` before deployment, so the same build can be measured with the sentence rescoring on and
 off. No key is injected into the keyboard and no UI is touched. The keyboard-neighbour map is not set, so typo
 correction uses the default distances. Device runs only on the user's explicit request.

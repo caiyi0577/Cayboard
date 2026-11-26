@@ -1,8 +1,8 @@
 package com.cayboard.settings
 
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -11,14 +11,14 @@ class FreshInstallSmokeTest {
     @Test fun bundledDefaultsAutomaticallyDeployAndProduceChineseWithoutDownloads() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         org.junit.Assume.assumeTrue("Use the isolated freshcheck APK", context.packageName.endsWith(".freshcheck"))
-        val (user, shared) = RimeConfigHelper.initializeRimeData(context)
+        val (user, shared) = EngineConfig.initializeInputData(context)
         // 内置双拼默认显示在方案栏，排在中文26键后面；当前方案仍是全拼。
-        assertEquals(listOf("rime_ice") + CayboardInputDefaults.doublePinyin + "t9_pinyin", SchemaManager.getEnabledSchemas(context))
-        val engine = RimeEngine.getInstance()
+        assertEquals(listOf("cayboard_pinyin") + CayboardInputDefaults.doublePinyin + "t9_pinyin", SchemaManager.getEnabledSchemas(context))
+        val engine = InputEngine.getInstance()
         engine.initialize(user, shared)
-        assertTrue("Offline deployment", RimeConfigHelper.ensureDeployment(context))
+        assertTrue("Offline deployment", EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession(180_000L))
-        assertTrue(engine.switchSchema("rime_ice"))
+        assertTrue(engine.switchSchema("cayboard_pinyin"))
         engine.setOption("ascii_mode", false)
         engine.setInput("zenme")
         assertTrue("26-key 怎么", engine.getCandidates().contains("怎么"))
@@ -30,8 +30,8 @@ class FreshInstallSmokeTest {
         assertTrue("T9 的", engine.getCandidates().contains("的"))
         engine.clearQueuedT9Composition()
         engine.clearComposition()
-        assertTrue(engine.switchSchema("rime_ice"))
-        assertEquals(listOf("rime_ice", "t9_pinyin", "double_pinyin_flypy", InputModes.ENGLISH) + CayboardInputDefaults.doublePinyin.drop(1),
+        assertTrue(engine.switchSchema("cayboard_pinyin"))
+        assertEquals(listOf("cayboard_pinyin", "t9_pinyin", "double_pinyin_flypy", InputModes.ENGLISH) + CayboardInputDefaults.doublePinyin.drop(1),
             InputModes.ordered(context, SchemaManager.discoverSchemas(context)
                 .filter { it.schemaId in SchemaManager.getEnabledSchemas(context) && SchemaManager.isSchemaCompiled(context, it.schemaId) }
                 .map { SchemaInfo(it.schemaId, it.name, it.version, it.author, it.description) }).map { it.schemaId })

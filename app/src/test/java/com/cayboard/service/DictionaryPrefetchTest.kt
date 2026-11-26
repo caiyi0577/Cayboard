@@ -83,13 +83,13 @@ class DictionaryPrefetchTest {
     @Test fun aSuccessfulSchemaSwitchReachesThePrefetch() {
         fun source(path: String) = listOf("src/main/java/com/cayboard/$path",
             "app/src/main/java/com/cayboard/$path").map { java.io.File(it) }.first { it.isFile }.readText()
-        val engine = source("rime/RimeEngine.kt")
+        val engine = source("cayboard_input/InputEngine.kt")
         val switch = engine.substring(engine.indexOf("fun switchSchema(schemaId: String): Boolean {")).substringBefore("private fun switchSchemaLocked")
         assertTrue(switch, switch.contains("if (switched) runCatching { onSchemaSwitched?.invoke(schemaId) }"))
         val service = source("service/CayboardInputMethodService.kt")
-        assertTrue(service.contains("rimeEngine.onSchemaSwitched = schemaSwitchPrefetch"))
-        assertTrue(service.contains("if (rimeEngine.onSchemaSwitched === schemaSwitchPrefetch) rimeEngine.onSchemaSwitched = null"))
-        assertTrue(service.contains("DictionaryPrefetch.onSchemaSwitched(this, serviceScope, rimeEngine, schemaId)"))
+        assertTrue(service.contains("inputEngine.onSchemaSwitched = schemaSwitchPrefetch"))
+        assertTrue(service.contains("if (inputEngine.onSchemaSwitched === schemaSwitchPrefetch) inputEngine.onSchemaSwitched = null"))
+        assertTrue(service.contains("DictionaryPrefetch.onSchemaSwitched(this, serviceScope, inputEngine, schemaId)"))
     }
 
     @Test fun checksAreSpacedButTypingFaultsBypassTheInterval() {

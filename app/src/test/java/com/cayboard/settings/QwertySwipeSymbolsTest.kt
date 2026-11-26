@@ -10,7 +10,7 @@ class QwertySwipeSymbolsTest {
     @Test fun savedSymbolsAreReadBackIncludingExplicitlyEmptySlots() {
         val prefs = mock<android.content.SharedPreferences>()
         val context = mock<android.content.Context>()
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE)).thenReturn(prefs)
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE)).thenReturn(prefs)
         whenever(prefs.contains("qwerty_symbols_zh_up.q")).thenReturn(true)
         whenever(prefs.getString("qwerty_symbols_zh_up.q", "")).thenReturn("★")
         whenever(prefs.contains("qwerty_symbols_zh_down.q")).thenReturn(true)
@@ -19,15 +19,15 @@ class QwertySwipeSymbolsTest {
         assertEquals(emptyMap<String, String>(), QwertySwipeSymbols.load(context, true))
     }
     @get:org.junit.Rule val temp = org.junit.rules.TemporaryFolder()
-    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("xime.yaml")).readText()
+    private val defaults get() = requireNotNull(javaClass.classLoader?.getResource("cayboard.yaml")).readText()
     @org.junit.Before fun loadActualLayoutBindings() {
         val assets = mock<android.content.res.AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer { defaults.byteInputStream() }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
+        whenever(assets.open("cayboard.yaml")).thenAnswer { defaults.byteInputStream() }
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(java.io.IOException("No custom override"))
         val context = mock<android.content.Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(temp.root)
-        whenever(context.getSharedPreferences("kime_settings", android.content.Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", android.content.Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
         KeysConfigHelper.loadConfig(context)
     }
@@ -68,7 +68,7 @@ class QwertySwipeSymbolsTest {
             assertEquals("。", KeysConfigHelper.getKeyGesture("'", false)!!.swipeUp!!.label)
         }
         // 26 键不受影响。
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         assertEquals(QwertySwipeSymbols.up.getValue("e"), KeysConfigHelper.getKeyGesture("e", false)!!.swipeUp!!.value)
     }
 
@@ -121,7 +121,7 @@ class QwertySwipeSymbolsTest {
         assertNull(QwertySwipeSymbols.apply("space", null, emptyMap(), null))
     }
     @Test fun productionAccessorsAgreeOnChineseAndEnglishGestures() {
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         for (ascii in listOf(false, true)) for (key in QwertySwipeSymbols.keys.map(Char::toString)) {
             assertEquals(QwertySwipeSymbols.up(ascii)[key], KeysConfigHelper.getSwipeUpCommitValue(key, ascii))
             assertEquals(QwertySwipeSymbols.up(ascii)[key], KeysConfigHelper.getSwipeUpLabel(key, ascii))

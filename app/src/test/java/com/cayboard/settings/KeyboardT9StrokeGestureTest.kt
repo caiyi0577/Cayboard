@@ -11,7 +11,7 @@ import java.io.File
  * 九键（keyboard.t9.keys）/ 笔画（keyboard.stroke.keys）手势配置测试：
  * 1. YAML 解析（字符串简写 / 对象格式 / 中文键名）
  * 2. swipeHandlerFor 分发（COMMIT→直接上屏、编辑动作→onGestureAction、NONE/空→无手势）
- * 3. 内置 xime.yaml 默认绑定与前端接线约定一致（守护资产与解析/布局不脱节）
+ * 3. 内置 cayboard.yaml 默认绑定与前端接线约定一致（守护资产与解析/布局不脱节）
  */
 class KeyboardT9StrokeGestureTest {
 
@@ -144,7 +144,7 @@ class KeyboardT9StrokeGestureTest {
         assertNull(swipeHandlerFor(GestureDef(label = "x", action = null), {}, null))
     }
 
-    // ── 内置默认绑定（守护 xime.yaml 资产与解析/前端约定不脱节） ──
+    // ── 内置默认绑定（守护 cayboard.yaml 资产与解析/前端约定不脱节） ──
 
     /** 定位仓库内文件（单测 workingDir 可能是模块目录或仓库根目录，逐级向上查找）。 */
     private fun repoFile(rel: String): File {
@@ -158,7 +158,7 @@ class KeyboardT9StrokeGestureTest {
     }
 
     private fun loadAssetSection(section: String): Map<String, KeyGestureConfig> {
-        val text = repoFile("src/main/assets/xime.yaml").readText()
+        val text = repoFile("src/main/assets/cayboard.yaml").readText()
         return KeysConfigHelper.parseKeyboardYamlSection(text, section) ?: emptyMap()
     }
 
@@ -178,7 +178,7 @@ class KeyboardT9StrokeGestureTest {
     @Test
     fun `内置 t9 keys 默认不绑定下滑动作`() {
         val keys = loadAssetSection("t9")
-        // 内置默认仅上滑输数字；下滑全部留空，由用户在 xime.custom.yaml 按键级配置
+        // 内置默认仅上滑输数字；下滑全部留空，由用户在 cayboard.custom.yaml 按键级配置
         for (d in '1'..'9') {
             assertNull("t9.keys $d 下滑应留空供自定义", keys[d.toString()]?.swipeDown)
         }
@@ -203,7 +203,7 @@ class KeyboardT9StrokeGestureTest {
     @Test
     fun `内置九键侧栏只放最常用标点且括号只留一对`() {
         // 用户 10-30：左栏只有四个、滑不动，要能滑；10-31：默认不需要这么多括号，放最常用的就行。
-        val text = repoFile("src/main/assets/xime.yaml").readText()
+        val text = repoFile("src/main/assets/cayboard.yaml").readText()
         val expected = listOf("，", "。", "？", "！", "…", "～", "、", "：", "“", "”", "；", "（", "）")
         assertEquals(expected, KeysConfigHelper.parseKeyboardT9YamlPartial(text)?.sideSymbols)
         assertEquals(expected, KeysConfigHelper.DEFAULT_T9_SIDE_SYMBOLS)
@@ -216,7 +216,7 @@ class KeyboardT9StrokeGestureTest {
 
     @Test
     fun `内置 stroke side_symbols 与历史硬编码一致`() {
-        val text = repoFile("src/main/assets/xime.yaml").readText()
+        val text = repoFile("src/main/assets/cayboard.yaml").readText()
         val partial = KeysConfigHelper.parseKeyboardStrokeYamlPartial(text)
         assertEquals(listOf("。", "？", "！", "~"), partial?.sideSymbols)
     }

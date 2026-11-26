@@ -57,7 +57,7 @@ class QwertyRowOptionsTest {
     }
 
     @Test fun syllableSplitOnlyForChinesePinyinWhenSwitchedOn() {
-        val pinyin = InputProfiles.describe("rime_ice")
+        val pinyin = InputProfiles.describe("cayboard_pinyin")
         // 默认关：任何布局都和以前一样。
         assertFalse(syllableSplitActive(false, ascii = false, profile = pinyin))
         assertTrue(syllableSplitActive(true, ascii = false, profile = pinyin))
@@ -66,12 +66,12 @@ class QwertyRowOptionsTest {
             assertTrue(id, syllableSplitActive(true, ascii = false, profile = InputProfiles.describe(id)))
         // 英文状态、注音、仓颉、日文没有拼音音节：反例，开关开着也不加。
         assertFalse(syllableSplitActive(true, ascii = true, profile = pinyin))
-        for (id in listOf("cyime_zhuyin", "cyime_cangjie", "japanese"))
+        for (id in listOf("cayboard_zhuyin", "cayboard_cangjie", "japanese"))
             assertFalse(id, syllableSplitActive(true, ascii = false, profile = InputProfiles.describe(id)))
     }
 
     @Test fun chineseUppercaseLabelsShowTheLanguageOnTheKeys() {
-        val pinyin = InputProfiles.describe("rime_ice")
+        val pinyin = InputProfiles.describe("cayboard_pinyin")
         val off = KeyboardInputPreferences()
         val chinese = off.copy(chineseUppercaseKeyLabels = true)
         // 默认关：中英文都和以前一样小写（大写只看 Shift）。
@@ -111,6 +111,6 @@ class QwertyRowOptionsTest {
         // 没在打拼音、或开关关着（含英文、注音等不生效的方案）：Shift 照旧切换大小写。
         assertFalse(shiftTapTypesSeparator(active = true, composing = false))
         assertFalse(shiftTapTypesSeparator(active = false, composing = true))
-        assertFalse(syllableSplitActive(true, ascii = true, profile = InputProfiles.describe("rime_ice")))
+        assertFalse(syllableSplitActive(true, ascii = true, profile = InputProfiles.describe("cayboard_pinyin")))
     }
 }

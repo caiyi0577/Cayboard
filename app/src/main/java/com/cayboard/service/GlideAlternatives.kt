@@ -1,11 +1,11 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 
 /**
  * 中文滑行的备选（#294：只出一个结果；抬手落在两键之间，小鹤 dj 但 出成 dh 当）。
  *
- * 一笔识别出的前几个编码里，首选照常交给 Rime；其后 [MAX] 个各在独立会话里预览一次，
+ * 一笔识别出的前几个编码里，首选照常交给输入引擎；其后 [MAX] 个各在独立会话里预览一次，
  * 取各自的第一个候选，插在候选栏首选之后。点它把这一笔的编码换成那个编码（组合还在，可以接着打），
  * 原来的首选换到备选里，点错了能点回来。编码一变（接着打字、删字、上屏）就不再给。
  */
@@ -34,7 +34,7 @@ internal class GlideAlternatives {
     fun inject(
         base: CandidateTransformResult?,
         inputText: String,
-        engineCandidates: List<RimeCandidate>,
+        engineCandidates: List<EngineCandidate>,
         firstPage: Boolean,
         schema: String,
         session: Long,
@@ -54,7 +54,7 @@ internal class GlideAlternatives {
         val extra = current.choices.filter { it.text.isNotEmpty() && shown.add(it.text) }
         if (extra.isEmpty()) return base
         return CandidateTransformResult(
-            candidates.take(1) + extra.map { RimeCandidate(it.text, "") } + candidates.drop(1),
+            candidates.take(1) + extra.map { EngineCandidate(it.text, "") } + candidates.drop(1),
             actions.take(1) + extra.map { CandidateAction.glide(it.text, it.input) } + actions.drop(1),
         )
     }

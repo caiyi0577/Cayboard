@@ -64,8 +64,8 @@ class ScelDictionaryTest {
             val parsed = ScelDictionary.parse(scelFixture(listOf("你好", "拟好", "你好"), version))
             assertEquals("测试词库", parsed.name)
             assertEquals(listOf(DictEntry("你好", "ni hao", 100), DictEntry("拟好", "ni hao", 100)), parsed.entries)
-            val rime = ScelDictionary.toRime("cell_test", parsed.entries)
-            assertTrue(rime.contains("你好\tni hao\t100\n"))
+            val engineDictionary = ScelDictionary.toEngineDictionary("cell_test", parsed.entries)
+            assertTrue(engineDictionary.contains("你好\tni hao\t100\n"))
         }
     }
 
@@ -148,7 +148,7 @@ class ScelDictionaryTest {
             val result = ScelDictionary.parse(file.readBytes())
             assertTrue(result.entries.isNotEmpty())
             // Round-trip conversion is the same path used before installing a downloaded source.
-            val restored = PersonalDictManager.parsePersonalDictEntries(ScelDictionary.toRime("cell_${offer.id}", result.entries))
+            val restored = PersonalDictManager.parsePersonalDictEntries(ScelDictionary.toEngineDictionary("cell_${offer.id}", result.entries))
             assertEquals(offer.name, result.entries, restored)
             "${offer.sourceId}\t${offer.name}\t${result.entries.size}\t${result.skipped}"
         }

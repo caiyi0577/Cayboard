@@ -1,8 +1,8 @@
 package com.cayboard.ui.keyboard
 
 import com.cayboard.keyboard.GestureAction
-import com.cayboard.rime.RimeComposition
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.EngineComposition
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.viewmodel.SchemaSwitchUiState
 
 data class KeyboardCallbacks(
@@ -12,8 +12,8 @@ data class KeyboardCallbacks(
     val captureInputContext: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
     /** 九键组句的上文：组合为空时光标前的已上屏文字；null 表示未知或正在组合。 */
     val t9LeftContext: () -> String? = { null },
-    val rerankT9Candidates: (RimeProcessResult) -> RimeProcessResult = { it },
-    val inputCommands: com.cayboard.rime.InputCommandQueue? = null,
+    val rerankT9Candidates: (EngineProcessResult) -> EngineProcessResult = { it },
+    val inputCommands: com.cayboard.engine.InputCommandQueue? = null,
     val onT9UnconsumedDelete: (suspend (com.cayboard.keyboard.RepeatInput?) -> Unit)? = null,
     val onKeyPressDown: ((String) -> Unit)? = null,
     val onKeyRelease: ((String) -> Unit)? = null,
@@ -24,14 +24,14 @@ data class KeyboardCallbacks(
     val onCancelRejectedCommit: () -> Unit = {},
     /** Validate the rendered list again when a tap or delayed deletion is delivered. */
     val isCandidateSnapshotCurrent: (com.cayboard.service.CandidateState) -> Boolean = { true },
-    val onOpenPreeditEditor: (((com.cayboard.rime.PinyinEditSession?) -> Unit) -> Unit)? = null,
+    val onOpenPreeditEditor: (((com.cayboard.engine.PinyinEditSession?) -> Unit) -> Unit)? = null,
     var onT9RefreshAfterPreeditEdit: (() -> Unit)? = null,
     /** Installed by the visible editor; the IME service consumes Back before hiding. */
     var onDismissPreeditEditor: (() -> Unit)? = null,
     var onPreeditKeyInput: ((String) -> Boolean)? = null,
     /** Touch cursor gestures can enter preedit editing; physical arrows never call this. */
     var onPreeditCursorMove: ((String) -> Boolean)? = null,
-    val onLivePreeditEdit: ((com.cayboard.rime.PinyinEditSession, String?, Int?, String?, (com.cayboard.rime.PinyinEditSession?) -> Unit) -> Unit)? = null,
+    val onLivePreeditEdit: ((com.cayboard.engine.PinyinEditSession, String?, Int?, String?, (com.cayboard.engine.PinyinEditSession?) -> Unit) -> Unit)? = null,
     /**
      * 候选展开页点选（本地分页）：globalIndex 为跨页全量候选列表中的索引，
      * 服务层走 select_candidate 全局索引（区别于候选栏的当前页内索引）。
@@ -43,12 +43,12 @@ data class KeyboardCallbacks(
     val onExtendCandidateStrip: (() -> Unit)? = null,
     /** 展开页打开了「单字」：服务层在已读候选里单字不够时接着往后读。 */
     val onSingleCharFilterOn: (() -> Unit)? = null,
-    val onRequestPinyinSyllables: ((Long, (com.cayboard.rime.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
-    val onSelectPinyinSyllable: ((com.cayboard.rime.PinyinSyllableChoices, Int,
-        (com.cayboard.rime.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
+    val onRequestPinyinSyllables: ((Long, (com.cayboard.engine.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
+    val onSelectPinyinSyllable: ((com.cayboard.engine.PinyinSyllableChoices, Int,
+        (com.cayboard.engine.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
     /** Takes back the last chosen syllable; the second lambda runs when nothing was taken back. */
-    val onUndoPinyinSyllable: ((com.cayboard.rime.PinyinSyllableChoices, () -> Unit,
-        (com.cayboard.rime.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
+    val onUndoPinyinSyllable: ((com.cayboard.engine.PinyinSyllableChoices, () -> Unit,
+        (com.cayboard.engine.PinyinSyllableChoices?) -> Unit) -> Unit)? = null,
     val onAssociationSelect: ((Int) -> Unit)? = null,
     val onClearAssociation: (() -> Unit)? = null,
     val onClipboard: (() -> Unit)? = null,
@@ -132,9 +132,9 @@ data class KeyboardCallbacks(
      */
     val onT9RightCommitUndone: ((Int) -> Unit)? = null,
     /**
-     * 右侧候选词即将被 RIME select 前同步通知 T9 控制器。
+     * 右侧候选词即将被引擎选中前同步通知 T9 控制器。
      * 返回 true 表示控制器判断输入序列已被该候选词完整消费。
-     * @param pinyin RIME 候选词注释
+     * @param pinyin 引擎候选词注释
      * @param text 候选词文本（可空），用于 C++ (comment, text) 双条件精确定位
      * @param textLength 候选词文字长度（汉字数），0 表示未知
      */
@@ -145,17 +145,17 @@ data class KeyboardCallbacks(
      */
     val onT9SwitchAway: (() -> Unit)? = null,
     /**
-     * 强制 T9 控制器重新发送当前 inputBuffer 到 RIME。
-     * 用于右侧候选 partial commit 后，RIME composition 被清除需要重新构建。
+     * 强制 T9 控制器重新发送当前 inputBuffer 到输入引擎。
+     * 用于右侧候选 partial commit 后，引擎组合态被清除需要重新构建。
      */
-    var onT9ForceSendToRime: (suspend () -> Unit)? = null,
+    var onT9ResendInput: (suspend () -> Unit)? = null,
     /** 与普通九键触摸共用 FIFO，字面提交也等待之前的输入。 */
     var onT9RunLiteralInput: ((suspend () -> Unit) -> Unit)? = null,
     /** 引擎已在队列中清空，仅同步复位 T9 控制器显示状态。 */
     var onT9CompositionCleared: (() -> Unit)? = null,
     /**
-     * T9 候选词过滤器。服务层在获取 RIME 候选词后调用，由键盘层根据
-     * [com.cayboard.rime.T9InputController.selectionHistory] 过滤不匹配的候选词。
+     * T9 候选词过滤器。服务层在获取 引擎候选词后调用，由键盘层根据
+     * [com.cayboard.engine.T9InputController.selectionHistory] 过滤不匹配的候选词。
      * @param candidates 候选词文本列表
      * @param comments 候选词拼音注释列表
      * @return 过滤后的 (候选词列表, 注释列表)
@@ -165,10 +165,10 @@ data class KeyboardCallbacks(
      * T9 键盘状态变更后通知服务层刷新 UI（候选区、preedit 等）。
      * 携带 flush 后一次取回的 composition，服务层直接应用，避免内部重复 getComposition。
      */
-    var onT9RefreshComposition: ((RimeComposition, List<com.cayboard.service.T9CandidateInjection>) -> Unit)? = null,
+    var onT9RefreshComposition: ((EngineComposition, List<com.cayboard.service.T9CandidateInjection>) -> Unit)? = null,
     /** T9 候选词变换（hotPath 插件能力）：T9 控制器后台取数后调用，
      *  返回带引擎锚点的插件候选注入列表（text 追加项），null/空 = 不干预。 */
-    val onTCandidateTransform: ((RimeProcessResult) -> List<com.cayboard.service.T9CandidateInjection>?)? = null,
+    val onTCandidateTransform: ((EngineProcessResult) -> List<com.cayboard.service.T9CandidateInjection>?)? = null,
     /** 快捷发送表单"触发编码"输入框焦点变化（决定按键输入路由到编码框）。 */
     /**
      * 切到语音/手写前调用。
@@ -177,7 +177,7 @@ data class KeyboardCallbacks(
     val onCommitCandidateBeforeModeChange: (() -> Unit)? = null,
     /** 打拼音时切到数字面板、按中/英键：按打的字母原样上屏（不上屏首选，Gboard 规则，用户 2026-10-24）。 */
     val onCommitTypedBeforeModeChange: (() -> Unit)? = null,
-    /** 假名按序进入 Rime；变音仅修改仍在组合中的末尾编码。 */
+    /** 假名按序进入输入引擎；变音仅修改仍在组合中的末尾编码。 */
     val onJapaneseKanaAction: ((JapaneseKanaAction) -> Unit)? = null,
     /** Explicit symbol categories commit the chosen glyph without width conversion. */
     val onCommitExactText: ((String) -> Unit)? = null,

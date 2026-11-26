@@ -75,7 +75,7 @@ jobs:
         run: chmod +x gradlew
         
       - name: Run Unit Tests
-        run: ./gradlew :app:testDebugUnitTest :plugin-core:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
         
       - name: Generate Test Report
         if: always()
@@ -95,14 +95,9 @@ jobs:
       - name: Build Debug APKs
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Build Plugin XIPKs
-        run: bash scripts/build-plugins.sh
-
       - name: Upload Debug APKs
         uses: actions/upload-artifact@v7
         with:
           name: debug-apks
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            build/plugin-release/*.xipk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 7

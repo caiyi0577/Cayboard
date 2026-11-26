@@ -80,7 +80,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cayboard.R
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.service.usesT9CandidateNavigation
 import com.cayboard.service.highlightedT9Syllable
@@ -142,7 +142,7 @@ fun T9KeyboardLayout(
         controller.onDeleted { result ->
             when (result) {
                 T9InputController.DeleteResult.UNDO_COMMIT -> {
-                    controller.clearRimeAndResend()
+                    controller.clearInputAndResend()
                 }
 
                 T9InputController.DeleteResult.NOT_CONSUMED -> {
@@ -469,7 +469,7 @@ private fun T9KeyboardContent(
                     androidx.compose.runtime.derivedStateOf { candidateState.value.highlightedT9Syllable(uiState.inputProfile) }
                 }
                 val currentFirstOptions = controller.firstOptions
-                // 空闲态符号列表来自 xime.yaml keyboard.t9.side_symbols（可自定义，>4 滚动）
+                // 空闲态符号列表来自 cayboard.yaml keyboard.t9.side_symbols（可自定义，>4 滚动）
                 val configVersion by KeysConfigHelper.configVersion.collectAsState()
                 val customSymbols = LocalKeyboardInputPreferences.current.symbolsFor(SideSymbolTarget.T9)
                 val t9SideSymbols = customSymbols

@@ -3,7 +3,7 @@ package com.cayboard.settings
 /**
  * 英文的两种方案（11-09）：
  * - 直接输入（[InputModes.ENGLISH]）：母语方案的 ascii 模式，字母逐字上屏，补全另给；
- * - 单词（[InputModes.ENGLISH_WORDS] 这类英文 Rime 方案）：字母先进组字区，从候选里选词上屏，和拼音一样。
+ * - 单词（[InputModes.ENGLISH_WORDS] 这类英文候选方案）：字母先进组字区，从候选里选词上屏，和拼音一样。
  * 语言键、菜单切到英文时由这里决定换到哪个方案；在单词方案上按语言键回到进英文之前的语言。
  */
 internal object EnglishSchemes {

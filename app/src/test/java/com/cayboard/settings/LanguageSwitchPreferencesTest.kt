@@ -106,7 +106,7 @@ class LanguageSwitchPreferencesTest {
     }
 
     @Test fun switchingLanguageDoesNotOverrideSelectedSchemeOrLayout() {
-        val entries = listOf("rime_ice", "t9_pinyin", "japanese", "japanese_kana").map { SchemaInfo(it, it, "", "", "") }
+        val entries = listOf("cayboard_pinyin", "t9_pinyin", "japanese", "japanese_kana").map { SchemaInfo(it, it, "", "", "") }
         val options = LanguageSwitchOptions(LanguageSwitchMode.SPECIFIC_ENGLISH, ja)
         val target = LanguageSwitchPreferences.target(en, zh, options, all.toList(), all)!!
         assertEquals("japanese_kana", InputProfileSelection.preferred(entries, target, "japanese_kana", "t9_pinyin")?.schemaId)

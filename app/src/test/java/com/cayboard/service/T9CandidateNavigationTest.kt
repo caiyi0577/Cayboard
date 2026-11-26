@@ -6,7 +6,7 @@ import org.junit.Test
 
 class T9CandidateNavigationTest {
     private val profile = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.T9,
-        EngineProfile.Rime("actual-installed-backend"))
+        EngineProfile.Decoder("actual-installed-backend"))
     private val composing = CandidateState(candidates = listOf("促使一样吗", "不是一样吗", "不是一样嘛"),
         candidateComments = listOf("cu shi yi yang ma", "bu shi yi yang ma", "bu shi yi yang ma"),
         inputText = "28744926462", preeditText = "cu'shi'yi'yang'ma", isComposing = true, engineRevision = 7)
@@ -157,7 +157,7 @@ class T9CandidateNavigationTest {
     }
 
     @Test fun otherLayoutsKeepTheEnginePreedit() {
-        val full = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.QWERTY, EngineProfile.Rime("rime_ice"))
+        val full = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.QWERTY, EngineProfile.Decoder("cayboard_pinyin"))
         assertEquals("pen", pen.copy(candidateFocus = CandidateFocus.at(1, pen)).shownPreedit(full))
         assertNull(pen.copy(candidateFocus = CandidateFocus.at(1, pen)).highlightedT9Syllable(full))
     }

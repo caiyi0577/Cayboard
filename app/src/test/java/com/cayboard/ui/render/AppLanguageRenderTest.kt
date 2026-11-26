@@ -23,7 +23,7 @@ import java.io.File
 
 /**
  * 设置首页在简体、繁體、English、日本語下的样子：看翻译后的标题、说明有没有挤爆、截断。
- * 只在设置了环境变量 CYIME_RENDER_OUT=<目录> 时出图。
+ * 只在设置了环境变量 CAYBOARD_RENDER_OUT=<目录> 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class)
@@ -37,7 +37,7 @@ class AppLanguageRenderTest {
     @Test @Config(qualifiers = "ja-rJP-w420dp-h2600dp-mdpi") fun japanese() = render("ja")
 
     private fun render(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

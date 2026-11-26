@@ -74,7 +74,7 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun fullKeyboardStaysBehindEveryToolAndChineseModeDoesNotTurnOff() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         verifyOpeningAndClosing(
             keyTag = "qwerty-enter-key", expectedMode = true,
             routes = listOf(OverlayRoute.Menu, OverlayRoute.SchemaList, OverlayRoute.Emoji, OverlayRoute.Clipboard(0)),
@@ -82,7 +82,7 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun clipboardKeepsOriginalToolbarSizeAndKeyboardGeometry() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         val enter = bounds("qwerty-enter-key")
         rule.runOnIdle { vm.showOverlay(OverlayRoute.Clipboard(0)) }
         rule.waitForIdle()
@@ -116,7 +116,7 @@ class KeyboardOverlayContinuityTest {
     @Test fun clipboardKeepsItsToolbarEvenWhenEditorHasAutofillSuggestions() {
         // Only the nonempty-list admission matters here; native inflation is not part
         // of the tool panel and must never replace these actions.
-        mount("rime_ice", inlineSuggestions = listOf(Any()))
+        mount("cayboard_pinyin", inlineSuggestions = listOf(Any()))
         rule.runOnIdle { vm.showOverlay(OverlayRoute.Clipboard(0)) }
         rule.onNodeWithTag("clipboard-board").assertIsDisplayed()
         rule.onNodeWithContentDescription("剪贴板").assertIsDisplayed()
@@ -126,14 +126,14 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun numberPanelRemainsTheSamePanelUnderTools() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         rule.runOnIdle { vm.enterPanel(PanelType.NUMBER) }
         verifyOpeningAndClosing("number-zero", false, listOf(OverlayRoute.SchemaList, OverlayRoute.Clipboard(0)))
         rule.runOnIdle { assertEquals(KeyboardPage.Panel(PanelType.NUMBER, MainType.FULL), vm.page.value) }
     }
 
     @Test fun symbolsKeepTheNumberUnderlayUntilClosingAndThenReturnToText() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         rule.runOnIdle { vm.enterPanel(PanelType.NUMBER) }
         val zero = bounds("number-zero")
         val root = bounds("continuity-keyboard")
@@ -168,7 +168,7 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun leavingSymbolsForAnotherToolStillReturnsToTextWhenTheOverlaySessionCloses() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         rule.mainClock.autoAdvance = false
         try {
             for (next in listOf(OverlayRoute.Emoji, OverlayRoute.Menu)) {
@@ -197,7 +197,7 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun fullscreenHandwritingKeepsCanvasAndSavedFooterBounds() {
-        mount("rime_ice", handwriting = true)
+        mount("cayboard_pinyin", handwriting = true)
         val canvas = bounds("handwriting-canvas")
         val footer = bounds("handwriting-controls")
         val bottom = bounds("handwriting-bottom-row")
@@ -235,7 +235,7 @@ class KeyboardOverlayContinuityTest {
     }
 
     @Test fun changingToolsDoesNotRestartTheCurtainOrExposeTheKeys() {
-        mount("rime_ice")
+        mount("cayboard_pinyin")
         rule.mainClock.autoAdvance = false
         try {
             rule.runOnIdle { vm.showOverlay(OverlayRoute.Menu) }
@@ -266,7 +266,7 @@ class KeyboardOverlayContinuityTest {
         vm.resetKeyboard(false, schemaId)
         val state = KeyboardUiState(
             currentSchemaId = schemaId, isDarkTheme = true,
-            schemas = listOf("rime_ice", "t9_pinyin", "pinyin_14jian").map { SchemaInfo(it, it, "", "", "") },
+            schemas = listOf("cayboard_pinyin", "t9_pinyin", "pinyin_14jian").map { SchemaInfo(it, it, "", "", "") },
             handwritingExpanded = handwriting, handwritingControlsWidthDp = if (handwriting) 260 else 0,
             handwritingControlsOffsetX = if (handwriting) -30 else 0,
         )

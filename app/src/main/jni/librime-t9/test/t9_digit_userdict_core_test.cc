@@ -315,7 +315,7 @@ TEST(T9DigitUserDictCoreTest, FormulaP_MatchesRIMEFormula) {
 }
 
 TEST(T9DigitUserDictCoreTest, FormulaP_QualityScaleAlignment) {
-  // T9 数字词典词与 RIME 候选在同一 quality 尺度内竞争：
+  // T9 数字词典词与 引擎候选在同一 quality 尺度内竞争：
   // 点击次数越多 quality 越高，两者可互相超越。
   auto compute_quality = [](int commits, int tick) {
     double dee = 0.0;

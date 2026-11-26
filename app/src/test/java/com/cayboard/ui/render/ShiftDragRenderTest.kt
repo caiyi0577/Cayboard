@@ -37,7 +37,7 @@ import java.io.File
 
 /**
  * Shift 拖到候选：拖线在候选栏里的那段、指着的候选的高亮，以及从第 1 个候选移到第 2 个时高亮滑过去的关键帧。
- * 键盘那段拖线由字母区自己画，这里用一块空白代替字母区。只在设了 CYIME_RENDER_OUT 时出图。
+ * 键盘那段拖线由字母区自己画，这里用一块空白代替字母区。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w480dp-h300dp-xhdpi")
@@ -46,13 +46,13 @@ class ShiftDragRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderShiftDrag() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)
-        val theme = System.getenv("CYIME_RENDER_THEME") ?: "soft_blue"
-        val dark = System.getenv("CYIME_RENDER_DARK") == "1"
-        val glass = System.getenv("CYIME_RENDER_GLASS") == "1"
+        val theme = System.getenv("CAYBOARD_RENDER_THEME") ?: "soft_blue"
+        val dark = System.getenv("CAYBOARD_RENDER_DARK") == "1"
+        val glass = System.getenv("CAYBOARD_RENDER_GLASS") == "1"
         val palette = resolveKeyboardPalette(theme, dark)
         val config = Unit
         rule.mainClock.autoAdvance = false

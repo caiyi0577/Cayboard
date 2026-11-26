@@ -6,7 +6,7 @@ import org.junit.Test
 /**
  * 预编辑文本合并逻辑测试
  *
- * 验证 mergePartialCommitText 在各种场景下正确拼接 partial commit 文本与 RIME 返回的 displayText。
+ * 验证 mergePartialCommitText 在各种场景下正确拼接 partial commit 文本与输入引擎返回的 displayText。
  * 核心问题：startsWith 无法检测部分重叠，导致重复拼接（如 "测披" + "披h" → "测披披h"）。
  */
 class PreeditMergeTest {
@@ -140,13 +140,13 @@ class PreeditMergeTest {
 
     // ── Full commit 文本合并场景 ──
     //
-    // 当 RIME 执行 full commit 时，commit() 返回的文本可能仅包含最近 partial commit 的部分，
+    // 当输入引擎执行 full commit 时，commit() 返回的文本可能仅包含最近 partial commit 的部分，
     // 不包含更早的 partial commit 文本。需要通过 mergePartialCommitText 确保完整拼接。
 
     @Test
     fun `full commit with partial overlap - ce pi he produces ce pi he`() {
         // 场景：输入"23744" → 选"测"(partial) → 选"pi" → 选"披"(partial) → 选"和"(full commit)
-        // t9PartialCommitTexts = ["测", "披"], RIME committedText = "披和"
+        // t9PartialCommitTexts = ["测", "披"], committedText = "披和"
         // 期望上屏："测披和"
         val result = PreeditMergeHelper.mergePartialCommitText(
             partialTexts = listOf("测", "披"),
@@ -157,7 +157,7 @@ class PreeditMergeTest {
 
     @Test
     fun `full commit with no overlap in committed text`() {
-        // 场景：t9PartialCommitTexts = ["测", "披"], RIME committedText = "和"（不含任何 partial 文本）
+        // 场景：t9PartialCommitTexts = ["测", "披"], committedText = "和"（不含任何 partial 文本）
         // 期望上屏："测披和"
         val result = PreeditMergeHelper.mergePartialCommitText(
             partialTexts = listOf("测", "披"),
@@ -168,7 +168,7 @@ class PreeditMergeTest {
 
     @Test
     fun `full commit with single partial and overlap`() {
-        // 场景：t9PartialCommitTexts = ["测"], RIME committedText = "测和"
+        // 场景：t9PartialCommitTexts = ["测"], committedText = "测和"
         // 期望上屏："测和"（不重复）
         val result = PreeditMergeHelper.mergePartialCommitText(
             partialTexts = listOf("测"),
@@ -179,7 +179,7 @@ class PreeditMergeTest {
 
     @Test
     fun `full commit with empty partial texts returns committed text as is`() {
-        // 无 partial commit 时，直接使用 RIME committedText
+        // 无 partial commit 时，直接使用 committedText
         val result = PreeditMergeHelper.mergePartialCommitText(
             partialTexts = emptyList(),
             displayText = "你好"
@@ -190,7 +190,7 @@ class PreeditMergeTest {
     @Test
     fun `space commit merges earlier partial commit ce with candidate shi`() {
         // 场景：T9 输入"23744" → 右侧选"策"(partial) → 空格上屏第一候选"是"
-        // t9PartialCommitTexts = ["策"], RIME committedText = "是"
+        // t9PartialCommitTexts = ["策"], committedText = "是"
         // 期望上屏："策是"
         val result = PreeditMergeHelper.mergePartialCommitText(
             partialTexts = listOf("策"),

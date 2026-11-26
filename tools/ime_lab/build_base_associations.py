@@ -36,7 +36,7 @@ def main():
     for ctx in sorted(groups):
         for word,count in sorted(groups[ctx],key=lambda x:(-x[1],x[0]))[:6]:
             rows.append(f"{ctx}\t{word}\t{count}\t{totals[ctx]}\n")
-    data=("# cyime-base-associations-v1\n"+"".join(rows)).encode("utf-8")
+    data=("# cayboard-base-associations-v1\n"+"".join(rows)).encode("utf-8")
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_bytes(gzip.compress(data,mtime=0))
     manifest={"source":"https://huggingface.co/datasets/thu-coai/lccc", "license":"MIT", "source_sha256":hashlib.file_digest(args.source.open("rb"),"sha256").hexdigest(),"split":"train only", "sampling":"zero-based dialogue index modulo 34 == 0", "dialogs":dialogs,"sentences":sentences,"contexts":len(groups),"entries":len(rows),"bytes":args.output.stat().st_size,"sha256":hashlib.sha256(args.output.read_bytes()).hexdigest(),"purpose":"post-commit word association baseline, not a pinyin decoder or personal history", "validation":"file integrity only; quality evaluation separate"}

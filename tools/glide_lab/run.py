@@ -44,7 +44,7 @@ def load_fixture(path):
     if path.stat().st_size > 4 * 1024 * 1024:
         raise ValueError("Fixture exceeds 4 MiB")
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data["schema"] != "cyime.glide.fixture.v1" or data["kind"] != "synthetic":
+    if data["schema"] != "cayboard.glide.fixture.v1" or data["kind"] != "synthetic":
         raise ValueError("This preparation runner currently accepts explicitly synthetic fixtures only")
     if (data["language"], data["scheme"]) not in (("en", "direct"), ("zh", "pinyin")):
         raise ValueError("Unsupported language/scheme combination")
@@ -220,7 +220,7 @@ def main():
     command = [java, "-Xmx512m", "-Dfile.encoding=UTF-8", "-cp", os.pathsep.join(map(str, [artifact, stdlib]))]
     checks = execute([*command, "com.cayboard.glidelab.GlideCoreChecksKt"], output / "checks.log")
     print(checks.strip())
-    report = {"schema": "cyime.glide.report.v1", "status": "experimental-not-device-accepted",
+    report = {"schema": "cayboard.glide.report.v1", "status": "experimental-not-device-accepted",
               "kotlin_version": version, "latency_protocol": "3 warmups, 7 repetitions per trace; median host JVM milliseconds; toy lexicon only",
               "sources_sha256": {str(p.relative_to(REPO)).replace('\\', '/'): sha(p) for p in [*sources, Path(__file__)]},
               "compiler_sha256": {p.name: sha(p) for p in jars},

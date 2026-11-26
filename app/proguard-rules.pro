@@ -24,7 +24,7 @@
 -keep class com.kingzcheung.xime.plugin.** { *; }
 -keepclassmembers class com.kingzcheung.xime.plugin.** { *; }
 
--keep class com.cayboard.rime.** { *; }
+-keep class com.cayboard.engine.** { *; }
 -keep class com.cayboard.**Jni** { *; }
 
 -keepattributes SourceFile,LineNumberTable

@@ -3,10 +3,13 @@ package com.cayboard.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 /** Pure helpers used by the sha256-verified install path. */
 class SchemaManagerImportTest {
+    @get:Rule val temporary = TemporaryFolder()
 
     @Test
     fun `sha256Hex of abc`() {
@@ -40,11 +43,26 @@ class SchemaManagerImportTest {
 
     @Test
     fun `protects xime yaml and metadata from import`() {
+        assertTrue(SchemaManager.isProtectedImportName("cayboard.yaml"))
         assertTrue(SchemaManager.isProtectedImportName("xime.yaml"))
         assertFalse(SchemaManager.isProtectedImportName("default.custom.yaml"))
-        assertFalse(SchemaManager.isProtectedImportName("xime.custom.yaml"))
+        assertFalse(SchemaManager.isProtectedImportName("cayboard.custom.yaml"))
         assertTrue(SchemaManager.isProtectedImportName(".registry.json"))
         assertFalse(SchemaManager.isProtectedImportName(".manifests/my_scheme.json"))
+    }
+
+    @Test
+    fun `keyboard config migration preserves an old file when the Cayboard file already exists`() {
+        val inputData = temporary.newFolder("cayboard_input")
+        inputData.mkdirs()
+        inputData.resolve("xime.custom.yaml").writeText("legacy: true\n")
+        inputData.resolve("cayboard.custom.yaml").writeText("current: true\n")
+
+        SchemaManager.migrateKeyboardConfigFiles(inputData)
+
+        assertEquals("current: true\n", inputData.resolve("cayboard.custom.yaml").readText())
+        assertEquals("legacy: true\n", inputData.parentFile.resolve("cayboard-name-conflicts/xime.custom.yaml").readText())
+        assertFalse(inputData.resolve("xime.custom.yaml").exists())
     }
 
     @Test

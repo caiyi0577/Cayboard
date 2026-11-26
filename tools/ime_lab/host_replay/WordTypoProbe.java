@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +13,7 @@ import java.util.List;
  *   committed, nothing learned). Row: id, kind, typed, target, rank while typing, rank after the pause
  *   (nativeRefineOmission, as the keyboard does 180 ms after the last key), letters, total and slowest key in
  *   microseconds (key + reading five candidates), pause time, top 3 before and after. Rank 0 = not in the first 20.
- * PROBE_OPTIONS (environment, optional): comma separated session switches, e.g. cyime_mixed_input=1.
+ * PROBE_OPTIONS (environment, optional): comma separated session switches, e.g. cayboard_mixed_input=1.
  */
 public class WordTypoProbe {
   static int rank(String[][] rows, String target) {
@@ -26,8 +26,8 @@ public class WordTypoProbe {
     return b.toString();
   }
   public static void main(String[] a) throws Exception {
-    System.load(new File(a[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine e = new RimeEngine();
+    System.load(new File(a[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine e = new InputEngine();
     e.nativeInitialize(a[1], a[1]);
     if (!e.nativeCreateSession()) throw new Exception("no session");
     if (!e.nativeSwitchSchema(a[2])) throw new Exception("no schema " + a[2]);

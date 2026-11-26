@@ -17,11 +17,11 @@ class StrokeSchemaBundleTest {
         error("missing $rel")
     }
 
-    private val schema by lazy { repoFile("src/main/assets/rime_chinese/stroke.schema.yaml").readText() }
+    private val schema by lazy { repoFile("src/main/assets/cayboard_chinese/stroke.schema.yaml").readText() }
 
     @Test
     fun `stroke keypad binds the bundled schema`() {
-        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(repoFile("src/main/assets/xime.yaml").readText())
+        val bindings = KeysConfigHelper.parseSchemaBindingsYamlText(repoFile("src/main/assets/cayboard.yaml").readText())
         assertEquals("stroke", bindings["stroke"])
         assertTrue(schema.contains("schema_id: stroke"))
         assertTrue(schema.contains("dictionary: stroke"))
@@ -38,13 +38,13 @@ class StrokeSchemaBundleTest {
     @Test
     fun `lua modules named by the schema are bundled`() {
         val modules = Regex("""lua_(?:translator|filter)@\*(\w+)""").findAll(schema).map { it.groupValues[1] }.toList()
-        assertEquals(listOf("cyime_stroke_wildcard", "cyime_stroke_phrase", "cyime_stroke_rank"), modules)
-        for (module in modules) repoFile("src/main/assets/rime_chinese/lua/$module.lua")
+        assertEquals(listOf("cayboard_stroke_wildcard", "cayboard_stroke_phrase", "cayboard_stroke_rank"), modules)
+        for (module in modules) repoFile("src/main/assets/cayboard_chinese/lua/$module.lua")
     }
 
     @Test
     fun `generated table ranks common characters by frequency`() {
-        val dict = repoFile("build/generated/stroke-assets/rime_chinese/stroke.dict.yaml").readLines()
+        val dict = repoFile("build/generated/stroke-assets/cayboard_chinese/stroke.dict.yaml").readLines()
         assertTrue(dict.contains("use_preset_vocabulary: false  # Cayboard：字频见下方权重"))
         val weights = dict.dropWhile { it.trim() != "..." }.drop(1).map { it.split('\t') }
             .filter { it.size == 3 }.groupBy({ it[0] }, { it[2].toLong() }).mapValues { (_, w) -> w.max() }
@@ -60,7 +60,7 @@ class StrokeSchemaBundleTest {
     fun `phrase table for split input is compiled through a hidden dependency`() {
         // 用分词键隔开、每个字只打头几笔时出词：词表靠 stroke_phrase 依赖方案编译，不进语言菜单。
         assertTrue(Regex("""(?m)^  dependencies:\n    - stroke_phrase$""").containsMatchIn(schema))
-        val helper = repoFile("src/main/assets/rime_chinese/stroke_phrase.schema.yaml").readText()
+        val helper = repoFile("src/main/assets/cayboard_chinese/stroke_phrase.schema.yaml").readText()
         assertTrue(helper.contains("dictionary: stroke_phrase"))
         assertTrue(helper.contains("enable_user_dict: false"))
         assertTrue("stroke_phrase" in CayboardInputDefaults.dependencies)
@@ -68,7 +68,7 @@ class StrokeSchemaBundleTest {
 
     @Test
     fun `generated phrase table codes each word by the first stroke of every character`() {
-        val rows = repoFile("build/generated/stroke-assets/rime_chinese/stroke_phrase.dict.yaml").readLines()
+        val rows = repoFile("build/generated/stroke-assets/cayboard_chinese/stroke_phrase.dict.yaml").readLines()
             .dropWhile { it.trim() != "..." }.drop(1).map { it.split('\t') }.filter { it.size == 3 }
         val codes = rows.groupBy({ it[0] }, { it[1] })
         assertTrue(codes.size > 100000)

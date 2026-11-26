@@ -35,7 +35,7 @@ class CornerVisibilitySettingsTest {
     private var appearance by mutableStateOf(false)
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val bounds = rule.onNodeWithTag("settings-root").fetchSemanticsNode().boundsInRoot
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)

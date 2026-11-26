@@ -27,7 +27,7 @@ object SettingsRoutes {
     const val Handwriting = "handwriting_settings"
     const val Clipboard = "clipboard"
     const val Backup = "backup"
-    const val RimeFileBrowser = "rime_file_browser"
+    const val EngineFileBrowser = "engine_file_browser"
     const val KeyboardResize = "keyboard_resize"
     const val ToolbarArrange = "toolbar_arrange"
 }

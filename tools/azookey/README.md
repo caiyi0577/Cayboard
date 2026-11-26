@@ -1,12 +1,12 @@
 # azooKey 日语转换库
 
-日语 26 键和九宫格的假名汉字转换由 azooKey（AzooKeyKanaKanjiConverter）完成。Rime 仍然管输入串、分段、候选栏、部分选词和回车上屏；
-`app/src/main/jni/cyime_azookey/azookey_translator.cc` 是一个 Rime 翻译器，运行时 `dlopen("libCyAzooKey.so")` 调本目录的 C 接口。
+日语 26 键和九宫格的假名汉字转换由 azooKey（AzooKeyKanaKanjiConverter）完成。输入引擎管理输入串、分段、候选、部分选词和回车上屏。
+`app/src/main/jni/cayboard_azookey/azookey_translator.cc` 通过 `dlopen("libCyAzooKey.so")` 调用本目录的 C 接口。
 
 - 上游：https://github.com/azooKey/AzooKeyKanaKanjiConverter ，提交 `25a6346bf76931c1cf2214015b808875ea82f4bf`（MIT）。
 - 词典：https://github.com/azooKey/azooKey_dictionary_storage ，提交 `4d418525b090cf49c219819d05a7e3cc2a4346eb` 的 `Dictionary/`（Apache-2.0），
   由 `app/build-logic/tasks-japanese.gradle.kts` 构建时下载、按内容哈希校验，打成 `azookey/dictionary.zip` 放进 APK；
-  手机上 `JapaneseSchemas.installAzooKeyDictionary` 解压到 `rime/azookey/dictionary`，学习记录在 `rime/azookey/memory`。
+  手机上 `JapaneseSchemas.installAzooKeyDictionary` 解压到 `cayboard_input/azookey/dictionary`，学习记录在 `cayboard_input/azookey/memory`。
 - 补充词：azooKey 词典缺的 Mozc 开源词典名词（约 40 万条：人名如 暁山、地名、机构名、普通名词，不收动词形容词和纯假名词）
   由 `build-dictionary.sh` 并进词典的 `louds/`，打成 `azookey-louds-mozc-<哈希前 8 位>.zip`；构建时用它替换上游 `louds/`
   （`charID.chid` 除外），整份词典的内容哈希记在 `azooKeyMergedDictionaryHash`。

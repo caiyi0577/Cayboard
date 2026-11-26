@@ -128,7 +128,7 @@ class HandwritingToggleTest {
         val vm = model()
         vm.setKeyboardState(KeyboardLayoutState.T9Pinyin)
         vm.showOverlay(OverlayRoute.Clipboard())
-        vm.applyPreparedEditorKeyboard(false, "rime_ice", true, false, false)
+        vm.applyPreparedEditorKeyboard(false, "cayboard_pinyin", true, false, false)
         val clipboard = vm.page.value as KeyboardPage.Overlay
         assertEquals(OverlayRoute.Clipboard(), clipboard.route)
         assertEquals(KeyboardPage.Main(MainType.FULL), clipboard.behind)

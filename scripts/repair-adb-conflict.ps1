@@ -4,7 +4,7 @@
 param(
     [string]$SdkDirectory = "$env:LOCALAPPDATA/Android/Sdk/platform-tools",
     [string]$SuperDisplayDirectory = "$env:ProgramFiles/SuperDisplay",
-    [string]$BackupRoot = 'D:/CyIME-Data/adb-compat',
+    [string]$BackupRoot = 'D:/Cayboard-Data/adb-compat',
     [string]$Receipt = '',
     [switch]$RepairDynamicPorts
 )

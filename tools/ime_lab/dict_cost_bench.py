@@ -17,7 +17,7 @@ cell_state / cell_set / cell_remove dev ops, network for the downloads, and the 
     python tools/ime_lab/dict_cost_bench.py --serial TABLET_SERIAL \
       --layouts tools/demo_typer/layouts/sm-x800.json --layout cn26 \
       --host-cmd "am start -n md.obsidian/.MainActivity" --host-window md.obsidian \
-      --name "Galaxy Tab S8+" --tier high --out D:/CyIME-Data/diagnostics/dict-cost-<date>
+      --name "Galaxy Tab S8+" --tier high --out D:/Cayboard-Data/diagnostics/dict-cost-<date>
 
 Other keyboards (--layout t9, or --scheme flypy on 小鹤双拼) only compare: add --no-push, and the curve stays in --out.
 """
@@ -122,7 +122,7 @@ def main():
     parser.add_argument("--interval", type=int, default=110)
     parser.add_argument("--hold", type=int, default=25)
     parser.add_argument("--cool", type=int, default=20)
-    parser.add_argument("--dex", default="D:/CyIME-Data/demo-video/cyime-inject.dex")
+    parser.add_argument("--dex", default="D:/Cayboard-Data/demo-video/cayboard-inject.dex")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     os.makedirs(args.out, exist_ok=True)

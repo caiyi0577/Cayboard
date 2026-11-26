@@ -26,9 +26,9 @@ class HoneycombGeometryTest {
     }
 
     @Test fun honeycombIsNeverSplit() {
-        assertTrue(supportsSplitKeyboard("rime_ice", true))
+        assertTrue(supportsSplitKeyboard("cayboard_pinyin", true))
         LetterLayouts.setForTest(InputLanguage.ENGLISH, TypewiseLayout.ID)
-        assertFalse(supportsSplitKeyboard("rime_ice", true))
+        assertFalse(supportsSplitKeyboard("cayboard_pinyin", true))
         assertFalse(supportsSplitKeyboard(TypewiseLayout.ID, false))
     }
 }

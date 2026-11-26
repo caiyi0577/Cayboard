@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_SENTENCE_SCORER_H_
-#define CYIME_T9_SENTENCE_SCORER_H_
+#ifndef CAYBOARD_T9_SENTENCE_SCORER_H_
+#define CAYBOARD_T9_SENTENCE_SCORER_H_
 #include <string>
 #include <vector>
 namespace rime {

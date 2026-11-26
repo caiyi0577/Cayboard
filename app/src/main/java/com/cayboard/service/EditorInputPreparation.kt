@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.InputModes
 import com.cayboard.settings.LanguagePreferences
 import com.cayboard.settings.OrientationLayouts
@@ -14,11 +14,11 @@ import kotlinx.coroutines.withContext
 /** Keep focus callbacks responsive and serialize dictionary work with subsequent typing. */
 internal class EditorInputPreparation(private val service: CayboardInputMethodService) {
     fun schedule(restarting: Boolean, numberEditor: Boolean) {
-        if (!RimeEngine.isInitialized() || service.uiState.value.isDeploying) return
-        service.keyRouter.postRimeJob {
+        if (!InputEngine.isInitialized() || service.uiState.value.isDeploying) return
+        service.keyRouter.postEngineJob {
             val owner = InputCommandOwner.requireOwner()
-            val engine = service.rimeEngine
-            if (engine.isMaintaining()) return@postRimeJob
+            val engine = service.inputEngine
+            if (engine.isMaintaining()) return@postEngineJob
             val available = engine.getAvailableSchemas().toList()
             val saved = SettingsPreferences.getCurrentSchema(service)
             // 横竖屏分开记布局：这个方向记的条目（横屏 26 键、竖屏九键），关着时就是 saved。
@@ -29,7 +29,7 @@ internal class EditorInputPreparation(private val service: CayboardInputMethodSe
             val policy = service.editorInputPolicy
             var target = policy.schemaOverride ?: LanguagePreferences.nativeSchema(stored, selectable, LanguagePreferences.enabled(service))
             if (policy.directInput && isHandwritingSchema(target)) {
-                target = engine.getCurrentSchema().takeIf { it in available } ?: available.firstOrNull() ?: return@postRimeJob
+                target = engine.getCurrentSchema().takeIf { it in available } ?: available.firstOrNull() ?: return@postEngineJob
             }
             var missingHandwriting = false
             if (isHandwritingSchema(target)) {
@@ -37,21 +37,21 @@ internal class EditorInputPreparation(private val service: CayboardInputMethodSe
                 val directory = com.cayboard.model.ModelStorage.getModelDir(service, "ochwpro")
                 missingHandwriting = !java.io.File(directory, "ochwpro.onnx").isFile ||
                     !java.io.File(directory, "char_index.json").isFile
-                if (missingHandwriting) target = available.firstOrNull() ?: return@postRimeJob
+                if (missingHandwriting) target = available.firstOrNull() ?: return@postEngineJob
             }
             val handwriting = isHandwritingSchema(target)
             if (!handwriting && target !in available && !SchemaManager.isSchemaCompiled(service, target)) {
-                target = available.firstOrNull() ?: return@postRimeJob
+                target = available.firstOrNull() ?: return@postEngineJob
             }
             val current = engine.getCurrentSchema()
             val nativeTarget = if (handwriting) current else target
-            if (nativeTarget.isEmpty()) return@postRimeJob
+            if (nativeTarget.isEmpty()) return@postEngineJob
             service.schemaController.applyPageSizeSetting(nativeTarget)
             if (!prepareEditorEngine(current, nativeTarget, engine::switchSchema,
                     { engine.clearQueuedComposition(); engine.clearQueuedT9Composition() },
                     service.sessionController::restorePersistedSchemaOptions)) {
                 FileLogger.w("InputLifecycle", "Editor preparation failed: schema unavailable")
-                return@postRimeJob
+                return@postEngineJob
             }
             val ascii = engine.isAsciiMode()
             withContext(Dispatchers.Main) {

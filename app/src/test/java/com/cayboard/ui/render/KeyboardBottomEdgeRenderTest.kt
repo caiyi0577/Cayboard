@@ -31,8 +31,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cayboard.keyboard.KeyboardPanelLaunch
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.service.extractBottomInset
 import com.cayboard.service.fixedKeyboardBottomInsetPx
@@ -120,7 +120,7 @@ class KeyboardBottomEdgeRenderTest {
         // 固定的两档不受键盘量到的下限限制：一直能调到底（键盘那边到 0 为止）。
         rule.runOnIdle { SettingsPreferences.setKeyboardBottomLoweringLimitDp(app, 0) }
         down.assertIsEnabled()
-        if (System.getenv("CYIME_RENDER_OUT") != null) {
+        if (System.getenv("CAYBOARD_RENDER_OUT") != null) {
             rule.mainClock.advanceTimeBy(3_000)
             rule.waitForIdle()
             save("bottom-recovery-settings")
@@ -155,7 +155,7 @@ class KeyboardBottomEdgeRenderTest {
         SettingsPreferences.setEdgeToEdgeKeyboard(app, false)
         val normal = extractBottomInset(insets, win)
         val bottom = mutableIntStateOf(fixedKeyboardBottomInsetPx(insets, win, normal))
-        val schema = mutableStateOf("rime_ice")
+        val schema = mutableStateOf("cayboard_pinyin")
         rule.setContent {
             Box(Modifier.size(360.dp, 300.dp).background(Color.DarkGray).testTag("viewport")) {
                 KeyboardView(viewModel, KeyboardUiState(keyboardHeightDp = 244, currentSchemaId = schema.value,
@@ -186,7 +186,7 @@ class KeyboardBottomEdgeRenderTest {
         rule.runOnIdle {
             val more = listOf("能听吗", "你听没", "难听吗", "能听么", "你听嘛", "你太慢", "你同意吗")
             candidates.value = candidates.value.copy(expandedCandidatesLoaded = true,
-                expandedCandidates = (candidates.value.candidates + more).map { RimeCandidate(it, "") })
+                expandedCandidates = (candidates.value.candidates + more).map { EngineCandidate(it, "") })
             viewModel.setCandidatePageExpanded(true)
         }
         // The first few words remain in the strip. Later ones appear in the expanded grid.
@@ -224,13 +224,13 @@ class KeyboardBottomEdgeRenderTest {
             on { firstOptions } doReturn emptyList()
         }
         doReturn(t9).whenever(viewModel).bindT9Controller(callbacks)
-        val schema = mutableStateOf("rime_ice")
+        val schema = mutableStateOf("cayboard_pinyin")
         rule.setContent {
             KeyboardView(viewModel, KeyboardUiState(isFloatingMode = true, keyboardWidthDp = 320, keyboardHeightDp = 244,
                 floatingOffsetY = 18, floatingMinOffsetY = 18, currentSchemaId = schema.value, isDarkTheme = true),
                 callbacks, inputSessionManagedByHost = true, modifier = Modifier.size(360.dp, 400.dp).testTag("float-host"))
         }
-        for ((id, tag) in listOf("rime_ice" to "qwerty-enter-key", "pinyin_14jian" to "qwerty-enter-key",
+        for ((id, tag) in listOf("cayboard_pinyin" to "qwerty-enter-key", "pinyin_14jian" to "qwerty-enter-key",
             "t9_pinyin" to "t9-zero-key")) {
             rule.runOnIdle {
                 viewModel.dispatch(KeyboardDispatchAction.InputSessionStarted(false, id))
@@ -270,13 +270,13 @@ class KeyboardBottomEdgeRenderTest {
             on { firstOptions } doReturn emptyList()
         }
         doReturn(t9).whenever(viewModel).bindT9Controller(callbacks)
-        val schema = mutableStateOf("rime_ice")
+        val schema = mutableStateOf("cayboard_pinyin")
         rule.setContent {
             KeyboardView(viewModel, KeyboardUiState(isFloatingMode = true, keyboardWidthDp = 560, keyboardHeightDp = 300,
                 floatingOffsetY = 18, floatingMinOffsetY = 18, currentSchemaId = schema.value, isDarkTheme = true),
                 callbacks, inputSessionManagedByHost = true, modifier = Modifier.size(1280.dp, 800.dp).testTag("float-host"))
         }
-        for (id in listOf("rime_ice", "t9_pinyin")) {
+        for (id in listOf("cayboard_pinyin", "t9_pinyin")) {
             rule.runOnIdle {
                 viewModel.dispatch(KeyboardDispatchAction.InputSessionStarted(false, id))
                 schema.value = id
@@ -303,7 +303,7 @@ class KeyboardBottomEdgeRenderTest {
     }
 
     private fun save(name: String, tag: String? = null) {
-        val dir = System.getenv("CYIME_RENDER_OUT") ?: return
+        val dir = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         rule.runOnIdle { root.draw(android.graphics.Canvas(bitmap)) }

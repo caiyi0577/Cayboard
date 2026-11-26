@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** GitHub #118：导入方案的 recognizer 规则以 V、` 起头时，这些键交给 Rime。 */
+/** GitHub #118：导入方案的 recognizer 规则以 V、` 起头时，这些键交给输入引擎。 */
 class RecognizerLeadCharsTest {
     @Test fun `schema patterns give their fixed first characters`() {
         val schema = """

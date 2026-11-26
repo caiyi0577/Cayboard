@@ -142,7 +142,7 @@ object ModelManager {
     }
 
     fun getModelStorageDir(context: Context, model: ModelInfo): File? {
-        // A downloaded candidate cache is not installed until Rime can actually read it.
+        // A downloaded candidate cache is not installed until the input engine can read it.
         if (model.category == ModelCategory.CANDIDATE) return CandidateModelAssets.existingDirectory(context, model)
         return ModelStorage.getModelDir(context, model.id)
     }
@@ -298,7 +298,7 @@ object ModelManager {
         }
     }
 
-    /** 只删 models/ 里的下载副本，不碰 rime/ 里正在用的同名文件；用于被另一档替代的模型。 */
+    /** 只删 models/ 里的下载副本，不碰输入数据目录里正在用的同名文件；用于被另一档替代的模型。 */
     internal fun deleteStoredDownload(context: Context, model: ModelInfo): Boolean {
         val guard = installGuards.getOrPut(model.id) { ModelInstallGuard() }
         return guard.delete {

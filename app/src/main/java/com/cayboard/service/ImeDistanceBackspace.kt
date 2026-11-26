@@ -1,7 +1,7 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.settings.LayoutKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,12 +35,12 @@ internal class ImeDistanceBackspace(private val service: CayboardInputMethodServ
         desired = count
         if (!current() || ic == null || (!internal && service.isSecretEditor()) || service.editorConnection() !== ic ||
             service.keyboardCallbacks?.onPreeditKeyInput != null) return
-        service.keyRouter.postRimeJob("distance-backspace") {
-            if (invalid || !current()) return@postRimeJob
-            val engine = service.rimeEngine
+        service.keyRouter.postEngineJob("distance-backspace") {
+            if (invalid || !current()) return@postEngineJob
+            val engine = service.inputEngine
             val composing = engine.compositionActiveForDeletion()
             if (document == null && code == null) {
-                if (count == 0) return@postRimeJob
+                if (count == 0) return@postEngineJob
                 val candidates = service.candidateState.value
                 if (composing == true && !initial.isAsciiMode && !initial.inputProfile.capabilities.japaneseConversion) {
                     if (service.t9PartialSegments.isEmpty()) code = DragCode.open(engine, initial, forward)
@@ -53,12 +53,12 @@ internal class ImeDistanceBackspace(private val service: CayboardInputMethodServ
                         }
                     }
                 }
-                if (document == null && code == null) { invalid = true; return@postRimeJob }
+                if (document == null && code == null) { invalid = true; return@postEngineJob }
             }
-            if (count != desired) return@postRimeJob
+            if (count != desired) return@postEngineJob
             val preedit = code
             if (preedit != null) {
-                val result = preedit.move(engine, count, ::current) ?: run { invalid = true; return@postRimeJob }
+                val result = preedit.move(engine, count, ::current) ?: run { invalid = true; return@postEngineJob }
                 withContext(Dispatchers.Main) {
                     if (current() && service.editorConnection() === ic) {
                         if (preedit.t9) service.keyboardCallbacks?.onT9RefreshAfterPreeditEdit?.invoke()
@@ -68,7 +68,7 @@ internal class ImeDistanceBackspace(private val service: CayboardInputMethodServ
             } else {
                 val text = document
                 if (text == null || composing != false || service.t9PartialSegments.isNotEmpty()) {
-                    invalid = true; return@postRimeJob
+                    invalid = true; return@postEngineJob
                 }
                 withContext(Dispatchers.Main) {
                     val cs = service.candidateState.value
@@ -116,7 +116,7 @@ internal class DragCode private constructor(
     private var expected = original
     private var revision = 0L
 
-    fun move(engine: RimeEngine, count: Int, current: () -> Boolean): RimeProcessResult? {
+    fun move(engine: InputEngine, count: Int, current: () -> Boolean): EngineProcessResult? {
         val nextCaret = if (forward) caret else (caret - count).coerceAtLeast(0)
         val next = if (forward) original.removeRange(caret, (caret + count).coerceAtMost(original.length))
             else original.removeRange(nextCaret, caret)
@@ -131,7 +131,7 @@ internal class DragCode private constructor(
     }
 
     companion object {
-        fun open(engine: RimeEngine, state: InputUIState, forward: Boolean = false): DragCode? {
+        fun open(engine: InputEngine, state: InputUIState, forward: Boolean = false): DragCode? {
             val (snap, digits) = engine.readDeleteDragInput(state.currentSchemaId) ?: return null
             val raw = snap.getOrNull(0)?.takeIf { it.isNotEmpty() && it.all { ch -> ch.code in 32..126 } } ?: return null
             val caret = snap.getOrNull(1)?.toIntOrNull()?.takeIf { it in 0..raw.length } ?: return null

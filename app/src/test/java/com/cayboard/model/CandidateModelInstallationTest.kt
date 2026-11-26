@@ -1,6 +1,6 @@
 package com.cayboard.model
 
-import com.cayboard.settings.BundledRimeSync
+import com.cayboard.settings.BundledInputSync
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
@@ -15,7 +15,7 @@ class CandidateModelInstallationTest {
         val grammar = listOf("wanxiang-lts-zh-hans.gram")
         val bytes = "grammar:\n  language: wanxiang-lts-zh-hans".toByteArray()
         File(runtime, "t9_pinyin.schema.yaml").writeBytes(bytes)
-        val manifest = "${hash(bytes)}\t${bytes.size}\trime_chinese/t9_pinyin.schema.yaml\tt9_pinyin.schema.yaml\n"
+        val manifest = "${hash(bytes)}\t${bytes.size}\tcayboard_chinese/t9_pinyin.schema.yaml\tt9_pinyin.schema.yaml\n"
         assertFalse(hasExternalGrammarConsumer(runtime, manifest, grammar))
         File(runtime, "wanxiang.schema.yaml").writeText("schema:\n  schema_id: wanxiang\n")
         File(runtime, "build/wanxiang.schema.yaml").apply { parentFile!!.mkdirs(); writeBytes(bytes) }
@@ -33,7 +33,7 @@ class CandidateModelInstallationTest {
         File(this, "t9_sentence.vocab").writeText("words")
     }
 
-    @Test fun verifiedDownloadBecomesReadableAtRimePathsAndCanBeReused() {
+    @Test fun verifiedDownloadBecomesReadableInInputDataAndCanBeReused() {
         val source = source()
         val runtime = temporary.newFolder()
         assertTrue(installCandidateModel(source, runtime, version()))
@@ -106,8 +106,8 @@ class CandidateModelInstallationTest {
         val model = File(runtime, "t9_sentence.onnx").apply { writeText("previous model") }
         val grammar = File(runtime, "wanxiang-lts-zh-hans.gram").apply { writeText("previous grammar") }
         val bytes = "dictionary".toByteArray()
-        val manifest = "${hash(bytes)}\t${bytes.size}\trime_chinese/basic.dict.yaml\tbasic.dict.yaml\n"
-        BundledRimeSync.install(runtime, temporary.newFolder(), manifest) { bytes.inputStream() }
+        val manifest = "${hash(bytes)}\t${bytes.size}\tcayboard_chinese/basic.dict.yaml\tbasic.dict.yaml\n"
+        BundledInputSync.install(runtime, temporary.newFolder(), manifest) { bytes.inputStream() }
         assertEquals("previous model", model.readText())
         assertEquals("previous grammar", grammar.readText())
     }

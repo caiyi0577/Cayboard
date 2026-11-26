@@ -2,12 +2,12 @@
 
 Short clauses (3-8 characters, split at punctuation) are matched against 14 grammatical patterns in order;
 the first matching pattern wins. The most frequent clauses per pattern are kept and given readings with
-pypinyin (run with an interpreter that has it, e.g. D:/CyIME-Data/lexicon-generation/.venv). The lines are
+pypinyin (run with an interpreter that has it, e.g. D:/Cayboard-Data/lexicon-generation/.venv). The lines are
 taken after --skip so they never overlap the part of the corpus used to estimate weights; the set is for
 scoring only.
 
 Usage: python pattern_phrases.py CORPUS.txt OUT_DIR [--skip 8000000] [--lines 8000000] [--per 100]
-Writes OUT_DIR/patterns.tsv (lexicon_regression rows, 26-key full pinyin, run with CYIME_EXTRA_CASES),
+Writes OUT_DIR/patterns.tsv (lexicon_regression rows, 26-key full pinyin, run with CAYBOARD_EXTRA_CASES),
 OUT_DIR/patterns.txt + patterns.pinyin.txt (t9_replay prepare input) and OUT_DIR/patterns.groups.tsv
 (line number -> pattern id, for scoring the nine-key replay).
 """

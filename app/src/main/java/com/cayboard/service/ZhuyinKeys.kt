@@ -1,7 +1,7 @@
 package com.cayboard.service
 
 /**
- * 注音（大千）键：键帽是注音符号，cyime_zhuyin 方案的拼写是大千式键盘的 ASCII 键码（ㄅ=1 ㄆ=q ㄇ=a …）。
+ * 注音（大千）键：键帽是注音符号，cayboard_zhuyin 方案的拼写是大千式键盘的 ASCII 键码（ㄅ=1 ㄆ=q ㄇ=a …）。
  * 声调 ˊˇˋ˙ 是 6 3 4 7，第一声是空格。
  */
 internal object ZhuyinKeys {

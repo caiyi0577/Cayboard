@@ -1,4 +1,4 @@
-package com.cyime.audit;
+package com.cayboard.audit;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,9 +84,9 @@ public final class ChatReplayHostChecks {
             () -> call("createAuditRoot", new Class<?>[]{File.class, boolean.class}, fresh, true));
         require(fresh.list().length == 0);
         File snapshot = new File(parent, "seed.userdb.txt");
-        Files.write(snapshot.toPath(), ("# Rime user dictionary\n#@/db_name\trime_ice.userdb\n#@/db_type\tuserdb\n"
+        Files.write(snapshot.toPath(), ("# Rime user dictionary\n#@/db_name\tcayboard_pinyin.userdb\n#@/db_type\tuserdb\n"
             + "#@/tick\t9\nni hao\t你好\tc=1 d=1 t=9\n").getBytes(StandardCharsets.UTF_8));
-        require("rime_ice".equals(call("userDictName", new Class<?>[]{File.class}, snapshot)));
+        require("cayboard_pinyin".equals(call("userDictName", new Class<?>[]{File.class}, snapshot)));
         require(flags("--host", "--user-dict", snapshot.getPath()).get("user-dict").equals(snapshot.getPath()));
         File plain = new File(parent, "plain.dict.txt");
         Files.write(plain.toPath(), "你好\tni hao\t1\n".getBytes(StandardCharsets.UTF_8));
@@ -95,7 +95,7 @@ public final class ChatReplayHostChecks {
         rejected(IOException.class, "snapshot not found",
             () -> call("userDictName", new Class<?>[]{File.class}, new File(parent, "missing.userdb.txt")));
         File badTick = new File(parent, "bad-tick.userdb.txt");
-        Files.write(badTick.toPath(), ("#@/db_name\trime_ice.userdb\n#@/db_type\tuserdb\n#@/tick\t9x\n"
+        Files.write(badTick.toPath(), ("#@/db_name\tcayboard_pinyin.userdb\n#@/db_type\tuserdb\n#@/tick\t9x\n"
             + "ni hao\t你好\tc=1 d=1 t=9\n").getBytes(StandardCharsets.UTF_8));
         rejected(IOException.class, "non-numeric /tick",
             () -> call("userDictName", new Class<?>[]{File.class}, badTick));

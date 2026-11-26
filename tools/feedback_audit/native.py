@@ -18,13 +18,13 @@ from storage_guard import check_storage
 def check_stroke(out, library, baseline):
     data = out / "stroke"
     data.mkdir()
-    assets = ROOT / "app/src/main/assets/rime_chinese"
+    assets = ROOT / "app/src/main/assets/cayboard_chinese"
     for name in ("symbols.yaml", "default.yaml", "default.custom.yaml"):
         shutil.copyfile(baseline / name, data / name)
-    shutil.copyfile(ROOT / "app/build/generated/stroke-assets/rime_chinese/stroke.dict.yaml", data / "stroke.dict.yaml")
+    shutil.copyfile(ROOT / "app/build/generated/stroke-assets/cayboard_chinese/stroke.dict.yaml", data / "stroke.dict.yaml")
     shutil.copyfile(assets / "stroke.schema.yaml", data / "stroke.schema.yaml")
     (data / "lua").mkdir()
-    for path in (assets / "lua").glob("cyime_stroke_*.lua"):
+    for path in (assets / "lua").glob("cayboard_stroke_*.lua"):
         shutil.copyfile(path, data / "lua" / path.name)
     a, b = "phnphnphhz", "hszhshzs"
     wild = "ph*phnphhz"
@@ -32,7 +32,7 @@ def check_stroke(out, library, baseline):
                 a+"'hszh*hzs": "笔画", "****": None}
     short = "phn'hsz"
     cases = [dict(id=code, input=code) for code in [*expected, short]]
-    os.environ["CYIME_REPORT_TOP"] = "60"
+    os.environ["CAYBOARD_REPORT_TOP"] = "60"
     candidates, _, _, _ = run(library, data, [("stroke", None, cases, None)])
     failures = [code for code, word in expected.items() if next(iter(candidates[code]), None) != word]
     return dict(candidates=candidates, failures=failures, abbreviated_has_target="笔画" in candidates[short])
@@ -59,7 +59,7 @@ def check_syllables(out):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--library", required=True, type=Path, help="existing host librime_jni.so")
+    parser.add_argument("--library", required=True, type=Path, help="existing host cayboard_jni.so")
     parser.add_argument("--baseline", required=True, type=Path, help="reference stroke deployment, read only")
     args = parser.parse_args()
     check_storage(ROOT)

@@ -33,7 +33,7 @@ class HandwritingPanelGeometryTest {
         val explicit = mutableStateOf(true)
         val app = rule.activity.application
         KeysConfigHelper.loadConfig(app)
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
         val vm = KeyboardViewModel(app)
         try {
             rule.setContent {
@@ -44,7 +44,7 @@ class HandwritingPanelGeometryTest {
                             keyTextColor = Color.White, specialKeyTextColor = Color.White,
                             keyBackgroundColor = Color(0xFF404148), specialKeyBackgroundColor = Color(0xFF505158))
                         else KeyboardLayout({}, vm, KeyboardCallbacks(onKeyPress = { _, _ -> }, onCandidateSelect = {}),
-                            KeyboardUiState(currentSchemaId = "rime_ice", isFloatingMode = floating.value), false, Modifier.fillMaxSize())
+                            KeyboardUiState(currentSchemaId = "cayboard_pinyin", isFloatingMode = floating.value), false, Modifier.fillMaxSize())
                     } }
                 }
             }
@@ -85,7 +85,7 @@ class HandwritingPanelGeometryTest {
                 saveUiEvidence("handwriting-aligned-$name", rule.onNodeWithTag("comparison-body"))
               }
             }
-        } finally { KeysConfigHelper.setActiveKeyboardSchema("rime_ice") }
+        } finally { KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin") }
     }
 
     @Test fun sideKeysAndFooterKeepFiveEqualRowsAtSmallAndLargeSizes() {

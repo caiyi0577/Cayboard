@@ -35,7 +35,7 @@ class FlatSettingsHomeTest {
             rule.onNodeWithText("语言与方案").assertExists()
             rule.onNodeWithText("翻译").assertExists()
             rule.onNodeWithText("关于 Cayboard").assertExists()
-            System.getenv("CYIME_RENDER_OUT")?.let {dir ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let {dir ->
                 val view=rule.activity.window.decorView
                 val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
                 rule.runOnIdle {view.draw(android.graphics.Canvas(bitmap))}

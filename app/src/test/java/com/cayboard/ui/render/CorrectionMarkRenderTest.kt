@@ -40,7 +40,7 @@ import java.io.File
 
 /**
  * 纠错候选的拼音只显示改正后的读音，改动的字母标红（少打、多打、打错、打反各一个），各主题深浅色和玻璃下各一行。
- * 用真实 CandidateBar 代码在电脑上渲染。只在设了环境变量 CYIME_RENDER_OUT 时出图。
+ * 用真实 CandidateBar 代码在电脑上渲染。只在设了环境变量 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w800dp-h600dp-xhdpi")
@@ -49,7 +49,7 @@ class CorrectionMarkRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderCorrectionMarks() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val context = ApplicationProvider.getApplicationContext<Context>()
         KeyboardThemes.initFromConfig(context)

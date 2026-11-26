@@ -14,18 +14,18 @@ import java.io.File
 import java.io.IOException
 
 /**
- * 回归测试（合并键布局重构引入，见 issue #884 关联的 xime.custom.yaml 不生效）：
+ * 回归测试（合并键布局重构引入，见 issue #884 关联的 cayboard.custom.yaml 不生效）：
  * [KeysConfigHelper.loadConfig] 刷新基线缓存后，必须把标准 26 键的行布局落到
  * `_zhRows`。历史上只调用 [KeysConfigHelper.setActiveKeyboardSchema]，而非合并键
  * 方案的 section 为 null，与重置后的 `_activeMergedSection` 相等会被提前 return，
- * 导致 xime.custom.yaml 的 layout.rows 不生效（重新部署也无效）。
+ * 导致 cayboard.custom.yaml 的 layout.rows 不生效（重新部署也无效）。
  */
 class KeysConfigLayoutReloadTest {
 
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private val defaultXime = """
+    private val defaultCayboard = """
         keyboard:
           qwerty:
             layout:
@@ -35,7 +35,7 @@ class KeysConfigLayoutReloadTest {
                 - [z, x, c, v, b, n, m]
     """.trimIndent()
 
-    private val customXime = """
+    private val customCayboard = """
         keyboard:
           qwerty:
             layout:
@@ -49,21 +49,21 @@ class KeysConfigLayoutReloadTest {
     @After fun clearBindings() = KeysConfigHelper.clearSchemaBindingsForTest()
 
     @Test
-    fun `重新部署时 xime custom 行布局生效`() {
+    fun `重新部署时 cayboard custom 行布局生效`() {
         val filesDir = tmp.newFolder("files")
-        val rimeDir = File(filesDir, "rime").apply { mkdirs() }
-        File(rimeDir, "xime.custom.yaml").writeText(customXime)
+        val inputDataDir = File(filesDir, "cayboard_input").apply { mkdirs() }
+        File(inputDataDir, "cayboard.custom.yaml").writeText(customCayboard)
 
         val assets = mock<AssetManager>()
-        whenever(assets.open("xime.yaml")).thenAnswer {
-            ByteArrayInputStream(defaultXime.toByteArray())
+        whenever(assets.open("cayboard.yaml")).thenAnswer {
+            ByteArrayInputStream(defaultCayboard.toByteArray())
         }
-        whenever(assets.open("xime.custom.yaml")).thenThrow(IOException("not in assets"))
+        whenever(assets.open("cayboard.custom.yaml")).thenThrow(IOException("not in assets"))
 
         val context = mock<Context>()
         whenever(context.assets).thenReturn(assets)
         whenever(context.filesDir).thenReturn(filesDir)
-        whenever(context.getSharedPreferences("kime_settings", Context.MODE_PRIVATE))
+        whenever(context.getSharedPreferences("cayboard_settings", Context.MODE_PRIVATE))
             .thenReturn(mock<android.content.SharedPreferences>())
 
         KeysConfigHelper.loadConfig(context)
@@ -74,7 +74,7 @@ class KeysConfigLayoutReloadTest {
         )
         // A subsequent user edit must be visible after a reload; parsed YAML reuse
         // must not turn into a process-lifetime stale configuration cache.
-        File(rimeDir, "xime.custom.yaml").writeText(defaultXime)
+        File(inputDataDir, "cayboard.custom.yaml").writeText(defaultCayboard)
         KeysConfigHelper.loadConfig(context)
         assertEquals(listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
             KeysConfigHelper.getKeyRows(false)[1])

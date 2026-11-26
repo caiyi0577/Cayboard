@@ -22,7 +22,7 @@ class DeviceModelDefaultsTest {
         val context = mock<Context>()
         val data = mutableMapOf<String, MutableMap<String, Any>>()
         private val preferences = mutableMapOf<String, SharedPreferences>()
-        fun values(name: String = "kime_settings") = data.getOrPut(name) { mutableMapOf() }
+        fun values(name: String = "cayboard_settings") = data.getOrPut(name) { mutableMapOf() }
         init {
             whenever(context.getSharedPreferences(any(), any())).thenAnswer { call ->
                 val name = call.getArgument<String>(0)
@@ -170,7 +170,7 @@ class DeviceModelDefaultsTest {
     
 
     @Test fun legacySettingsIncludingValuesEqualToOldDefaultsArePreserved() {
-        listOf("kime_settings", "asr_model", "default_models", "bundled_models").forEach { existingStore ->
+        listOf("cayboard_settings", "asr_model", "default_models", "bundled_models").forEach { existingStore ->
             val stores = Stores()
             stores.values(existingStore)["legacy_marker"] = true
             DeviceDefaults.initialize(stores.context) { error("existing installation must not re-probe") }

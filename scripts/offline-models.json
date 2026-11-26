@@ -52,7 +52,8 @@
     "version": "v12",
     "files": [
       {
-        "name": "cyime_gloss-v12.tsv",
+        "name": "cayboard_gloss-v12.tsv",
+        "legacyCacheName": "cyime_gloss-v12.tsv",
         "url": "https://github.com/Cyletix/CyIME/releases/download/models/cyime_gloss-v12.tsv",
         "sha256": "46ad175c5ea63cf1d9de5999aa615dbaf09a5689e71dc7d20c17e177fd22e761",
         "size": 2747059

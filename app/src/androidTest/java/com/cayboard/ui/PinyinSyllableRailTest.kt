@@ -11,8 +11,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
-import com.cayboard.rime.PinyinSyllableChoices
-import com.cayboard.rime.PinyinSyllableOption
+import com.cayboard.engine.PinyinSyllableChoices
+import com.cayboard.engine.PinyinSyllableOption
 import com.cayboard.service.CandidateState
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.ui.keyboard.*
@@ -87,6 +87,6 @@ class PinyinSyllableRailTest {
         rule.waitForIdle()
         rule.runOnIdle { checkNotNull(delayed).invoke() }
         rule.onNodeWithTag("expanded-pinyin-options").assertDoesNotExist()
-        KeysConfigHelper.setActiveKeyboardSchema("rime_ice")
+        KeysConfigHelper.setActiveKeyboardSchema("cayboard_pinyin")
     }
 }

@@ -38,7 +38,7 @@ import java.io.File
 
 /**
  * 设置页图例按真键盘配色画（11-03：黑白浅色主题「三行字母错位」四张图白底白键，只看得见两根深色条）。
- * 图例里的键必须和图例底色分得开；设 CYIME_RENDER_OUT 时把整页图例存成 PNG 对照。
+ * 图例里的键必须和图例底色分得开；设 CAYBOARD_RENDER_OUT 时把整页图例存成 PNG 对照。
  * 设置页图例与玻璃透明度无关（设置页后面没有应用），玻璃开关不影响这里的颜色。
  */
 @RunWith(AndroidJUnit4::class)
@@ -98,7 +98,7 @@ class LegendContrastRenderTest {
             val ratio = contrast(key, board)
             assertTrue("$themeId dark=$dark 第 $index 张：键 $key 底 $board 对比 $ratio", ratio >= LEGEND_MIN_KEY_CONTRAST - .02f)
         }
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         val page = rule.onNodeWithTag("legend-page", useUnmergedTree = true).fetchSemanticsNode().boundsInWindow
         File(out).mkdirs()
         File(out, "legend-$themeId-${if (dark) "dark" else "light"}.png").outputStream().use {

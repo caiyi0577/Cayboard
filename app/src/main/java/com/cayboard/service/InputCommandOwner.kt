@@ -6,16 +6,16 @@ import kotlinx.coroutines.asContextElement
 /** Ownership travels with the coroutine, including dispatcher switches. */
 internal data class InputCommandOwner(val admission: Long, val editor: Long, val validate: () -> Unit) {
     fun context() = current.asContextElement(this) +
-        com.cayboard.rime.RimeCommandContext.validity.asContextElement(validate)
+        com.cayboard.engine.EngineCommandContext.validity.asContextElement(validate)
 
     fun <T> runInline(block: () -> T): T {
         val previous = current.get()
-        val previousValidator = com.cayboard.rime.RimeCommandContext.validity.get()
+        val previousValidator = com.cayboard.engine.EngineCommandContext.validity.get()
         current.set(this)
-        com.cayboard.rime.RimeCommandContext.validity.set(validate)
+        com.cayboard.engine.EngineCommandContext.validity.set(validate)
         try { validate(); return block() } finally {
             current.set(previous)
-            com.cayboard.rime.RimeCommandContext.validity.set(previousValidator)
+            com.cayboard.engine.EngineCommandContext.validity.set(previousValidator)
         }
     }
 

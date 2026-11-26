@@ -47,7 +47,7 @@ object LanguagePreferences {
         return saved.takeIf { it in native && InputLanguage.forSchema(it) in languages }
             ?: native.firstOrNull { InputLanguage.forSchema(it) in languages }
             ?: native.firstOrNull()
-            ?: "rime_ice"
+            ?: "cayboard_pinyin"
     }
 
     /** English always remains available; language switches never delete dictionaries. */
@@ -69,7 +69,7 @@ object LanguagePreferences {
         }
         // 补全词表是商店里的下载包：开启时就在后台下载，打字前多半已经下好。
         if (enabled) LetterLanguage.of(language)?.let { com.cayboard.association.WordCompletion.download(context, it) }
-        // The English entry is virtual. Keep a real Rime schema as the engine fallback.
+        // The English entry is virtual. Keep a real decoder schema as the engine fallback.
         val current = SettingsPreferences.getCurrentSchema(context)
         if (current == InputModes.ENGLISH || InputLanguage.forSchema(current) !in next) {
             val fallback = nativeSchema(current, SchemaManager.getEnabledSchemas(context), next)
@@ -81,7 +81,7 @@ object LanguagePreferences {
         if (schemasChanged) SettingsPreferences.setDeploymentDone(context, false)
         SettingsPreferences.getPrefsPublic(context).edit().putStringSet(KEY, next.map { it.id }.toSet()).commit()
         if (schemasChanged) scope.launch {
-            com.cayboard.rime.RimeConfigHelper.prepareAutomatically(context.applicationContext)
+            com.cayboard.engine.EngineConfig.prepareAutomatically(context.applicationContext)
             // 键盘自己的那次刷新可能早于编译完成，读到的方案列表里还没有新语言：开了意大利语、准备完了，
             // 语言键还是只有中英，要关掉再开才出现（11-09）。准备完再通知键盘重读一次。
             SettingsPreferences.getPrefsPublic(context).edit().putLong(SCHEMAS_READY_KEY, System.currentTimeMillis()).apply()

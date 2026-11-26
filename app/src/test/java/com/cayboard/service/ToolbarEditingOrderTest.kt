@@ -25,7 +25,7 @@ class ToolbarEditingOrderTest {
         actions.forEach(controller::handleToolbarEditingAction)
 
         // 一个动作一个排队任务，谁都没有在排队前直接碰输入框。
-        verify(router, times(actions.size)).postRimeJob(any(), any())
+        verify(router, times(actions.size)).postEngineJob(any(), any())
         verifyNoInteractions(connection)
         verify(service, never()).dismissPredictionsForPaste()
         verify(service, never()).sendUndoShortcut(any(), any())
@@ -40,6 +40,6 @@ class ToolbarEditingOrderTest {
 
         actions.forEach(controller::handleToolbarEditingAction)
 
-        verify(router, never()).postRimeJob(any(), any())
+        verify(router, never()).postEngineJob(any(), any())
     }
 }

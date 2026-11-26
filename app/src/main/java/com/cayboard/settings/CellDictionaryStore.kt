@@ -1,6 +1,6 @@
 package com.cayboard.settings
 
-import com.cayboard.settings.ScelDictionary.rimeLine
+import com.cayboard.settings.ScelDictionary.engineDictionaryLine
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -35,7 +35,7 @@ data class CellDictionaryState(
         downloadedWordRevision != appliedWordRevision
 }
 
-/** Downloaded data stays outside Rime until explicitly applied. Never edits learned user dictionaries. */
+/** Downloaded data stays outside the input engine until explicitly applied. Never edits learned user dictionaries. */
 class CellDictionaryStore(val directory: File) {
     companion object {
         private val lock = Any()
@@ -165,12 +165,12 @@ class CellDictionaryStore(val directory: File) {
         val parsed = when {
             offer != null || scel -> ScelDictionary.parse(bytes)
             bytes.firstOrNull { it.toInt().toChar() !in " \r\n\t" } == '{'.code.toByte() -> JsonCellDictionary.parse(bytes)
-            else -> TxtCellDictionary.parse(bytes)  // 词 拼音 / 拼音 词 / Rime .dict.yaml
+            else -> TxtCellDictionary.parse(bytes)  // 词 拼音 / 拼音 词 / schema .dict.yaml
         }
         val entry = InstalledCellDictionary(id, offer?.name ?: parsed.name.ifBlank { "本地词库" },
             offer?.category ?: "本地导入", parsed.entries.size, parsed.skipped, offer?.sourceUrl.orEmpty(), hash,
             parsed.english.size)
-        writeAtomic(dictionaryFile(id), ScelDictionary.toRime("cell_$id", parsed.entries))
+        writeAtomic(dictionaryFile(id), ScelDictionary.toEngineDictionary("cell_$id", parsed.entries))
         if (parsed.english.isEmpty()) englishFile(id).delete()
         else writeAtomic(englishFile(id), parsed.english.joinToString("\n", postfix = "\n"))
         save(old.copy(installed = old.installed.filterNot { it.id == id } + entry))
@@ -179,7 +179,7 @@ class CellDictionaryStore(val directory: File) {
 
     /**
      * A file picked by the user, copied to disk first (bounded, hashed on the way) instead of into memory. A plain
-     * or Rime list is converted line by line, up to [TxtCellDictionary.MAX_BYTES] (万象's base list is 49 MB);
+     * or schema dictionary is converted line by line, up to [TxtCellDictionary.MAX_BYTES] (万象's base list is 49 MB);
      * SCEL and JSON stay at 16 MB and go through [install].
      */
     fun installFile(input: InputStream): InstalledCellDictionary {
@@ -227,8 +227,8 @@ class CellDictionaryStore(val directory: File) {
         val converted = File.createTempFile(".import-", ".tmp", directory)
         try {
             val summary = converted.bufferedWriter().use { output ->
-                output.write(ScelDictionary.rimeHeader("cell_$id"))
-                TxtCellDictionary.read({ source.inputStream() }) { output.rimeLine(it) }
+                output.write(ScelDictionary.engineDictionaryHeader("cell_$id"))
+                TxtCellDictionary.read({ source.inputStream() }) { output.engineDictionaryLine(it) }
             }
             return synchronized(lock) {
                 val old = read()

@@ -97,7 +97,7 @@ internal sealed interface HardwareCandidateDecision {
  * 空格有意不跟随工具栏高亮（用户 2026-10-12 决定，勿按 Windows 端改回“空格选高亮”）：
  * Android 每次上屏后都会自动弹出下一个词的智能联想，空格必须始终是可预期的普通动作——
  * 组词时确认默认候选，上屏后的联想只能用数字或点按选，空格照常输入空格，
- * 否则正常打字会频繁把联想词误上屏。Windows 端空格上屏 Rime 高亮的那个候选，两端在此有意不同。
+ * 否则正常打字会频繁把联想词误上屏。Windows 端空格上屏输入引擎高亮的候选，两端在此有意不同。
  */
 internal fun physicalCandidateDecision(
     key: HardwareCandidateKey,

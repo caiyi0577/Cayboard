@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import com.cayboard.rime.PinyinEditSession
-import com.cayboard.rime.PinyinEditDisplay
+import com.cayboard.engine.PinyinEditSession
+import com.cayboard.engine.PinyinEditDisplay
 
 /** A non-focusable editing strip above the IME: no replacement keyboard or extra row of keys. */
 @Composable

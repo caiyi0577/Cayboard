@@ -1,4 +1,4 @@
-"""把扩展商店和模型文件同步到魔搭仓库 Cyletix/cyime-model，给国内用户一条能下的线路。
+"""把扩展商店和模型文件同步到魔搭仓库 Cyletix/cayboard-model，给国内用户一条能下的线路。
 
 在电脑上运行（Python 3.10+）。只需要一次准备：
   py -3 -m pip install -U modelscope
@@ -29,14 +29,13 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-REPO_ID = "Cyletix/cyime-model"
+REPO_ID = "Cyletix/cayboard-model"
 RESOLVE = f"https://www.modelscope.cn/models/{REPO_ID}/resolve/master/"
 ROOT = Path(__file__).resolve().parents[2]
 STORE = ROOT / "store"
-CURATED = ROOT / "app/src/main/java/com/cayboard/settings/CuratedRimeSchemes.kt"
 CATALOG = ROOT / "app/src/main/java/com/cayboard/model/BuiltinModelCatalog.kt"
 MIRROR_HOSTS = {"raw.githubusercontent.com", "github.com"}
-GITHUB_REPO = "Cyletix/Cayboard"
+GITHUB_REPO = "caiyi0577/Cayboard"
 # 与 AppUpdateCatalog.MODELSCOPE_PAGE / apkName 相同。
 MODELSCOPE_PAGE = f"https://www.modelscope.cn/models/{REPO_ID}/files"
 APP_MANIFEST = "app/releases.json"
@@ -66,16 +65,13 @@ def mirror_path(url: str) -> str | None:
 
 
 def external_files() -> list[tuple[str, str]]:
-    """商店目录和内置方案目录里写了 sha256 的 GitHub 文件：(地址, sha256)。"""
+    """商店目录里写了 sha256 的 GitHub 文件：(地址, sha256)。"""
     found: dict[str, str] = {}
     for index in STORE.glob("*/index.yaml"):
         text = index.read_text(encoding="utf-8")
         for m in re.finditer(r'url:\s*"?([^"\s]+)"?\s*\n\s*sha256:\s*"?([0-9a-fA-F]{64})', text):
             found[m.group(1)] = m.group(2).lower()
-    text = CURATED.read_text(encoding="utf-8")
-    for m in re.finditer(r'url\s*=\s*"([^"]+)",\s*\n\s*sha256\s*=\s*"([0-9a-fA-F]{64})"', text):
-        found[m.group(1)] = m.group(2).lower()
-    own = ("https://raw.githubusercontent.com/Cyletix/CyIME/main/store/",)
+    own = (f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/store/",)
     return [(u, s) for u, s in sorted(found.items()) if mirror_path(u) and not u.startswith(own)]
 
 
@@ -99,13 +95,13 @@ def catalog_hash(name: str) -> str | None:
 
 def download(url: str, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(url, headers={"User-Agent": "cyime-store-sync"})
+    req = urllib.request.Request(url, headers={"User-Agent": "cayboard-store-sync"})
     with urllib.request.urlopen(req, timeout=600) as src, open(target, "wb") as dst:
         shutil.copyfileobj(src, dst)
 
 
 def fetch_json(url: str, headers: dict | None = None):
-    req = urllib.request.Request(url, headers={"User-Agent": "cyime-store-sync", **(headers or {})})
+    req = urllib.request.Request(url, headers={"User-Agent": "cayboard-store-sync", **(headers or {})})
     with urllib.request.urlopen(req, timeout=60) as src:
         return json.load(src)
 
@@ -279,7 +275,7 @@ def cmd_check(args) -> None:
             for asset in release.get("assets", []):
                 url = asset["browser_download_url"]
                 try:
-                    req = urllib.request.Request(url, headers={"User-Agent": "cyime-store-sync", "Range": "bytes=0-0"})
+                    req = urllib.request.Request(url, headers={"User-Agent": "cayboard-store-sync", "Range": "bytes=0-0"})
                     with urllib.request.urlopen(req, timeout=60) as src:
                         ok = src.status in (200, 206)
                 except Exception as e:  # noqa: BLE001

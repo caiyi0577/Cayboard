@@ -7,7 +7,7 @@ import org.junit.Test
 
 class PhysicalKeyboardPolicyTest {
     private val profile = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.T9,
-        EngineProfile.Rime("installed-backend"))
+        EngineProfile.Decoder("installed-backend"))
     private fun source(state: CandidateState = CandidateState(), english: Boolean = false, pending: Boolean = false) =
         HardwareCandidateSnapshot(1, profile, state, english, predictionPending = pending)
     private val composing = CandidateState(inputText = "ni", isComposing = true, candidates = listOf("你", "呢"))
@@ -51,8 +51,8 @@ class PhysicalKeyboardPolicyTest {
 
     @Test fun `space in expanded candidates uses the displayed filtered mapping`() {
         val state = source(composing.copy(expandedCandidates = listOf(
-            com.cayboard.rime.RimeCandidate("你好", "ni hao"),
-            com.cayboard.rime.RimeCandidate("你", "ni")), expandedCandidatesLoaded = true))
+            com.cayboard.engine.EngineCandidate("你好", "ni hao"),
+            com.cayboard.engine.EngineCandidate("你", "ni")), expandedCandidatesLoaded = true))
             .copy(expanded = true, singleCharOnly = true)
         val decision = physicalCandidateDecision(HardwareCandidateKey.SPACE, state, true)
         assertEquals(HardwareCandidateDecision.Confirm(0, false), decision)
@@ -133,7 +133,7 @@ class PhysicalKeyboardPolicyTest {
         }
     }
 
-    /** GitHub #290：中文标点下 Shift 打的 " ( ) 等交给 Rime 出全角，英文 / 半角和小键盘照旧原样上屏。 */
+    /** GitHub #290：中文标点下 Shift 打的 " ( ) 等交给输入引擎出全角，英文 / 半角和小键盘照旧原样上屏。 */
     @Test fun `shifted symbols follow chinese punctuation while numpad stays literal`() {
         for (symbol in listOf("\"", "(", ")", ":", "?", "!", "<", ">", "_", "{", "}", "~")) {
             assertFalse(symbol, hardwareSymbolIsLiteral(symbol, shifted = true, numpad = false, chinesePunctuation = true))
@@ -141,7 +141,7 @@ class PhysicalKeyboardPolicyTest {
         }
         assertTrue(hardwareSymbolIsLiteral("+", shifted = false, numpad = true, chinesePunctuation = true))
         assertTrue(hardwareSymbolIsLiteral("7", shifted = false, numpad = true, chinesePunctuation = true))
-        assertFalse("不按 Shift 的符号本来就走 Rime", hardwareSymbolIsLiteral("'", shifted = false, numpad = false, chinesePunctuation = true))
+        assertFalse("不按 Shift 的符号本来就走输入引擎", hardwareSymbolIsLiteral("'", shifted = false, numpad = false, chinesePunctuation = true))
         assertFalse("Shift 字母不归这里管", hardwareSymbolIsLiteral("A", shifted = true, numpad = false, chinesePunctuation = false))
     }
 }

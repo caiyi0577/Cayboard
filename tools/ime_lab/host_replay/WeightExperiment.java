@@ -1,6 +1,6 @@
-package com.cyime.audit;
+package com.cayboard.audit;
 
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.nio.file.Files;
@@ -12,7 +12,7 @@ import java.util.Iterator;
 /** Endpoint-only, zero-delay configuration diagnostic; not the full replay protocol. */
 public final class WeightExperiment {
     private static final String[] FIELDS = {"text", "comment", "type", "quality", "index", "start", "end", "weight", "code", "components"};
-    private final RimeEngine engine = new RimeEngine();
+    private final InputEngine engine = new InputEngine();
     private BufferedWriter out;
     private static double ms(long start) { return (System.nanoTime() - start) / 1000000.0; }
     private void emit(JSONObject value) throws Exception { out.write(value.toString()); out.newLine(); out.flush(); }
@@ -27,11 +27,11 @@ public final class WeightExperiment {
         out = Files.newBufferedWriter(Paths.get(args[3]), StandardCharsets.UTF_8);
         boolean initialized = false;
         try {
-            System.load(Paths.get(args[0], "librime_jni.so").toAbsolutePath().toString());
+            System.load(Paths.get(args[0], "cayboard_jni.so").toAbsolutePath().toString());
             engine.nativeInitialize(args[1], args[1]); initialized = true;
             if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema(schema)) throw new IllegalStateException("No session for " + schema);
             engine.nativeSetOption("ascii_mode", false); engine.nativeSetOption("full_shape", false);
-            boolean idleSpelling = engine.nativeGetSchemaString(schema, "cyime_edit_schema") != null;
+            boolean idleSpelling = engine.nativeGetSchemaString(schema, "cayboard_edit_schema") != null;
             JSONObject actual = new JSONObject();
             for (Iterator<String> keys = expected.keys(); keys.hasNext();) {
                 String key = keys.next();
@@ -48,11 +48,11 @@ public final class WeightExperiment {
                 if (!schema.equals(item.optString("schema", "t9_pinyin"))) continue;
                 ++checked;
                 String keys = item.getString("keys"), target = item.getString("text");
-                engine.nativeT9ClearComposition(1); engine.nativeT9FlushRimeInput();
+                engine.nativeT9ClearComposition(1); engine.nativeT9FlushInput();
                 JSONArray processMs = new JSONArray();
                 for (int n = 0; n < keys.length(); ++n) {
                     long keyStart = System.nanoTime();
-                    boolean accepted = engine.nativeProcessKey(keys.charAt(n), 0); engine.nativeT9FlushRimeInput();
+                    boolean accepted = engine.nativeProcessKey(keys.charAt(n), 0); engine.nativeT9FlushInput();
                     processMs.put(ms(keyStart));
                     if (!accepted) throw new IllegalStateException(item.getString("id") + ": key rejected");
                 }

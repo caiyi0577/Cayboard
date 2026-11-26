@@ -2,7 +2,7 @@
 
 The chat blend (chat_base_weights.py) moved the first candidate of about 4200 codes. LCCC drops some words entirely
 (美国, 政府, 台湾, 爸爸 count 0), so for those the blend is plainly wrong. Each flipped pair is counted at word level in
-three registers (wiki, subtitles, LCCC; tools: D:/CyIME-Data/eval/flips-general-20261030/count_seg.py). A pair goes
+three registers (wiki, subtitles, LCCC; tools: D:/Cayboard-Data/eval/flips-general-20261030/count_seg.py). A pair goes
 back to rime-ice's order only when the per-million rate averaged over the three is at least 2x in rime-ice's favour
 and at least two of the three corpora agree. Only that word's entry for that code changes: it gets 1.2x the weight of
 the word now on top, never more than its rime-ice weight.

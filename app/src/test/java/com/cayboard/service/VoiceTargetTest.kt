@@ -44,7 +44,7 @@ class VoiceTargetTest {
     private var barConnected = true
     private val sent = mutableListOf<String>()
     private var hostComposingMarks = 0
-    private var currentState = InputUIState(currentSchemaId = "rime_ice")
+    private var currentState = InputUIState(currentSchemaId = "cayboard_pinyin")
     private lateinit var target: VoiceTarget<String>
     private lateinit var handler: VoiceRecognitionHandler
     private lateinit var onResult: (String) -> Unit

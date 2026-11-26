@@ -20,7 +20,7 @@ namespace rime {
 // ════════════════════════════════════════════════════════════════
 //
 // v1.0 中以下状态转换组合散落于 15+ 处：
-//   sync_state() + update_candidates(true) + set_rime_input(...)
+//   sync_state() + update_candidates(true) + set_engine_input(...)
 //   state_machine.EnterIdle() / EnterInput() / ClearSelectionHistory() / RestoreFrom(...)
 // 各处参数组合略有差异，容易写错且难以维护。
 // 这里封装为 3 个语义方法，让 Strategy 代码聚焦于业务分支判断。
@@ -31,7 +31,7 @@ void T9RightCommitHandler::Context::TransitionToIdle() {
     state_machine.EnterIdle();
     sync_state();
     update_candidates(true);
-    set_rime_input(std::nullopt);
+    set_engine_input(std::nullopt);
 }
 
 void T9RightCommitHandler::Context::TransitionToInput(bool keep_history) {
@@ -45,7 +45,7 @@ void T9RightCommitHandler::Context::TransitionToInput(bool keep_history) {
     }
     sync_state();
     update_candidates(true);
-    set_rime_input(input_buffer.ToBufferString(manual_delimiter));
+    set_engine_input(input_buffer.ToBufferString(manual_delimiter));
 }
 
 void T9RightCommitHandler::Context::TransitionToSelection(
@@ -64,13 +64,13 @@ void T9RightCommitHandler::Context::TransitionToSelection(
     }
     sync_state();
     update_candidates(true);
-    set_rime_input(std::nullopt);
+    set_engine_input(std::nullopt);
 }
 
-void T9RightCommitHandler::Context::SyncBufferToRime() {
+void T9RightCommitHandler::Context::SyncBufferToEngine() {
     sync_state();
     update_candidates(true);
-    set_rime_input(input_buffer.ToBufferString(manual_delimiter));
+    set_engine_input(input_buffer.ToBufferString(manual_delimiter));
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -209,7 +209,7 @@ T9RightCommitHandler::ComputeRightCommitConsumption(
     const SyllableAlignment& alignment,
     const std::optional<std::string>& candidate_pinyin,
     RouteType route,
-    int rime_consumed_digits,
+    int engine_consumed_digits,
     bool is_t9_user_word) {
 
     T9_SCOPED_TIMER_TAG("T9RightCommit", "ComputeRightCommitConsumption");
@@ -338,11 +338,11 @@ T9RightCommitHandler::ComputeRightCommitConsumption(
     // digitSegment 模式
     if (!has_selections && !unassigned.empty()) {
         // 统一消费计算（DigitSegmentStrategy::ComputeConsumedCount）：
-        // 方案 A 的 RIME 候选 end 优先 + AlignWithBuffer fallback + 分隔符分段匹配，
+        // 方案 A 的 引擎候选 end 优先 + AlignWithBuffer fallback + 分隔符分段匹配，
         // 与 DigitSegmentStrategy 共享同一逻辑，消除双算与不一致。
         const std::string& segment = unassigned;
         int consumed_count = DigitSegmentStrategy::ComputeConsumedCount(
-            buf, candidate_pinyin, rime_consumed_digits);
+            buf, candidate_pinyin, engine_consumed_digits);
         if (consumed_count > static_cast<int>(segment.size()))
             consumed_count = static_cast<int>(segment.size());
         return {Take(segment, consumed_count), Drop(segment, consumed_count)};
@@ -446,7 +446,7 @@ bool T9RightCommitHandler::HandleRightCommit(
     Context& ctx,
     const std::optional<std::string>& candidate_pinyin,
     int candidate_text_length,
-    int rime_consumed_digits,
+    int engine_consumed_digits,
     bool is_t9_user_word) {
 
     T9_SCOPED_TIMER_TAG("T9RightCommit", "HandleRightCommit");
@@ -482,7 +482,7 @@ bool T9RightCommitHandler::HandleRightCommit(
     auto alignment = SyllableAlignment::FromCandidatePinyin(candidate_pinyin);
 
     auto consumption = ComputeRightCommitConsumption(
-        buf, alignment, candidate_pinyin, route, rime_consumed_digits,
+        buf, alignment, candidate_pinyin, route, engine_consumed_digits,
         is_t9_user_word);
     const std::string& remaining_digits = consumption.second;
 

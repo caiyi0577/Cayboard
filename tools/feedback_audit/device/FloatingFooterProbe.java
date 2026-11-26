@@ -442,7 +442,12 @@ public class FloatingFooterProbe {
         } finally { b.recycle(); }
     }
     static void requireLocked(boolean expected) {
-        boolean actual = ctx.getSharedPreferences("kime_settings",0).getBoolean("floating_geometry_locked",false);
+        String key = "floating_geometry_locked";
+        SharedPreferences settings = ctx.getSharedPreferences("cayboard_settings", 0);
+        if (!settings.contains(key)) {
+            settings = ctx.getSharedPreferences("kime_settings", 0);
+        }
+        boolean actual = settings.getBoolean(key, false);
         if (actual != expected) throw new AssertionError("Expected locked="+expected+", got "+actual);
     }
     static long stepDelay(int step) {

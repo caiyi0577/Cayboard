@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -17,11 +17,11 @@ class CandidateSelectionSourceTest {
     }
     @Test fun appendAndSuggestionRefreshKeepExistingTapIdentityButReorderDoesNot() {
         val original = CandidateState(candidates = listOf("是", "时"), inputText = "74", engineRevision = 7,
-            expandedCandidates = listOf(RimeCandidate("是", "shi")))
+            expandedCandidates = listOf(EngineCandidate("是", "shi")))
         assertTrue(original.hasSameSelectionSource(original.copy(associationCandidates = listOf("好的"))))
-        assertTrue(original.hasSameSelectionSource(original.copy(expandedCandidates = original.expandedCandidates + RimeCandidate("时", "shi"))))
+        assertTrue(original.hasSameSelectionSource(original.copy(expandedCandidates = original.expandedCandidates + EngineCandidate("时", "shi"))))
         assertFalse(original.hasSameSelectionSource(original.copy(engineRevision = 8)))
         assertFalse(original.hasSameSelectionSource(original.copy(candidates = listOf("时", "是"))))
-        assertFalse(original.hasSameSelectionSource(original.copy(expandedCandidates = listOf(RimeCandidate("时", "shi")))))
+        assertFalse(original.hasSameSelectionSource(original.copy(expandedCandidates = listOf(EngineCandidate("时", "shi")))))
     }
 }

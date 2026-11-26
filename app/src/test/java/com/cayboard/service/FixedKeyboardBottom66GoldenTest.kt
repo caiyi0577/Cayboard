@@ -21,7 +21,7 @@ import java.io.File
  * 覆盖手势导航、三键导航、把整条导航框报成可点区域的机型、只有手势条的机型、横屏、悬浮键盘下限、留白 0／抬高 16／调低 16／调到底。
  * `bottom-position-choices-golden-*.tsv`：另外两档（贴到最底、留出导航按钮）的固定规则。
  * 以后改贴底的任何代码，输出都必须和这几份文件一致；真要改结果，先拿到用户同意，再用环境变量重写文件并在提交里说明：
- * 自动档 `CYIME_BOTTOM_GOLDEN_WRITE_66=1`（66 基线，一般不该重写），另两档 `CYIME_BOTTOM_GOLDEN_WRITE=1`。
+ * 自动档 `CAYBOARD_BOTTOM_GOLDEN_WRITE_66=1`（66 基线，一般不该重写），另两档 `CAYBOARD_BOTTOM_GOLDEN_WRITE=1`。
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "sw360dp-w360dp-h800dp-mdpi")
@@ -98,11 +98,11 @@ class FixedKeyboardBottom66GoldenTest {
 
     private fun checkAuto(orientation: String) = compare(File("src/test/resources/bottom-edge-66-golden-$orientation.tsv"),
         listOf("orientation", "maker", "navigation_mode", "bars", "edge", "adjust_dp", "normal", "minimum", "fixed", "floating_minimum")
-            .joinToString(tab), autoRows(orientation), "CYIME_BOTTOM_GOLDEN_WRITE_66", "自动档和 1.15.66 不一致（$orientation）")
+            .joinToString(tab), autoRows(orientation), "CAYBOARD_BOTTOM_GOLDEN_WRITE_66", "自动档和 1.15.66 不一致（$orientation）")
 
     private fun checkChoices(orientation: String) = compare(File("src/test/resources/bottom-position-choices-golden-$orientation.tsv"),
         listOf("orientation", "position", "maker", "navigation_mode", "bars", "adjust_dp", "normal", "minimum", "fixed").joinToString(tab),
-        choiceRows(orientation), "CYIME_BOTTOM_GOLDEN_WRITE", "两档固定位置的结果变了（$orientation）")
+        choiceRows(orientation), "CAYBOARD_BOTTOM_GOLDEN_WRITE", "两档固定位置的结果变了（$orientation）")
 
     @Test fun portraitAutoMatches66() = checkAuto("portrait")
 

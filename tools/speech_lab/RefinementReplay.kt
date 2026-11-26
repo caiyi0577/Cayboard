@@ -38,7 +38,7 @@ fun main(args: Array<String>) {
             continue
         }
         // Optional variants: single-pause<ms> keeps one Paraformer with a longer minimum pause.
-        val modes = System.getenv("CYIME_REPLAY_MODES")?.split(',')?.filter { it.isNotBlank() } ?: listOf("single", "refinement")
+        val modes = System.getenv("CAYBOARD_REPLAY_MODES")?.split(',')?.filter { it.isNotBlank() } ?: listOf("single", "refinement")
         for (mode in modes) {
             exchange("CASE\t${file.name.removeSuffix(".raw.f32")}\t$mode")
             val level = SpeechDetectionLevel()

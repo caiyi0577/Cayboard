@@ -18,7 +18,7 @@ val azooKeyLoudsZipHash = "ebbb69a26d958a6d3498d1422f6c1315530a08ee730877cfdc33d
 // Content hash (same scheme) of the merged dictionary: dictionary.version, checked again on the phone.
 val azooKeyMergedDictionaryHash = "7776faa0dc60bea48b2e24824d6e45924bed3a85a0b8263d7d4859d39f9a9745"
 // Own asset root holding only azookey/: the old generated/japanese-assets root kept the jaroomaji
-// dictionaries (rime_japanese/, ~89 MB) from earlier builds, which would otherwise still be packaged.
+// dictionaries (cayboard_japanese/, ~89 MB) from earlier builds, which would otherwise still be packaged.
 val japaneseAssetRoot = layout.buildDirectory.dir("generated/japanese-azookey-assets/azookey")
 val retiredJapaneseAssetRoot = layout.buildDirectory.dir("generated/japanese-assets")
 fun sha256(bytes: ByteArray): String =
@@ -61,8 +61,10 @@ val prepareJapaneseDictionaries by tasks.registering {
     outputs.upToDateWhen { zip.isFile && version.isFile && version.readText() == azooKeyMergedDictionaryHash }
     val retiredRoot = retiredJapaneseAssetRoot.get().asFile
     val loudsZipName = "azookey-louds-mozc-${azooKeyLoudsZipHash.take(8)}.zip"
-    val localDirs = listOfNotNull(providers.gradleProperty("cyime.azookeyLibDir").orNull,
-        providers.environmentVariable("CYIME_AZOOKEY_LIB_DIR").orNull).map { File(it) } +
+    val localDirs = listOfNotNull(providers.gradleProperty("cayboard.azookeyLibDir").orNull,
+        providers.environmentVariable("CAYBOARD_AZOOKEY_LIB_DIR").orNull,
+        providers.gradleProperty("cayboard.azookeyLibDir").orNull,
+        providers.environmentVariable("CAYBOARD_AZOOKEY_LIB_DIR").orNull).map { File(it) } +
         rootProject.file(".codex-artifacts/azookey-1102/libs")
     doLast {
         retiredRoot.deleteRecursively()
@@ -130,7 +132,8 @@ tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(prepareJapane
 // libCyAzooKey.so, built by tools/azookey/build-android.sh (Swift has no x86 32-bit Android target;
 // there the translator finds no library and the romaji is shown unconverted).
 // A local copy is used first when its SHA-256 matches: <dir>/<abi>/libCyAzooKey.so or <dir>/libCyAzooKey-<hash8>-<abi>.so,
-// with <dir> from -Pcyime.azookeyLibDir, CYIME_AZOOKEY_LIB_DIR, or .codex-artifacts/azookey-1102/libs. Otherwise it is downloaded.
+// with <dir> from -Pcayboard.azookeyLibDir / CAYBOARD_AZOOKEY_LIB_DIR (legacy -Pcayboard.azookeyLibDir and CAYBOARD_AZOOKEY_LIB_DIR remain accepted),
+// or .codex-artifacts/azookey-1102/libs. Otherwise it is downloaded.
 val azooKeyLibraryHashes = mapOf(
     "arm64-v8a" to "16907c1acf748d8b0b731106fcc65c07d70f72eb04d6a5430718b39604b53b50",
     "armeabi-v7a" to "01f5b76a443b22993de965aa3c4d0eeca67afb1b087451ca9b7bc585cd318f19",
@@ -143,8 +146,10 @@ val prepareAzooKeyLibraries by tasks.registering {
     inputs.property("checksums", azooKeyLibraryHashes)
     val targetRoot = azooKeyLibraryRoot.get().asFile
     val libraries = azooKeyLibraryHashes.mapValues { (abi, _) -> File(targetRoot, "$abi/libCyAzooKey.so") }
-    val localDirs = listOfNotNull(providers.gradleProperty("cyime.azookeyLibDir").orNull,
-        providers.environmentVariable("CYIME_AZOOKEY_LIB_DIR").orNull).map { File(it) } +
+    val localDirs = listOfNotNull(providers.gradleProperty("cayboard.azookeyLibDir").orNull,
+        providers.environmentVariable("CAYBOARD_AZOOKEY_LIB_DIR").orNull,
+        providers.gradleProperty("cayboard.azookeyLibDir").orNull,
+        providers.environmentVariable("CAYBOARD_AZOOKEY_LIB_DIR").orNull).map { File(it) } +
         rootProject.file(".codex-artifacts/azookey-1102/libs")
     outputs.files(libraries.values)
     outputs.upToDateWhen { azooKeyLibraryHashes.all { (abi, hash) -> libraries.getValue(abi).let { it.isFile && sha256(it) == hash } } }

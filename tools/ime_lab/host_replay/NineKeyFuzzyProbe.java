@@ -1,11 +1,11 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 
 /** Test the production settings from NineKeyFuzzySettingsTest in a disposable deployed user directory. */
 public final class NineKeyFuzzyProbe {
     public static void main(String[] args) throws Exception {
-        System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-        RimeEngine engine = new RimeEngine();
+        System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+        InputEngine engine = new InputEngine();
         engine.nativeInitialize(args[1], args[1]);
         try {
             engine.nativeEnsureT9SchemaPatches("t9_pinyin");
@@ -25,13 +25,13 @@ public final class NineKeyFuzzyProbe {
         } finally { engine.nativeDestroy(); }
     }
 
-    private static void select(RimeEngine engine, String digits, String reading, int used,
+    private static void select(InputEngine engine, String digits, String reading, int used,
                                String word, String remaining) throws Exception {
         LayoutSyncProbe.clear(engine, true);
         LayoutSyncProbe.type(engine, digits);
         if (!reading.isEmpty()) {
             if (!engine.nativeT9SelectPinyinDirect(reading, used)) throw new AssertionError(reading);
-            engine.nativeT9FlushRimeInput();
+            engine.nativeT9FlushInput();
         }
         String[][] rows = engine.nativeInspectCandidates(160);
         for (int index = 0; index < rows.length; index++) {

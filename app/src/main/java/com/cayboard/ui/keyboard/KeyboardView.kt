@@ -90,13 +90,13 @@ import com.cayboard.keyboard.KeyboardPage
 import com.cayboard.keyboard.MainType
 import com.cayboard.keyboard.OverlayRoute
 import com.cayboard.keyboard.PanelType
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.keyboard.ToolbarAction
 import com.cayboard.keyboard.ToolbarButton
 import com.cayboard.keyboard.ToolbarButtonItem
 import com.cayboard.keyboard.QuickActionLayout
 import com.cayboard.keyboard.resolveToolbarButtonItem
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.T9InputController
 import com.cayboard.service.CandidateState
 import com.cayboard.service.highlightedCandidateIndex
 import com.cayboard.service.shownPreedit
@@ -140,7 +140,7 @@ fun KeyboardView(
     candidateState: State<CandidateState> = remember { mutableStateOf(CandidateState()) },
     predictionTransition: kotlinx.coroutines.flow.StateFlow<Boolean>? = null,
     glideCandidatePreview: State<String> = remember { mutableStateOf("") },
-    glideRimePreview: State<RimeProcessResult?> = remember { mutableStateOf(null) },
+    glideEnginePreview: State<EngineProcessResult?> = remember { mutableStateOf(null) },
     glideEnglishPreview: State<GlideEnglishPreview?> = remember { mutableStateOf(null) },
     voiceAmplitudeState: State<Float> = remember { mutableFloatStateOf(0f) },
     voiceSpectrumState: State<FloatArray> = remember { mutableStateOf(FloatArray(16)) },
@@ -587,10 +587,10 @@ fun KeyboardView(
 
         // 长按候选不再修改用户词典，保留候选栏的普通长按反馈。
         var preeditEditSession by remember(state.inputSessionId, state.currentSchemaId, state.isAsciiMode) {
-            mutableStateOf<com.cayboard.rime.PinyinEditSession?>(null)
+            mutableStateOf<com.cayboard.engine.PinyinEditSession?>(null)
         }
         var preeditRequest by remember(state.inputSessionId, state.currentSchemaId) { mutableIntStateOf(0) }
-        var preeditFrame by remember { mutableStateOf<com.cayboard.rime.PinyinEditSession?>(null) }
+        var preeditFrame by remember { mutableStateOf<com.cayboard.engine.PinyinEditSession?>(null) }
         var preeditOpening by remember(state.inputSessionId, state.currentSchemaId, state.isAsciiMode) { mutableStateOf(false) }
         val pendingPreeditMoves = remember(state.inputSessionId, state.currentSchemaId, state.isAsciiMode) { mutableListOf<String>() }
         fun editPreedit(key: String? = null, caret: Int? = null, text: String? = null) {
@@ -657,7 +657,7 @@ fun KeyboardView(
                 } else if (key == "delete" || key == "'" || key.length == 1 &&
                     (key[0].lowercaseChar() in 'a'..'z' || t9 && key[0] in '1'..'9') ||
                     // 14 键的合并键（qw）：挪过光标后接着点，插在光标处（11-13：原来关掉编辑，插到哪、显示什么都乱）。
-                    com.cayboard.rime.MergedLetterInput.isGroup(key,
+                    com.cayboard.engine.MergedLetterInput.isGroup(key,
                         state.inputProfile.layout == com.cayboard.settings.InputLayout.MERGED14 && !state.isAsciiMode)) {
                     editPreedit(key = key); true
                 } else { closePreeditEditor(); false }
@@ -860,7 +860,7 @@ fun KeyboardView(
             val handwritingComments = if (wubiHints) androidx.compose.runtime.key(state.currentSchemaId, handwritingCandidates) {
                 androidx.compose.runtime.produceState<List<String>>(emptyList()) {
                     if (handwritingCandidates.isNotEmpty()) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        com.cayboard.rime.RimeEngine.getInstance().currentSchemeCodes(state.currentSchemaId, handwritingCandidates)
+                        com.cayboard.engine.InputEngine.getInstance().currentSchemeCodes(state.currentSchemaId, handwritingCandidates)
                     }
                 }.value
             } else remember(handwritingCandidates, handwritingChinese, hanziPinyinRevision) {
@@ -961,7 +961,7 @@ fun KeyboardView(
                 candidateState.value.expandedCandidatesLoaded
 
             val cs = candidateState.value
-            val liveGlide = glideRimePreview.value
+            val liveGlide = glideEnginePreview.value
             val englishGlide = glideEnglishPreview.value
             androidx.compose.runtime.SideEffect { com.cayboard.service.KeyLatencyProbe.composed() }
             // 展开态候选栏数据源：全量列表（筛选态取单字子列表，仍是同源关系）。
@@ -1072,7 +1072,7 @@ fun KeyboardView(
                     !correctionVisible -> emptyMap()
                     correctionScheme == null || !doublePinyinKeysShown -> cs.correctedCandidates
                     else -> cs.correctedCandidates.mapValues { (_, marks) ->
-                        com.cayboard.rime.CorrectionMarks.doublePinyin(marks, correctionScheme)
+                        com.cayboard.engine.CorrectionMarks.doublePinyin(marks, correctionScheme)
                     }
                 }
             }
@@ -1242,7 +1242,7 @@ fun KeyboardView(
                 showPreeditPreview = preeditEditSession == null,
                 inlinePreeditEditor = drawPreeditEditor,
                 onEditPreedit = if (liveGlide == null && englishGlide == null && glideCandidatePreview.value.isEmpty() && !state.isAsciiMode && !isHandwritingPage &&
-                    com.cayboard.rime.PinyinEditBuffer.supports(state.currentSchemaId) &&
+                    com.cayboard.engine.PinyinEditBuffer.supports(state.currentSchemaId) &&
                     callbacks.onOpenPreeditEditor != null) ({
                     openPreeditEditor()
                 }) else null,
@@ -1259,7 +1259,7 @@ fun KeyboardView(
                 val cs = candidateState.value
                 // 候选展开页：候选栏的在位展开态（顶部即真实候选栏，实时跟随编码/删除变化）。
                 // 数据源为服务层的跨页全量候选（expandedCandidates），行分组惰性渲染
-                // （LazyColumn 只画可见行），可上下滑动 + 翻页键滚动一屏，不驱动 rime 翻页。
+                // （LazyColumn 只画可见行），可上下滑动 + 翻页键滚动一屏，不驱动候选翻页。
                 val allExpanded = candidateState.value.expandedCandidates
                 // 左栏符号复刻当前键盘左栏：九键/笔画各自的可自定义 side_symbols
                 // （configVersion 参与重组，保证设置改动后刷新）；其余布局用默认快捷符号
@@ -1278,7 +1278,7 @@ fun KeyboardView(
                     state.inputProfile.capabilities.editablePinyin && candidateState.value.isComposing
                 val merged14 = state.inputProfile.layout == com.cayboard.settings.InputLayout.MERGED14
                 var syllableChoices by remember(state.inputSessionId, state.currentSchemaId, merged14) {
-                    mutableStateOf<com.cayboard.rime.PinyinSyllableChoices?>(null)
+                    mutableStateOf<com.cayboard.engine.PinyinSyllableChoices?>(null)
                 }
                 var syllableRequest by remember { mutableIntStateOf(0) }
                 LaunchedEffect(canChooseSyllable, syllableRevision, state.inputSessionId, state.currentSchemaId, merged14) {
@@ -1405,7 +1405,7 @@ fun KeyboardView(
                             onHapticFeedback?.invoke()
                             if (customRailSymbols != null) {
                                 // 九键/笔画左栏符号：与键盘本体左栏同路径（onKeyPress，
-                                // 由 rime punctuator 决定顶屏/上屏行为）
+                                // 由方案标点规则决定顶屏/上屏行为）
                                 callbacks.onKeyPress(text, false)
                             } else {
                                 callbacks.onCommitText?.invoke(text)
@@ -1415,14 +1415,14 @@ fun KeyboardView(
                             if (isT9Layout) {
                                 // 与九键键盘本体退格键（T9KeyboardLayout.handleDelete）
                                 // 完全同路径：T9 撤销模型（删未分配数字/撤销左栏选择/
-                                // 撤销上屏），buffer→rime 经 FlushRimeInput 同步；
+                                // 撤销上屏），buffer→引擎经 FlushEngineInput 同步；
                                 // 引擎不消费时才转服务层普通删除。此前直接走
                                 // onKeyPress("delete") 缺 flush，T9 buffer 已回退但
-                                // rime composition 不刷新，表现为连按多次才删掉
+                                // 引擎组合态不刷新，表现为连按多次才删掉
                                 t9Controller.onDeleted { result ->
                                     when (result) {
                                         T9InputController.DeleteResult.UNDO_COMMIT ->
-                                            t9Controller.clearRimeAndResend()
+                                            t9Controller.clearInputAndResend()
                                         T9InputController.DeleteResult.NOT_CONSUMED ->
                                             callbacks.onKeyPress("delete", false)
                                         else -> {}

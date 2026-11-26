@@ -22,8 +22,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.service.CayboardInputMethodService
 import com.cayboard.settings.InputModes
 import com.cayboard.settings.SettingsPreferences
@@ -43,7 +43,7 @@ class PreeditEditorImeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
-    private val engine = RimeEngine.getInstance()
+    private val engine = InputEngine.getInstance()
     private lateinit var editor: EditText
     private val swipeDistance get() = 80f * context.resources.displayMetrics.density
     private val imeComponent get() = ComponentName(context, "com.cayboard.service.CayboardInputMethodService")
@@ -65,9 +65,9 @@ class PreeditEditorImeTest {
         // A service-owned ComposeView outlives a test's ComposeTestRule. Reusing it in the
         // next test would keep the previous rule's disposed recomposer and invisible test root.
         stopKeyboardService()
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
         engine.initialize(user, shared)
-        assertTrue(RimeConfigHelper.ensureDeployment(context))
+        assertTrue(EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession())
         engine.clearQueuedComposition()
         shell("ime enable $imeId")
@@ -126,7 +126,7 @@ class PreeditEditorImeTest {
                 (oldService == null || oldService.lifecycle.currentState == Lifecycle.State.DESTROYED)
         }
         // Service removal and delivery of onDestroy happen on different threads. Drain Main
-        // before initializing Rime again or allowing this test's recomposer to be disposed.
+        // before initializing the native input engine again or allowing this test's recomposer to be disposed.
         instrumentation.waitForIdleSync()
     }
 
@@ -179,7 +179,7 @@ class PreeditEditorImeTest {
     private fun selectExpandedCandidate(value: String) {
         val candidates = engine.getAllCandidates().toList()
         val candidate = candidates.firstOrNull { it.text == value }
-        assertNotNull("Rime 全量候选缺少 $value，input=${engine.getInput()} candidates=${candidates.take(30)}", candidate)
+        assertNotNull("引擎全量候选缺少 $value，input=${engine.getInput()} candidates=${candidates.take(30)}", candidate)
         // Expanded entries render the word and its annotation in one styled Text node.
         val comment = candidate!!.comment.replace("~", "")
         val displayText = value + if (comment.isNotEmpty()) " $comment" else ""
@@ -213,7 +213,7 @@ class PreeditEditorImeTest {
 
     @Test fun inlinePinyinBackspaceAndInsertionPreserveBothSidesOfTheCaret() {
         SettingsPreferences.setInputTextLocation(context, SettingsPreferences.INPUT_TEXT_INPUT_BOX)
-        chooseMode("rime_ice")
+        chooseMode("cayboard_pinyin")
         setPrefix()
         "nihao".forEach { tap(it.toString()) }
         rule.waitUntil(5000) { engine.getInput() == "nihao" && text().startsWith("前文ni") }
@@ -261,11 +261,11 @@ class PreeditEditorImeTest {
     }
 
     @Test fun liveEditorStaysAboveCandidatesAndUsesOriginalKeysWithoutChangingHostText() {
-        chooseMode("rime_ice"); setPrefix()
+        chooseMode("cayboard_pinyin"); setPrefix()
         "nihao".forEach { tap(it.toString()) }
         rule.waitUntil(5000) { engine.getInput() == "nihao" }
         // Editor restarts reapply this setting. Idempotent updates must retain composition.
-        repeat(12) { engine.setPageSize("rime_ice", SettingsPreferences.getPageSize(context)) }
+        repeat(12) { engine.setPageSize("cayboard_pinyin", SettingsPreferences.getPageSize(context)) }
         assertEquals("nihao", engine.getInput())
         val qBefore = rule.onNodeWithText("q", ignoreCase = true).fetchSemanticsNode()
         val qPosition = qBefore.positionOnScreen
@@ -330,7 +330,7 @@ class PreeditEditorImeTest {
     }
 
     @Test fun spaceDragEditsPinyinAndDeletingAllClosesEditorWithoutMovingHostCaret() {
-        chooseMode("rime_ice"); setPrefix()
+        chooseMode("cayboard_pinyin"); setPrefix()
         "nihao".forEach { tap(it.toString()) }
         rule.waitUntil(5000) { engine.getInput() == "nihao" }
         // Start in ordinary composition: requiring a prior tap on preedit hid the bug.
@@ -353,7 +353,7 @@ class PreeditEditorImeTest {
     }
     @Test fun spaceDragFromInputBoxCompositionKeepsRawInputAndNeverFinalizesTheHost() {
         SettingsPreferences.setInputTextLocation(context, SettingsPreferences.INPUT_TEXT_INPUT_BOX)
-        chooseMode("rime_ice"); setPrefix()
+        chooseMode("cayboard_pinyin"); setPrefix()
         "nihao".forEach { tap(it.toString()) }
         rule.waitUntil(5000) { engine.getInput() == "nihao" && text().startsWith("前文") && text().length > 2 }
         val before = text()
@@ -392,7 +392,7 @@ class PreeditEditorImeTest {
     }
 
     @Test fun punctuationCommitsImmediatelyAndNeverLeavesCandidates() {
-        chooseMode("rime_ice"); setPrefix()
+        chooseMode("cayboard_pinyin"); setPrefix()
         "nihao".forEach { tap(it.toString()) }
         rule.waitUntil(5000) { engine.getCandidates().contains("你好") }
         tap("，")

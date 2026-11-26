@@ -40,7 +40,7 @@ import java.io.File
 
 /**
  * 26 键（和 14 键）按住 !@# 当 Ctrl：刚按下键面不变，按满时限（这里 2 秒）字母键渐变成快捷键键面，再拖到 C 上。
- * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CYIME_RENDER_OUT 时出图。
+ * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -49,13 +49,13 @@ class CtrlSymbolKeyRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderCtrlHold() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
         KeyboardThemes.initFromConfig(app)
         com.cayboard.ui.keyboard.AppFonts.initialize(app)
-        val schema = System.getenv("CYIME_RENDER_SCHEMA").orEmpty()
+        val schema = System.getenv("CAYBOARD_RENDER_SCHEMA").orEmpty()
         if (schema.isNotEmpty()) KeysConfigHelper.setActiveKeyboardSchema(schema)
         val vm = KeyboardViewModel(app)
         var theme by mutableStateOf("soft_blue")

@@ -124,7 +124,7 @@ object GlideLexicon {
     }
 }
 
-/** 词的音节连成要划的字母串；同一字母串只留最常用的一次（xi an 与 xian 划法相同，交给 Rime 区分）。 */
+/** 词的音节连成要划的字母串；同一字母串只留最常用的一次（xi an 与 xian 划法相同，交给候选解码区分）。 */
 internal fun pinyinCodes(entries: List<List<String>>, doublePinyin: DoublePinyinScheme?): List<String> =
     entries.mapNotNull { syllables ->
         if (doublePinyin == null) syllables.joinToString("")

@@ -50,7 +50,7 @@ bool T9SuppressionStore::Set(const std::string& schema, const std::string& text,
 
 #ifndef T9_ALGO_ONLY_BUILD
 std::shared_ptr<T9SuppressionStore> GetT9SuppressionStore() {
-  // JNI and filters execute under the existing RimeEngine lock. The directory
+  // JNI and filters execute under the existing InputEngine lock. The directory
   // key keeps isolated tests and different Rime profiles independent.
   static std::map<std::string, std::weak_ptr<T9SuppressionStore>> stores;
   const auto file = (Service::instance().deployer().user_data_dir / "t9-suppressed-v1.txt").string();

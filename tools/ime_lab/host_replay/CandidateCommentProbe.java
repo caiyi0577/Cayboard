@@ -1,17 +1,17 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.util.Arrays;
 
 public class CandidateCommentProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0],"librime_jni.so").getAbsolutePath());
-    RimeEngine engine=new RimeEngine();engine.nativeInitialize(args[1],args[1]);
+    System.load(new File(args[0],"cayboard_jni.so").getAbsolutePath());
+    InputEngine engine=new InputEngine();engine.nativeInitialize(args[1],args[1]);
     try {
       engine.nativeStartMaintenance(true);
       long until=System.currentTimeMillis()+180000;
       while(engine.nativeIsMaintaining()) {if(System.currentTimeMillis()>until)throw new Exception("deploy_timeout");Thread.sleep(100);}
       if(!engine.nativeCreateSession())throw new Exception("session_failed");
-      String[][] cases={{"rime_ice","nihao"},{"pinyin_14jian","bugao"},{"double_pinyin_flypy","nihk"},{"double_pinyin_flypy_14jian","bugj"},{"wubi86","wqiy"}};
+      String[][] cases={{"cayboard_pinyin","nihao"},{"pinyin_14jian","bugao"},{"double_pinyin_flypy","nihk"},{"double_pinyin_flypy_14jian","bugj"},{"wubi86","wqiy"}};
       for(String[] test:cases){
         if(!engine.nativeSwitchSchema(test[0]))throw new Exception("schema_unavailable="+test[0]);
         engine.nativeSetOption("ascii_mode",false);

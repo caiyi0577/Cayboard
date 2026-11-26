@@ -32,7 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowInsetsControllerCompat
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.ImportManager
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SchemaManager
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
     private val prewarmScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     private fun prewarmKeyboardConfig() {
-        if (RimeEngine.isInitialized()) return
+        if (InputEngine.isInitialized()) return
         prewarmScope.launch {
             try {
                 KeysConfigHelper.loadConfig(this@MainActivity)
@@ -291,9 +291,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 分享图片到 Xime：保存到 rime/themes/ 并提示用户如何引用。 */
-
-
-    /** 生成可在 xime.custom.yaml 中使用的主题配置模板并复制到剪贴板。 */
+    /** 生成可在 cayboard.custom.yaml 中使用的主题配置模板并复制到剪贴板。 */
 
 }

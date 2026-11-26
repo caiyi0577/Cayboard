@@ -229,7 +229,7 @@ def build(args):
         production = original.read_text(encoding="utf-8")
     else:
         original.write_text(production, encoding="utf-8")
-    anchor = "include(Rime)"
+    anchor = "include(CayboardNativeEngine)"
     if production.count(anchor) != 1:
         raise ValueError("Production CMake layout changed; review host adaptation")
     prefix = production[:production.index(anchor)] + 'list(PREPEND CMAKE_MODULE_PATH "${HOST_ADAPTER_DIR}")\n' + anchor
@@ -256,16 +256,16 @@ def build(args):
                  "-DHOST_JNI_INCLUDE=" + str(tools["jni"]), "-DHOST_ORT_DIR=" + str(tools["onnx"].parent),
                  "-DHOST_ORT_LIBRARY=" + str(tools["onnx"]), "-DBUILD_TESTING=OFF", "-DBUILD_TEST=OFF",
                  # Host-only per-key work counters; Android builds leave this OFF.
-                 "-DCYIME_T9_WORK_COUNTERS=ON"]
-    compile_args = [tools["cmake"], "--build", directory, "--target", "rime_jni", "--parallel", "2"]
+                 "-DCAYBOARD_T9_WORK_COUNTERS=ON"]
+    compile_args = [tools["cmake"], "--build", directory, "--target", "cayboard_jni", "--parallel", "2"]
     manifest = {"format_version": 1, "status": "building", "backend": "linux-x86_64-production-jni",
                 "source_repo": str(repo), "source_root": str(source), "source_sha256": identity,
                 "source_files": "source-files.json", "source_files_sha256": sha(directory / "source-files.json"),
                 "source_file_count": len(files), "adapter_hashes": adapter_hashes,
                 "source_transforms": ["CRLF normalized to LF in C/C++/CMake/text inputs before production git-apply checks",
-                                      "Android top-level build replaced after include(Rime) with host JNI linkage",
+                                      "Android top-level build replaced after include(CayboardNativeEngine) with host JNI linkage",
                                       "FindBoost uses the production vendored Boost 1.89 target",
-                                      "CYIME_T9_WORK_COUNTERS=ON: per-key work counters and host_replay_jni.cc entry points"],
+                                      "CAYBOARD_T9_WORK_COUNTERS=ON: per-key work counters and host_replay_jni.cc entry points"],
                 "dependencies": dependency_identity, "configure": list(map(str, configure)),
                 "compile": list(map(str, compile_args)), "started_utc": datetime.now(timezone.utc).isoformat()}
     save(manifest_path, manifest)
@@ -273,7 +273,7 @@ def build(args):
         with (directory / "build.log").open("w", encoding="utf-8") as log:
             run(configure, stdout=log, stderr=subprocess.STDOUT)
             run(compile_args, stdout=log, stderr=subprocess.STDOUT)
-        library = directory / "lib/librime_jni.so"
+        library = directory / "lib/cayboard_jni.so"
         # Keep all runtime dependencies discoverable with one library directory.
         ort_link = library.parent / tools["onnx"].name
         if not ort_link.exists():

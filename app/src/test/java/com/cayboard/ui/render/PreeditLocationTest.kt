@@ -18,8 +18,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cayboard.service.*
-import com.cayboard.rime.PinyinEditSession
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.PinyinEditSession
+import com.cayboard.engine.T9InputController
 import com.cayboard.settings.KeysConfigHelper
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.ui.keyboard.*
@@ -153,7 +153,7 @@ class PreeditLocationTest {
     }
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT") ?: return
+        val out = System.getenv("CAYBOARD_RENDER_OUT") ?: return
         rule.waitForIdle()
         val root = rule.activity.window.decorView
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)

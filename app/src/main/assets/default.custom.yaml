@@ -1,12 +1,12 @@
-# default.custom.yaml —— Xime app 固定配置（不随 assets/rime 方案 submodule 分发）
-# 安装/启动时由 RimeConfigHelper 同步到用户 rime 目录，部署时 patch 到 default.yaml，
+# default.custom.yaml —— Cayboard 固定配置（不随输入方案资源分发）
+# 安装/启动时由 EngineConfig 同步到 Cayboard 输入数据目录，部署时 patch 到 default.yaml，
 # 经 librime DefaultConfigPlugin 将 menu 等节编入每个方案的编译产物。
 # 注意：schema_list 由 app 按用户启停状态管理（SchemaManager.setEnabledSchemas），
 # 请勿在此手工调整；其余 patch 节为默认配置基线，修改后随 app 更新生效。
 
 patch:
   schema_list:
-    - schema: rime_ice
+    - schema: cayboard_pinyin
     - schema: double_pinyin_flypy
     - schema: t9_pinyin
     - schema: pinyin_14jian

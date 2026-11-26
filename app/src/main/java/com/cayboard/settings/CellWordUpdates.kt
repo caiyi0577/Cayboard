@@ -5,8 +5,8 @@ import kotlinx.serialization.json.Json
 
 /**
  * Cumulative, data-only vocabulary additions to named built-ins. No schema changes or paths.
- * [main] holds the maintainer's words for the main Chinese dictionary (雾凇 + Cayboard, app/data/cyime_domain_terms.tsv
- * and cyime_user_fixes.tsv): they go into the same pack as the cell dictionaries, so a new word or a raised weight
+ * [main] holds the maintainer's words for the main Chinese dictionary (雾凇 + Cayboard, app/data/cayboard_domain_terms.tsv
+ * and cayboard_user_fixes.tsv): they go into the same pack as the cell dictionaries, so a new word or a raised weight
  * reaches every pinyin keyboard without a new APK. A pack can add words and raise weights, never remove or lower one.
  * Published by scripts/dict/publish_word_updates.py.
  */
@@ -18,9 +18,9 @@ internal data class CellWordUpdates(val format: String, val revision: Int,
         private val json = Json { ignoreUnknownKeys = true }
         const val ASSET = "cell_dictionaries/word_updates.json"
         const val MAX_BYTES = 512 * 1024
-        /** Imported by the cell pack, relative to the Rime directory (no .dict.yaml). */
-        const val MAIN_TABLE = "cyime_cells/cyime_main_words"
-        val empty = CellWordUpdates("cyime.cell-words.v1", 0, emptyMap())
+        /** Imported by the cell pack, relative to the input-data directory (no .dict.yaml). */
+        const val MAIN_TABLE = "cayboard_cells/cayboard_main_words"
+        val empty = CellWordUpdates("cayboard.cell-words.v1", 0, emptyMap())
 
         fun parse(bytes: ByteArray): CellWordUpdates {
             require(bytes.size <= MAX_BYTES) { "词库更新超过 512 KiB" }
@@ -37,7 +37,7 @@ internal data class CellWordUpdates(val format: String, val revision: Int,
         }
     }
 
-    /** Rime table for [main], imported by the cell pack; null when there is nothing to add. */
+    /** Input-engine table for [main], imported by the cell pack; null when there is nothing to add. */
     fun mainTable(): String? = if (main.isEmpty()) null else buildString {
         append("# Cayboard 词库在线更新 revision ").append(revision).append("，由 scripts/dict/publish_word_updates.py 生成\n")
         append("---\nname: ").append(MAIN_TABLE.substringAfterLast('/')).append("\nversion: \"").append(revision)

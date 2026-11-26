@@ -56,7 +56,7 @@ private fun ChineseOutputSection() {
     val context = LocalContext.current
     val input = com.cayboard.ui.keyboard.rememberKeyboardInputPreferences()
     val hasCylm = remember(context) {
-        val dir = com.cayboard.settings.SchemaManager.getRimeDir(context)
+        val dir = com.cayboard.settings.SchemaManager.getInputDataDir(context)
         dir.resolve("cylm_model.lm").isFile && dir.resolve("cylm_lexicon.cylx").isFile
     }
     SettingsSection(title = "中文输出") {

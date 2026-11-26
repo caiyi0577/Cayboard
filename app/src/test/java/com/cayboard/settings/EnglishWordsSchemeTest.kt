@@ -1,6 +1,6 @@
 package com.cayboard.settings
 
-import com.cayboard.rime.PinyinEditBuffer
+import com.cayboard.engine.PinyinEditBuffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,10 +25,10 @@ class EnglishWordsSchemeTest {
         error("missing $rel")
     }
 
-    private val schemaFile by lazy { repoFile("src/main/assets/rime_chinese/cyime_english.schema.yaml") }
+    private val schemaFile by lazy { repoFile("src/main/assets/cayboard_chinese/cayboard_english.schema.yaml") }
     private val schema by lazy { schemaFile.readText() }
     private val words = SchemaInfo(InputModes.ENGLISH_WORDS, "英文单词", "", "", "")
-    private val chinese = SchemaInfo("rime_ice", "雾凇拼音", "", "", "")
+    private val chinese = SchemaInfo("cayboard_pinyin", "雾凇拼音", "", "", "")
     private val japanese = SchemaInfo("japanese", "日语", "", "", "")
 
     @After fun resetBindings() { KeysConfigHelper.clearSchemaBindingsForTest() }
@@ -39,7 +39,7 @@ class EnglishWordsSchemeTest {
         assertEquals(InputScheme.WORDS, profile.scheme)
         assertEquals("单词", InputScheme.WORDS.displayName)
         assertEquals(InputLayout.QWERTY, profile.layout)
-        assertEquals(EngineProfile.Rime(InputModes.ENGLISH_WORDS), profile.engineProfile)
+        assertEquals(EngineProfile.Decoder(InputModes.ENGLISH_WORDS), profile.engineProfile)
         assertEquals("word", InputProfiles.schemePreview(profile))
         // 和拼音一样能挪光标改编码；编码分大小写（Hello 不被改成 hello）。
         assertTrue(profile.capabilities.editablePinyin)
@@ -51,8 +51,8 @@ class EnglishWordsSchemeTest {
         assertTrue(direct.typesLettersDirectly)
         assertFalse(direct.capabilities.editablePinyin)
         assertTrue(InputProfiles.describe("spanish").typesLettersDirectly)
-        assertFalse(InputProfiles.describe("rime_ice").typesLettersDirectly)
-        assertFalse(InputProfiles.describe("rime_ice").capabilities.caseSensitiveCode)
+        assertFalse(InputProfiles.describe("cayboard_pinyin").typesLettersDirectly)
+        assertFalse(InputProfiles.describe("cayboard_pinyin").capabilities.caseSensitiveCode)
         // 英文选的字母排列（Colemak 等）两种英文方案都用。
         assertTrue(LetterLayouts.appliesTo(InputLanguage.ENGLISH, InputScheme.WORDS))
     }
@@ -84,23 +84,23 @@ class EnglishWordsSchemeTest {
         val entries = InputModes.available(listOf(chinese, japanese, words))
         // 选了单词：换到单词方案，不开 ascii。
         assertEquals(EnglishSchemes.Target(InputModes.ENGLISH_WORDS, asciiMode = false),
-            EnglishSchemes.target(entries, InputModes.ENGLISH_WORDS, "rime_ice", "rime_ice"))
+            EnglishSchemes.target(entries, InputModes.ENGLISH_WORDS, "cayboard_pinyin", "cayboard_pinyin"))
         // 没选过、选的是直接输入、或单词方案没启用：照旧在当前方案上开 ascii。
-        assertEquals(EnglishSchemes.Target("rime_ice", asciiMode = true), EnglishSchemes.target(entries, null, "rime_ice", "rime_ice"))
+        assertEquals(EnglishSchemes.Target("cayboard_pinyin", asciiMode = true), EnglishSchemes.target(entries, null, "cayboard_pinyin", "cayboard_pinyin"))
         assertEquals(EnglishSchemes.Target("japanese", asciiMode = true),
             EnglishSchemes.target(entries, InputModes.ENGLISH, "japanese", "japanese"))
-        assertEquals(EnglishSchemes.Target("rime_ice", asciiMode = true),
-            EnglishSchemes.target(InputModes.available(listOf(chinese)), InputModes.ENGLISH_WORDS, "rime_ice", "rime_ice"))
+        assertEquals(EnglishSchemes.Target("cayboard_pinyin", asciiMode = true),
+            EnglishSchemes.target(InputModes.available(listOf(chinese)), InputModes.ENGLISH_WORDS, "cayboard_pinyin", "cayboard_pinyin"))
         // 选的不是英文方案（存了个中文方案 id）也不会换过去。
-        assertEquals(EnglishSchemes.Target("rime_ice", asciiMode = true), EnglishSchemes.target(entries, "japanese", "rime_ice", "rime_ice"))
+        assertEquals(EnglishSchemes.Target("cayboard_pinyin", asciiMode = true), EnglishSchemes.target(entries, "japanese", "cayboard_pinyin", "cayboard_pinyin"))
         // 正在单词方案上改选直接输入：先回母语方案再开 ascii；没有母语方案可回就不切。
-        assertEquals(EnglishSchemes.Target("rime_ice", asciiMode = true),
-            EnglishSchemes.target(entries, InputModes.ENGLISH, InputModes.ENGLISH_WORDS, "rime_ice"))
+        assertEquals(EnglishSchemes.Target("cayboard_pinyin", asciiMode = true),
+            EnglishSchemes.target(entries, InputModes.ENGLISH, InputModes.ENGLISH_WORDS, "cayboard_pinyin"))
         assertNull(EnglishSchemes.target(entries, InputModes.ENGLISH, InputModes.ENGLISH_WORDS, null))
         assertNull(EnglishSchemes.target(entries, InputModes.ENGLISH, InputModes.ENGLISH_WORDS, InputModes.ENGLISH_WORDS))
         assertTrue(EnglishSchemes.isEnglishSchema(InputModes.ENGLISH_WORDS, entries))
         assertFalse(EnglishSchemes.isEnglishSchema(InputModes.ENGLISH, entries))
-        assertFalse(EnglishSchemes.isEnglishSchema("rime_ice", entries))
+        assertFalse(EnglishSchemes.isEnglishSchema("cayboard_pinyin", entries))
     }
 
     @Test fun `language key on the words scheme goes back to the language before English`() {
@@ -124,7 +124,7 @@ class EnglishWordsSchemeTest {
         assertEquals("hello", PinyinEditBuffer.normalized("Hello", keepCase = false))
         assertEquals("ni'hao", PinyinEditBuffer.normalized("Ni hao", keepCase = false))
         assertTrue(PinyinEditBuffer.keepsCase(InputModes.ENGLISH_WORDS))
-        assertFalse(PinyinEditBuffer.keepsCase("rime_ice"))
+        assertFalse(PinyinEditBuffer.keepsCase("cayboard_pinyin"))
         assertTrue(PinyinEditBuffer.supports(InputModes.ENGLISH_WORDS))
         assertFalse(PinyinEditBuffer.supports(InputModes.ENGLISH))
     }
@@ -146,27 +146,27 @@ class EnglishWordsSchemeTest {
         assertFalse(processors.contains("recognizer"))
         assertTrue(processors.contains("speller") && processors.contains("selector") && processors.contains("express_editor"))
         // 整词和补全两个翻译器，同一个词典。
-        assertEquals(2, Regex("""(?m)^  dictionary: cyime_english$""").findAll(schema).count())
+        assertEquals(2, Regex("""(?m)^  dictionary: cayboard_english$""").findAll(schema).count())
         assertTrue(schema.contains("    - table_translator\n    - table_translator@completion\n"))
         // 标点半角（组字时先上屏首选再出标点）。
         val half = schema.substringAfter("  half_shape:")
         for (p in listOf(",", ".", "?", "!", "'")) assertTrue(p, half.contains("    \"$p\": \"$p\""))
-        assertEquals("cyime_english", KeysConfigHelper.parseSchemaBindingsYamlText(repoFile("src/main/assets/xime.yaml").readText())
+        assertEquals("cayboard_english", KeysConfigHelper.parseSchemaBindingsYamlText(repoFile("src/main/assets/cayboard.yaml").readText())
             .entries.single { it.value == "qwerty_en" }.key)
     }
 
     @Test fun `lua modules named by the schema are bundled`() {
         val modules = Regex("""lua_(?:translator|filter)@\*(\w+)""").findAll(schema).map { it.groupValues[1] }.toList()
-        assertEquals(listOf("cyime_en_memory", "cyime_english_words"), modules)
-        // cyime_en_memory 和雾凇共用（构建时拷进 rime_ice/lua）；单词方案自己的过滤器随中文资源装。
-        repoFile("data/cyime_en_memory.lua")
-        val filter = repoFile("src/main/assets/rime_chinese/lua/cyime_english_words.lua").readText()
-        assertTrue(filter.contains("return cyime_english_words"))
+        assertEquals(listOf("cayboard_en_memory", "cayboard_english_words"), modules)
+        // cayboard_en_memory 和雾凇共用（构建时拷进 cayboard_pinyin/lua）；单词方案自己的过滤器随中文资源装。
+        repoFile("data/cayboard_en_memory.lua")
+        val filter = repoFile("src/main/assets/cayboard_chinese/lua/cayboard_english_words.lua").readText()
+        assertTrue(filter.contains("return cayboard_english_words"))
         assertTrue(filter.contains("Candidate(\"raw\""))
     }
 
     @Test fun `generated dictionary ranks common words and keeps spellings`() {
-        val dict = repoFile("build/generated/chinese-assets/rime_ice/cyime_english.dict.yaml").readLines()
+        val dict = repoFile("build/generated/chinese-assets/cayboard_pinyin/cayboard_english.dict.yaml").readLines()
         val rows = dict.dropWhile { it.trim() != "..." }.drop(1).map { it.split('\t') }.filter { it.size == 3 }
         assertTrue(rows.size > 20000)
         val weight = rows.associate { (it[0] + "\t" + it[1]) to it[2].toInt() }

@@ -7,7 +7,7 @@ object CandidateModelCatalog {
     const val NGRAM = "t9-ngram"
     const val NGRAM_SMALL = "t9-ngram-small"
     val models = listOf(
-        // 引擎按方案的 t9/ngram_model 在 rime 用户目录找 t9_ngram.lm；文件名必须保持 .lm。
+        // 引擎按方案的 t9/ngram_model 在输入数据目录找 t9_ngram.lm；文件名必须保持 .lm。
         // 完整版与精简版写同一个文件名，装哪个九键就用哪个；紧凑格式（c3）内容与原 370 MB 文件相同，旧文件仍可读。
         ModelInfo(NGRAM, "九键词组模型(完整，203 MB)", "让九键按整句常用说法组词和排序，安装后重新启动输入法生效；不下载时九键使用旧算法。Cayboard 自行训练，默认推荐。", ModelCategory.CANDIDATE,
             versions = listOf(

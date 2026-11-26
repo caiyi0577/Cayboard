@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.ChineseSchemas
 import com.cayboard.settings.DoublePinyinScheme
 import com.cayboard.settings.SchemaManager
@@ -99,7 +99,7 @@ fun SetupWizardScreen(
         try {
             val schemas = withContext(Dispatchers.IO) {
                 // 准备没过时会一直自动重试；把原因摆出来，不再只有一根进度条转十几分钟看不出卡在哪（GitHub #36）。
-                RimeConfigHelper.prepareAutomatically(context) { message ->
+                EngineConfig.prepareAutomatically(context) { message ->
                     preparationDetail = message.takeIf { "重试" in it }
                 }
                 // 用方案文件里的名字（小鹤双拼等），和「语言与方案」页一致；读不到才退回内置名或 ID。

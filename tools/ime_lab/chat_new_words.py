@@ -22,7 +22,7 @@ MAX_NEW = 6
 
 
 def dictionary_words(root):
-    text = (root / "rime_ice.dict.yaml").read_text(encoding="utf-8")
+    text = (root / "cayboard_pinyin.dict.yaml").read_text(encoding="utf-8")
     block = text.split("import_tables:", 1)[1].split("\n...", 1)[0]
     words = set()
     for name in re.findall(r"(?m)^  - ([^\s#]+)", block):

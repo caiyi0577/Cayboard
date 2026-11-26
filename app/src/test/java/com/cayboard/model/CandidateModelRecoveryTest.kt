@@ -61,7 +61,7 @@ class CandidateModelRecoveryTest {
         ))
         val model = ModelInfo("candidate-recovery-${System.nanoTime()}", "fixture", "", ModelCategory.CANDIDATE, listOf(version))
         val cache = ModelStorage.getModelDir(context, model.id)
-        val runtime = File(context.filesDir, "rime").apply { mkdirs() }
+        val runtime = File(context.filesDir, "cayboard_input").apply { mkdirs() }
         val target = File(runtime, "t9_sentence.onnx").apply { writeText("wrong") }
         File(runtime, "t9_sentence.vocab").writeText("words")
         val staging = temporary.newFolder().apply {

@@ -1,8 +1,8 @@
 package com.cayboard.settings
 
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.Assert.*
@@ -10,14 +10,14 @@ import org.junit.Assert.*
 class ChineseCandidateRegressionTest {
     @Test fun inspectRecallAndLearning() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
-        val engine = RimeEngine.getInstance()
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
+        val engine = InputEngine.getInstance()
         engine.initialize(user, shared)
-        assertTrue(RimeConfigHelper.ensureDeployment(context))
+        assertTrue(EngineConfig.ensureDeployment(context))
         assertTrue(engine.ensureSession())
         for ((schema, inputs) in listOf(
             "t9_pinyin" to listOf("3", "33", "64824", "72628542628", "9682437363358"),
-            "rime_ice" to listOf("d", "de", "paobuliaobu", "zoubierende lu".replace(" ", "")))) {
+            "cayboard_pinyin" to listOf("d", "de", "paobuliaobu", "zoubierende lu".replace(" ", "")))) {
             assertTrue(engine.switchSchema(schema))
             engine.setOption("ascii_mode", false)
             for (input in inputs) {
@@ -40,7 +40,7 @@ class ChineseCandidateRegressionTest {
                     assertTrue(candidates.any { it.text == "牛逼" })
                     assertTrue(candidates.any { it.text == "你太" })
                     assertTrue(engine.t9SelectPinyinDirect("niu", 3))
-                    engine.t9FlushRimeInput()
+                    engine.t9FlushInput()
                     val locked = engine.getAllCandidates(100)
                     assertTrue("locked niu still recalls 牛逼", locked.any { it.text == "牛逼" })
                     assertFalse("locked niu excludes ni tai", locked.any { it.text == "你太" })
@@ -72,10 +72,10 @@ class ChineseCandidateRegressionTest {
 
     @Test fun learnedSingleKeySurvivesEngineRestart() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val (user, shared) = RimeConfigHelper.initializeRimeDataAsync(context)
-        val engine = RimeEngine.getInstance()
+        val (user, shared) = EngineConfig.initializeInputDataAsync(context)
+        val engine = InputEngine.getInstance()
         engine.initialize(user, shared)
-        assertTrue(RimeConfigHelper.ensureDeployment(context)); assertTrue(engine.ensureSession())
+        assertTrue(EngineConfig.ensureDeployment(context)); assertTrue(engine.ensureSession())
         assertTrue(engine.switchSchema("t9_pinyin")); engine.setOption("ascii_mode", false)
         var learned = 0
         try {

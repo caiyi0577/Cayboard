@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import com.cayboard.keyboard.OverlayRoute
-import com.cayboard.rime.T9InputController
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.T9InputController
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.settings.SettingsPreferences
 import com.cayboard.settings.KeyboardHeightProfiles
 import com.cayboard.ui.keyboard.KeyboardCallbacks
@@ -75,20 +75,14 @@ internal fun rememberImeKeyboardCallbacks(
             },
             inputCommands = service.inputCommands,
             rerankT9Candidates = { result ->
-                if (com.cayboard.settings.SensitiveInputState.active || service.isSecretEditor() ||
-                    service.uiState.value.inputTarget.isInternal
-                ) result
+                if (!service.canPersonalizeCandidates()) result
                 else {
-                    val context = service.rimeEngine.rerankerContext(result.engineRevision)
+                    val context = service.inputEngine.rerankerContext(result.engineRevision)
                     val scored = if (context == null) result else {
                         service.t9Reranker.warmUp(service.serviceScope)
                         service.t9Reranker.rerank(result, context)
                     }
-                    // Apply the user's explicit choices last so the offline habit always
-                    // wins over the generic language model for an already known digit code.
-                    val durable = service.rimeEngine.t9Lookup(scored.inputText)
-                    scored.copy(candidates = service.t9UserHabitMemory.rerank(
-                        scored.inputText, scored.candidates, durable))
+                    service.personalizeCandidates(scored)
                 }
             },
             onT9UnconsumedDelete = service.keyRouter::processDeleteKey,
@@ -111,9 +105,9 @@ internal fun rememberImeKeyboardCallbacks(
                 if (service.keyboardCallbacks?.onPreeditKeyInput?.invoke(key) != true) {
                     val numberPanel = service.keyboardViewModel.keyboardState.value is com.cayboard.ui.keyboard.KeyboardLayoutState.Number
                     val separator = key == "'" && service.candidateState.value.isComposing && !service.uiState.value.isAsciiMode
-                    // 微软双拼的 ing 在分号上：分号键交给按键队列，打字中送进 Rime 组码，没在打字时照旧按标点上屏（见 ImeKeyRouter）。
+                    // 微软双拼的 ing 在分号上：分号键交给按键队列，打字中送进输入引擎组码，没在打字时照旧按标点上屏（见 ImeKeyRouter）。
                     val semicolonCode = key == ";" && service.keyRouter.semicolonIsCode()
-                    // 第三方方案字母表里的符号（声笔的 ; ' , . /）是编码键：交给按键队列送进 Rime（#87）。
+                    // 第三方方案字母表里的符号（声笔的 ; ' , . /）是编码键：交给按键队列送进输入引擎（#87）。
                     val schemeCode = if (numberPanel) null else service.keyRouter.schemeCodeKey(key)
                     // 日语 26 键的长音键（键面 ー）送 -：和字母一样进罗马字转换（ko-hi- → コーヒー），不当标点直接上屏。
                     val choonpu = !numberPanel && japaneseChoonpuIsCode(key, service.uiState.value.isAsciiMode,
@@ -125,7 +119,7 @@ internal fun rememberImeKeyboardCallbacks(
                     } else if (!numberPanel && !separator && !semicolonCode && isLiteralPunctuation(key)) {
                         service.textCommit.commitLiteralText(key)
                     } else {
-                        val mergedKey = com.cayboard.rime.MergedLetterInput.isGroup(key,
+                        val mergedKey = com.cayboard.engine.MergedLetterInput.isGroup(key,
                             !service.uiState.value.isAsciiMode &&
                             service.uiState.value.inputProfile.layout == com.cayboard.settings.InputLayout.MERGED14)
                         service.keyRouter.handleKeyPress(if (mergedKey) key.take(1) else key, isShifted,
@@ -159,7 +153,7 @@ internal fun rememberImeKeyboardCallbacks(
                 val candidate = service.candidateState.value
                 if (service.uiState.value.inputProfile.scheme == com.cayboard.settings.InputScheme.DOUBLE_PINYIN &&
                     !candidate.isComposing && candidate.inputText.isEmpty() &&
-                    (service.inputCommands.hasPendingCommands || service.rimeEngine.compositionActiveForDeletion() != false)) return@select
+                    (service.inputCommands.hasPendingCommands || service.inputEngine.compositionActiveForDeletion() != false)) return@select
                 service.feedbackManager.performKeyPressEffect(view = view)
                 service.keyRouter.selectAssociation(index)
             },
@@ -187,7 +181,7 @@ internal fun rememberImeKeyboardCallbacks(
             },
             onClipboardSelect = { text -> service.textCommit.selectClipboardItem(text) },
             onClipboardRecordCommitted = { service.feedbackManager.playClipboardCommitSound() },
-            // 角标、长按、空格两侧标点键和符号面板上屏的符号：第三方方案把它当编码键时同样先交给 Rime（#87）。
+            // 角标、长按、空格两侧标点键和符号面板上屏的符号：第三方方案把它当编码键时同样先交给输入引擎（#87）。
             // 雾凇 26 键打着 Unicode 码（U26）时角标、长按的数字也接进编码（U2603 → ☃）。
             onCommitText = { text ->
                 if (service.inputReadiness.ticket() != null) {
@@ -454,20 +448,20 @@ internal fun rememberImeKeyboardCallbacks(
                 service.serviceScope.launch(service.keyProcessingDispatcher) {
                     when {
                         pinyin == T9InputController.CLEAR_COMPOSITION_ONLY -> {
-                            service.rimeEngine.clearComposition()
+                            service.inputEngine.clearComposition()
                         }
                         pinyin == T9InputController.CLEAR_ALL -> {
                             service.t9PartialSegments.clear()
-                            service.rimeEngine.endQueuedComposition(t9 = true)
+                            service.inputEngine.endQueuedComposition(t9 = true)
                         }
                         pinyin.isEmpty() -> {
-                            service.rimeEngine.clearComposition()
+                            service.inputEngine.clearComposition()
                         }
                         else -> {
-                            service.rimeEngine.setInput(pinyin)
+                            service.inputEngine.setInput(pinyin)
                         }
                     }
-                    val composition = service.rimeEngine.getComposition()
+                    val composition = service.inputEngine.getComposition()
                     withContext(Dispatchers.Main) {
                         service.mainHandler.post { service.sessionController.applyComposition(composition) }
                     }
@@ -504,17 +498,17 @@ internal fun rememberImeKeyboardCallbacks(
                 service.candidateTransform.transformForT9(result)
             },
             onT9SwitchAway = {
-                service.keyRouter.postRimeJob {
+                service.keyRouter.postEngineJob {
                     service.sessionController.commitFirstCandidateAndClearT9()
                 }
             },
             onCommitCandidateBeforeModeChange = {
-                service.keyRouter.postRimeJob {
+                service.keyRouter.postEngineJob {
                     service.textCommit.commitCompositionAndLiteral()
                 }
             },
             onCommitTypedBeforeModeChange = {
-                service.keyRouter.postRimeJob {
+                service.keyRouter.postEngineJob {
                     service.textCommit.commitCompositionAndLiteral(asTyped = true)
                 }
             },

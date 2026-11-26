@@ -1,7 +1,7 @@
 """生成训练模式的“中文汉字”题库，用来收集内置中文手写模型（ochwpro）微调样本。
 
 用法：
-    python tools/handwriting_training/extract_chinese.py D:/CyIME-Data/handwriting_training/banks/chinese_chars.tsv
+    python tools/handwriting_training/extract_chinese.py D:/Cayboard-Data/handwriting_training/banks/chinese_chars.tsv
 
 收录内置手写模型字表里的全部汉字，按使用频率从高到低一个一个出题（模型字表外的字认不出来，
 写了也没法拿来微调，所以不收）。频率取自 App 内置拼音词库 pinyin_simp.dict.yaml 的单字权重，
@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
-DICT = REPO / "app/src/main/assets/rime/pinyin_simp.dict.yaml"
+DICT = REPO / "app/src/main/assets/cayboard_base/pinyin_simp.dict.yaml"
 VOCAB = REPO / ".gradle/bundled-model-cache/ochwpro/char_index.json"
 
 

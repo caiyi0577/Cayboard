@@ -4,9 +4,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import androidx.test.platform.app.InstrumentationRegistry
-import com.cayboard.rime.RimeConfigHelper
-import com.cayboard.rime.RimeEngine
-import com.cayboard.rime.T9InputController
+import com.cayboard.engine.EngineConfig
+import com.cayboard.engine.InputEngine
+import com.cayboard.engine.T9InputController
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -18,8 +18,8 @@ import org.junit.Test
 class StartupInputAdmissionTest {
     @Test fun blockedT9InputAndInvalidatedQueueNeverReplay(): Unit = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertTrue(RimeConfigHelper.prepareEngine(context))
-        val engine = RimeEngine.getInstance()
+        assertTrue(EngineConfig.prepareEngine(context))
+        val engine = InputEngine.getInstance()
         assertTrue(engine.ensureSession())
         val previous = engine.getCurrentSchema()
         val previousAscii = engine.isAsciiMode()

@@ -17,7 +17,7 @@ class FixedSpeechSelectionTest {
         val context=ApplicationProvider.getApplicationContext<Application>()
         context.getSharedPreferences("asr_model",0).edit().putString("selected_model_zh",SpeechModelCatalog.SENSEVOICE)
             .putString("selected_model_en",SpeechModelCatalog.PARAFORMER).commit()
-        context.getSharedPreferences("kime_settings",0).edit().putBoolean("stt_use_local",false)
+        context.getSharedPreferences("cayboard_settings",0).edit().putBoolean("stt_use_local",false)
             .putBoolean("stt_whole_sentence",false).commit()
         val manager=AsrModelManager(context)
         for(language in listOf(InputLanguage.CHINESE,InputLanguage.ENGLISH)) {

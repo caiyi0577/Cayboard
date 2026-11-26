@@ -205,7 +205,7 @@ TEST(T9LeftPanelModeTest, Auto_WithoutScriptTranslator_ReturnsNone) {
 }
 
 TEST(T9LeftPanelModeTest, ExplicitNone_OverridesAuto) {
-    // rime_frost_t9 等混合方案作者可显式关闭左栏
+    // 混合方案作者可显式关闭左栏
     EXPECT_EQ(rime::t9_panel_state::ResolveLeftPanelMode(true, "none"),
               rime::t9_panel_state::LeftPanelMode::kNone);
     EXPECT_EQ(rime::t9_panel_state::ResolveLeftPanelMode(false, "none"),

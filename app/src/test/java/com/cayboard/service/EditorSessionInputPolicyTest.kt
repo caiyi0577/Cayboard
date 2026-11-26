@@ -15,7 +15,7 @@ class EditorSessionInputPolicyTest {
         val termius = "com.server.auditor.ssh.client"
         val shell = field(termius, 0x91, 0x50000001)
         val session = EditorSessionInputPolicy()
-        assertFalse(session.begin(shell, false, false, "rime_ice").isAsciiMode)
+        assertFalse(session.begin(shell, false, false, "cayboard_pinyin").isAsciiMode)
         assertTrue(session.choose(false))
         assertFalse(session.directInput)
         assertTrue(EditorInfoClassifier.isTerminalEditor(shell))
@@ -23,14 +23,14 @@ class EditorSessionInputPolicyTest {
         assertTrue(com.cayboard.settings.SensitiveInputState.isSensitiveEditor(shell))
         for (password in listOf(field(termius, 0x81, 0x50000001), field(termius, 0x12, 0x50000001))) {
             assertFalse(EditorInfoClassifier.isTerminalEditor(password))
-            assertTrue(session.begin(password, false, false, "rime_ice").isAsciiMode)
+            assertTrue(session.begin(password, false, false, "cayboard_pinyin").isAsciiMode)
             assertFalse(session.choose(false))
         }
         // 可见密码框（Termius 登录页、别的应用的代码编辑器）先给英文，可以切回中文，仍按密码框不学词。
         for (visible in listOf(field(termius, 0x91, EditorInfo.IME_ACTION_DONE), field("other.editor", 0x91, 0x50000001))) {
             assertFalse(EditorInfoClassifier.isTerminalEditor(visible))
             assertTrue(EditorInfoClassifier.isSecretEditor(visible))
-            assertTrue(session.begin(visible, false, false, "rime_ice").isAsciiMode)
+            assertTrue(session.begin(visible, false, false, "cayboard_pinyin").isAsciiMode)
             assertTrue(session.choose(false))
         }
     }
@@ -71,18 +71,18 @@ class EditorSessionInputPolicyTest {
         val code = editor(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
             InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
         val session = EditorSessionInputPolicy()
-        assertTrue(session.begin(code, false, false, "rime_ice").isAsciiMode)
+        assertTrue(session.begin(code, false, false, "cayboard_pinyin").isAsciiMode)
         assertEquals(EditorFieldPolicy.Kind.VISIBLE_PASSWORD, session.field.kind)
         assertTrue(session.directInput)
         assertFalse(session.locksNativeInput)
         assertTrue(session.field.allowsNativeInput)
-        assertTrue(session.choose(false, "rime_ice"))
+        assertTrue(session.choose(false, "cayboard_pinyin"))
         assertFalse(session.directInput)
         // 同一个框重启连接（编辑器刷新）不丢中文。
-        assertFalse(session.begin(code, true, false, "rime_ice").isAsciiMode)
+        assertFalse(session.begin(code, true, false, "cayboard_pinyin").isAsciiMode)
         // 离开后原来的语言照旧，下一个可见密码框又先给英文。
-        assertFalse(session.begin(editor(InputType.TYPE_CLASS_TEXT, 2), false, false, "rime_ice").isAsciiMode)
-        assertTrue(session.begin(editor(code.inputType, 3), false, false, "rime_ice").isAsciiMode)
+        assertFalse(session.begin(editor(InputType.TYPE_CLASS_TEXT, 2), false, false, "cayboard_pinyin").isAsciiMode)
+        assertTrue(session.begin(editor(code.inputType, 3), false, false, "cayboard_pinyin").isAsciiMode)
         // 英文时照密码框直接上屏：只收半角可见字符。
         assertEquals("a", session.field.typedLiteral("a"))
         assertTrue(session.field.typedLiteral("中").isEmpty())
@@ -96,7 +96,7 @@ class EditorSessionInputPolicyTest {
             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)) {
             val terminal = editor(type)
             assertTrue(EditorInfoClassifier.isTerminalEditor(terminal))
-            assertFalse(session.begin(terminal, false, false, "rime_ice").isAsciiMode)
+            assertFalse(session.begin(terminal, false, false, "cayboard_pinyin").isAsciiMode)
             assertFalse(session.scoped)
             assertFalse(session.locksNativeInput)
             assertFalse(session.directInput)
@@ -105,28 +105,28 @@ class EditorSessionInputPolicyTest {
         for (type in listOf(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS,
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or
                 InputType.TYPE_TEXT_FLAG_IME_MULTI_LINE)) {
-            assertFalse(session.begin(editor(type, 2), false, false, "rime_ice").isAsciiMode)
+            assertFalse(session.begin(editor(type, 2), false, false, "cayboard_pinyin").isAsciiMode)
             assertFalse(session.scoped)
         }
         // 借密码类型的多行编辑器：先给英文，能切中文；可见密码同样。
         for (variation in listOf(InputType.TYPE_TEXT_VARIATION_PASSWORD, InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)) {
             val code = editor(InputType.TYPE_CLASS_TEXT or variation or InputType.TYPE_TEXT_FLAG_MULTI_LINE, 3)
-            assertTrue(session.begin(code, false, false, "rime_ice").isAsciiMode)
+            assertTrue(session.begin(code, false, false, "cayboard_pinyin").isAsciiMode)
             assertFalse(session.locksNativeInput)
-            assertTrue(session.choose(false, "rime_ice"))
+            assertTrue(session.choose(false, "cayboard_pinyin"))
             assertFalse(session.directInput)
         }
         // 网址框（有的编辑器用它关联想）：先给英文也能切中文。
         val uri = editor(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_TEXT_FLAG_MULTI_LINE, 4)
-        session.begin(uri, false, false, "rime_ice")
+        session.begin(uri, false, false, "cayboard_pinyin")
         assertFalse(session.locksNativeInput)
         // 真正的密码框（单行）照旧锁英文。
         for (variation in listOf(InputType.TYPE_TEXT_VARIATION_PASSWORD, InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD)) {
             val password = editor(InputType.TYPE_CLASS_TEXT or variation, 5)
-            assertTrue(session.begin(password, false, false, "rime_ice").isAsciiMode)
+            assertTrue(session.begin(password, false, false, "cayboard_pinyin").isAsciiMode)
             assertTrue(session.locksNativeInput)
-            assertFalse(session.choose(false, "rime_ice"))
+            assertFalse(session.choose(false, "cayboard_pinyin"))
         }
         assertTrue(EditorFieldPolicy.fromInputType(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD).locksNativeInput)
     }

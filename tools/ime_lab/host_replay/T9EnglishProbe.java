@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,14 +8,14 @@ import java.util.List;
  * Nine-key English typed half way: for each word, the fewest keys after which it is among the first
  * five candidates, and its rank once fully typed. Arguments: library_dir, a deployed t9 replay user
  * directory (a t9_replay run's native-run copy; nothing is learned or committed) and a word list file.
- * Compile and run together with ../android_replay/RimeEngine.java.
+ * Compile and run together with ../android_replay/InputEngine.java.
  */
 public class T9EnglishProbe {
   static final String KEYS = "22233344455566677778889999";
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("t9_pinyin"))
       throw new Exception("t9_pinyin session unavailable");
@@ -29,11 +29,11 @@ public class T9EnglishProbe {
       StringBuilder digits = new StringBuilder();
       for (char c : word.toLowerCase().toCharArray()) digits.append(KEYS.charAt(c - 'a'));
       engine.nativeT9ClearComposition(1);
-      engine.nativeT9FlushRimeInput();
+      engine.nativeT9FlushInput();
       int firstSeen = -1, fullRank = -1;
       for (int i = 0; i < digits.length(); i++) {
         engine.nativeProcessKey(digits.charAt(i), 0);
-        engine.nativeT9FlushRimeInput();
+        engine.nativeT9FlushInput();
         String[][] rows = engine.nativeInspectCandidates(10);
         int rank = -1;
         for (int r = 0; r < rows.length; r++) if (rows[r][0].equalsIgnoreCase(word)) { rank = r; break; }

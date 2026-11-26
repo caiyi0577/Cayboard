@@ -10,7 +10,7 @@ class ReportedBehaviorTest {
     @Test fun independentEnglishOffersNineKeys() {
         InputProfiles.updateInstalled(emptyList())
         KeysConfigHelper.clearSchemaBindingsForTest()
-        val installed = listOf("rime_ice", "pinyin_14jian", "t9_pinyin").map { SchemaInfo(it, it, "", "", "") }
+        val installed = listOf("cayboard_pinyin", "pinyin_14jian", "t9_pinyin").map { SchemaInfo(it, it, "", "", "") }
         val all = InputModes.available(installed, InputModes.defaultModeOrder)
         fun layouts(language: InputLanguage) =
             InputProfileSelection.layoutRow(all.filter { it.language == language }, all).map { it.id }

@@ -44,37 +44,37 @@ T9RightCommitHandler::Context MakeContext(const ScenarioSetup& s) {
 // ── digitSegment 模式（无选择，有未分配数字） ──
 
 TEST(T9RightCommitHandlerTest, DigitSegmentFullCommitWhenAllDigitsConsumed) {
-    // fallback 路径（rime_consumed_digits=-1，RIME 查询失败时）：输入 "54482"，
+    // fallback 路径（engine_consumed_digits=-1，引擎查询失败时）：输入 "54482"，
     // 右选 "ji hua" → AlignWithBuffer 消费全部 5 位 → full commit
     auto ctx = MakeContext({"54482", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("ji hua"), 0,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_TRUE(result);
     EXPECT_TRUE(ctx.input_buffer.is_empty());
     EXPECT_TRUE(ctx.state_machine.is_idle());
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommitWhenPartConsumed) {
-    // fallback 路径（rime_consumed_digits=-1）：输入 "54482"，右选 "ji" →
+    // fallback 路径（engine_consumed_digits=-1）：输入 "54482"，右选 "ji" →
     // AlignWithBuffer 消费 2 位 → partial commit, remaining "482"
     auto ctx = MakeContext({"54482", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("ji"), 0,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_FALSE(result);
     EXPECT_EQ(ctx.input_buffer.unassigned(), "482");
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommit_WoDe_96339633) {
-    // fallback 路径（rime_consumed_digits=-1，RIME 查询失败时）：
+    // fallback 路径（engine_consumed_digits=-1，引擎查询失败时）：
     // 输入 96339633（96 33 96 33 → wo de wo de），
     // 右选 "wo de" → AlignWithBuffer 消费 4 位（96 33），剩余 "9633"
     // 验证 digitSegment 模式下 fallback partial commit 正确性
     auto ctx = MakeContext({"96339633", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("wo de"), 2,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_FALSE(result);                                 // partial commit
     EXPECT_EQ(ctx.input_buffer.unassigned(), "9633");     // 剩余 4 位
     EXPECT_EQ(ctx.input_buffer.consumed_count, 4);        // 已消费 4 位
@@ -83,25 +83,25 @@ TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommit_WoDe_96339633) {
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommit_WoDeWoDe_96339633) {
-    // fallback 路径（rime_consumed_digits=-1）：输入 96339633，
+    // fallback 路径（engine_consumed_digits=-1）：输入 96339633，
     // 右选 "wo de wo de"（全部消费）→ AlignWithBuffer → full commit
     auto ctx = MakeContext({"96339633", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("wo de wo de"), 4,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_TRUE(result);                                   // full commit
     EXPECT_TRUE(ctx.input_buffer.is_empty());
     EXPECT_TRUE(ctx.state_machine.is_idle());
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommit_ZouDe_96339633) {
-    // fallback 路径（rime_consumed_digits=-1，历史 Bug-2026-07-26-v3 保护）：
+    // fallback 路径（engine_consumed_digits=-1，历史 Bug-2026-07-26-v3 保护）：
     // 输入 96339633，右选 "zou de"（简拼+全拼混合：z→9, de→33）
     // AlignWithBuffer 消费 4 位（zou→"968"前缀匹配"96"得2位 + de→"33"全匹配得2位），剩余 "9633"
     auto ctx = MakeContext({"96339633", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("zou de"), 2,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_FALSE(result);                                 // partial commit
     // zou→PinyinToDigitCode="968"（z=9,o=6,u=8），
     // 输入前缀 "96" 匹配 "968" 前2位，de→"33" 匹配 "33"
@@ -110,91 +110,91 @@ TEST(T9RightCommitHandlerTest, DigitSegmentPartialCommit_ZouDe_96339633) {
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialSyllableFullCommit) {
-    // fallback 路径（rime_consumed_digits=-1）：输入 "9435"，右选 "zhe li"
+    // fallback 路径（engine_consumed_digits=-1）：输入 "9435"，右选 "zhe li"
     // → AlignWithBuffer 消费 zhe(943)+li前缀(5) = 4 位 → full commit
     auto ctx = MakeContext({"9435", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("zhe li"), 2,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_TRUE(result);
     EXPECT_TRUE(ctx.input_buffer.is_empty());
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentPartialSyllablePartialCommit) {
-    // fallback 路径（rime_consumed_digits=-1）：输入 "94356"，右选 "zhe li"
+    // fallback 路径（engine_consumed_digits=-1）：输入 "94356"，右选 "zhe li"
     // → AlignWithBuffer 消费 4 位 → partial commit, remaining "6"
     auto ctx = MakeContext({"94356", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("zhe li"), 2,
-                                            /*rime_consumed_digits=*/-1);
+                                            /*engine_consumed_digits=*/-1);
     EXPECT_FALSE(result);
     EXPECT_EQ(ctx.input_buffer.unassigned(), "6");
 }
 
 TEST(T9RightCommitHandlerTest, DigitSegmentFullCommitWithNullCandidatePinyin) {
-    // 无候选拼音（candidate_pinyin 为 null，RIME 查询必然失败）→ fallback 贪婪最长匹配
+    // 无候选拼音（candidate_pinyin 为 null，引擎查询必然失败）→ fallback 贪婪最长匹配
     auto ctx = MakeContext({"54482", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     // null candidatePinyin → firstSyllableOptions 消费首音节
-    bool result = handler.HandleRightCommit(ctx, std::nullopt, 0, /*rime_consumed_digits=*/-1);
+    bool result = handler.HandleRightCommit(ctx, std::nullopt, 0, /*engine_consumed_digits=*/-1);
     EXPECT_FALSE(result);  // 只消费首音节，不会全部消费
 }
 
-// ── 方案 A：RIME 候选 end 换算的消费位数优先（2026-08-01） ──
+// ── 方案 A：引擎候选 end 换算的消费位数优先（2026-08-01） ──
 
-TEST(T9RightCommitHandlerTest, DigitSegment_RimeConsumed_YongDong_96636_FullCommit) {
+TEST(T9RightCommitHandlerTest, DigitSegment_EngineConsumed_YongDong_96636_FullCommit) {
     // 方案 A 核心场景：输入 96636，右选 "yong dong"（派生 966+36，RIME end=5）
     // 旧算法：完整拼音 yong=9664/dong=3664 前缀匹配只消费 4 位，剩 6（bug）
-    // 方案 A：rime_consumed_digits=5 → 消费全部 5 位 → full commit
+    // 方案 A：engine_consumed_digits=5 → 消费全部 5 位 → full commit
     auto ctx = MakeContext({"96636", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(
-        ctx, std::optional<std::string>("yong dong"), 2, /*rime_consumed_digits=*/5);
+        ctx, std::optional<std::string>("yong dong"), 2, /*engine_consumed_digits=*/5);
     EXPECT_TRUE(result);                                  // full commit
     EXPECT_TRUE(ctx.input_buffer.is_empty());
     EXPECT_TRUE(ctx.state_machine.is_idle());
 }
 
-TEST(T9RightCommitHandlerTest, DigitSegment_RimeConsumed_ZongMen_96636_FullCommit) {
+TEST(T9RightCommitHandlerTest, DigitSegment_EngineConsumed_ZongMen_96636_FullCommit) {
     // 方案 A 核心场景：输入 96636，右选 "zong men"（派生 96+636，RIME end=5）
     // 旧算法只消费 3 位（zong 派生 zo=96 + men 前缀），剩 36（bug）
     auto ctx = MakeContext({"96636", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(
-        ctx, std::optional<std::string>("zong men"), 2, /*rime_consumed_digits=*/5);
+        ctx, std::optional<std::string>("zong men"), 2, /*engine_consumed_digits=*/5);
     EXPECT_TRUE(result);                                  // full commit
     EXPECT_TRUE(ctx.input_buffer.is_empty());
 }
 
-TEST(T9RightCommitHandlerTest, DigitSegment_RimeConsumed_Yong_96636_PartialCommit) {
+TEST(T9RightCommitHandlerTest, DigitSegment_EngineConsumed_Yong_96636_PartialCommit) {
     // 方案 A 部分消费：输入 96636，右选 "yong"（派生 966，RIME end=3）
     // 消费 3 位 → partial commit，剩余 "36" 可继续匹配 dong
     auto ctx = MakeContext({"96636", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(
-        ctx, std::optional<std::string>("yong"), 1, /*rime_consumed_digits=*/3);
+        ctx, std::optional<std::string>("yong"), 1, /*engine_consumed_digits=*/3);
     EXPECT_FALSE(result);                                 // partial commit
     EXPECT_EQ(ctx.input_buffer.consumed_count, 3);
     EXPECT_EQ(ctx.input_buffer.unassigned(), "36");
 }
 
-TEST(T9RightCommitHandlerTest, DigitSegment_RimeConsumed_ClampedToSegment) {
-    // 防御：rime_consumed_digits 超过 unassigned 长度时 clamp 到段长
+TEST(T9RightCommitHandlerTest, DigitSegment_EngineConsumed_ClampedToSegment) {
+    // 防御：engine_consumed_digits 超过 unassigned 长度时 clamp 到段长
     auto ctx = MakeContext({"96636", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(
-        ctx, std::optional<std::string>("yong dong"), 2, /*rime_consumed_digits=*/99);
+        ctx, std::optional<std::string>("yong dong"), 2, /*engine_consumed_digits=*/99);
     EXPECT_TRUE(result);                                  // clamp 后消费全部 → full commit
     EXPECT_TRUE(ctx.input_buffer.is_empty());
 }
 
-TEST(T9RightCommitHandlerTest, DigitSegment_RimeConsumed_Negative_FallbackToAlign) {
-    // 防御：rime_consumed_digits=-1（无法确定）→ fallback 到旧 AlignWithBuffer 算法
+TEST(T9RightCommitHandlerTest, DigitSegment_EngineConsumed_Negative_FallbackToAlign) {
+    // 防御：engine_consumed_digits=-1（无法确定）→ fallback 到旧 AlignWithBuffer 算法
     // 旧算法对 96636+"wo men" 消费 5 位（wo=96 完整 + men=636 完整）→ full commit
     auto ctx = MakeContext({"96636", {}, 0, T9StateMachine::State::kInput});
     T9RightCommitHandler handler;
     bool result = handler.HandleRightCommit(
-        ctx, std::optional<std::string>("wo men"), 2, /*rime_consumed_digits=*/-1);
+        ctx, std::optional<std::string>("wo men"), 2, /*engine_consumed_digits=*/-1);
     EXPECT_TRUE(result);
     EXPECT_TRUE(ctx.input_buffer.is_empty());
 }
@@ -308,11 +308,11 @@ TEST(T9RightCommitHandlerTest, LetterBufferPartialSelectionConsumption_54482_LiG
     // `cumulative + digit_length <= consumed_digit_count` 只检测完全消费，
     // 对 gua（cumulative=2 < consumed_digit_count=4 < 2+3=5，部分消费）误判为未消费，
     // 导致 T9Buffer("2", [gua(3)], 3, 1) 不一致状态，
-    // ToRimeInputString() 返回 "gua" 而非 "2"，RIME 候选词显示挂/瓜而非 a/b/c。
+    // ToEngineInputString() 返回 "gua" 而非 "2"，引擎候选词显示挂/瓜而非 a/b/c。
     //
     // adb 日志证据（/tmp/t9_ligu_bug.log L70-73, L86-87）：
     //   consumedDigitCount=4, cutIndex=1, remainingSels.size=1   ← 应为 cutIndex=2, size=0
-    //   ToRimeInputString: all-full-pinyin → 'gua'                ← 应为 '2'
+    //   ToEngineInputString: all-full-pinyin → 'gua'                ← 应为 '2'
     //   ReplaceFullPinyin: 'gua'                                   ← 应为 '2'
     std::vector<SyllableOption> sels{SyllableOption("li", 2), SyllableOption("gua", 3)};
     std::vector<SyllableOption> history{sels[0], sels[1]};
@@ -331,7 +331,7 @@ TEST(T9RightCommitHandlerTest, LetterBufferPartialSelectionConsumption_54482_LiG
     EXPECT_FALSE(result);                                  // partial commit
     EXPECT_TRUE(ctx.input_buffer.selections.empty());      // gua 部分消费，不保留
     EXPECT_EQ(ctx.input_buffer.unassigned(), "2");         // 剩余数字 '2'
-    EXPECT_EQ(ctx.input_buffer.ToRimeInputString(), "2");  // 发给 RIME 的是 '2' 而非 'gua'
+    EXPECT_EQ(ctx.input_buffer.ToEngineInputString(), "2");  // 发给 RIME 的是 '2' 而非 'gua'
 }
 
 // ── T11.x 回归测试：每个修复场景对应一个测试，避免后续修改导致回归 ──
@@ -359,7 +359,7 @@ TEST(T9RightCommitHandlerTest, T11_2_LetterBufferRemainingDigits_54482_JiHua) {
     EXPECT_FALSE(result);                                  // partial commit
     EXPECT_TRUE(ctx.input_buffer.selections.empty());      // hua 被部分消费，不保留
     EXPECT_EQ(ctx.input_buffer.unassigned(), "2");         // 剩余数字 '2'
-    EXPECT_EQ(ctx.input_buffer.ToRimeInputString(), "2");
+    EXPECT_EQ(ctx.input_buffer.ToEngineInputString(), "2");
 }
 
 TEST(T9RightCommitHandlerTest, T11_5_LockedDigitsZeroWhenSelectionsEmpty_5143_Ke) {
@@ -410,7 +410,7 @@ TEST(T9RightCommitHandlerTest, T11_6_LetterBufferConsumedDigitsFromPinyin_543_Ke
     EXPECT_EQ(ctx.input_buffer.selections.size(), 1u);     // he 保留
     EXPECT_EQ(ctx.input_buffer.selections[0].pinyin, "he");
     EXPECT_EQ(ctx.input_buffer.unassigned(), "");          // 新 buffer digitSeq="43", consumed=2
-    EXPECT_EQ(ctx.input_buffer.ToRimeInputString(), "he");
+    EXPECT_EQ(ctx.input_buffer.ToEngineInputString(), "he");
 }
 
 TEST(T9RightCommitHandlerTest, T11_7_ApostropheConsumedDigitsFromPinyin_543_Ku) {
@@ -541,7 +541,7 @@ TEST(T9RightCommitHandlerTest, T11_8_LetterBufferPreserveRemainingSelections_548
     EXPECT_EQ(ctx.input_buffer.selections.size(), 1u);     // jian 保留
     EXPECT_EQ(ctx.input_buffer.selections[0].pinyin, "jian");
     EXPECT_EQ(ctx.input_buffer.unassigned(), "");          // 新 buffer digitSeq="5426", consumed=4
-    EXPECT_EQ(ctx.input_buffer.ToRimeInputString(), "jian");
+    EXPECT_EQ(ctx.input_buffer.ToEngineInputString(), "jian");
 }
 
 TEST(T9RightCommitHandlerTest, T11_9_AllAbbrevMultiSyllableFullCommit_54347_JiuGenErGongSi) {

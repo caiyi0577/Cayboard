@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,8 +12,8 @@ import java.util.Set;
 
 /**
  * 模糊音只多给读音，不抢打准的字（2026-11-05：开 n/l 后 ne 首选「了」、neng 首选「冷」）。
- * Arguments: LIB USER NEIGHBORS [PLAIN_FIRSTS_OUT]. USER is a disposable copy of a deployed rime_ice user directory: this probe
- * writes rime_ice.custom.yaml with every fuzzy group the app offers (penalized fuzz/ rules before the scheme's own
+ * Arguments: LIB USER NEIGHBORS [PLAIN_FIRSTS_OUT]. USER is a disposable copy of a deployed cayboard_pinyin user directory: this probe
+ * writes cayboard_pinyin.custom.yaml with every fuzzy group the app offers (penalized fuzz/ rules before the scheme's own
  * algebra, as SpellingPatches writes them) and deploys it. Every single syllable of the bundled 8105 dictionary
  * is typed with the groups off and on: a first word spelled by the typed letters must stay first with them on.
  * The fuzzy readings must still come right after (ne still offers 了 in the first three).
@@ -26,11 +26,11 @@ public class FuzzyExactFirstProbe {
       "fuzz/ing$/in/", "fuzz/in$/ing/", "fuzz/iang$/ian/", "fuzz/ian$/iang/", "fuzz/uang$/uan/", "fuzz/uan$/uang/"};
 
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
     File user = new File(args[1]);
-    File customFile = new File(user, "rime_ice.custom.yaml");
+    File customFile = new File(user, "cayboard_pinyin.custom.yaml");
     List<String> inputs = new ArrayList<>(syllables(new File(user, "cn_dicts/8105.dict.yaml")));
-    List<String> algebra = algebra(new File(user, "rime_ice.schema.yaml"));
+    List<String> algebra = algebra(new File(user, "cayboard_pinyin.schema.yaml"));
     // First pass without fuzzy pinyin: the first word of each syllable as the user gets it today.
     Files.deleteIfExists(customFile.toPath());
     Map<String, String[]> plain = run(user, args[2], inputs, null);
@@ -71,12 +71,12 @@ public class FuzzyExactFirstProbe {
   static Map<String, String[]> run(File user, String neighbors, List<String> inputs, List<String> failures)
       throws Exception {
     Map<String, String[]> first = new LinkedHashMap<>();
-    RimeEngine engine = new RimeEngine();
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(user.getPath(), user.getPath());
     engine.nativeStartMaintenance(true);
     while (engine.nativeIsMaintaining()) Thread.sleep(100);
     try {
-      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("rime_ice")) throw new Exception("schema unavailable");
+      if (!engine.nativeCreateSession() || !engine.nativeSwitchSchema("cayboard_pinyin")) throw new Exception("schema unavailable");
       engine.nativeSetOption("ascii_mode", false);
       engine.nativeSetNeighborMap(neighbors);
       long micros = 0;

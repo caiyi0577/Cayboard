@@ -1,4 +1,4 @@
-"""Snapshot existing project Rime resources for host replay, without an APK build."""
+"""Snapshot existing Cayboard input resources for host replay, without an APK build."""
 from __future__ import annotations
 
 import hashlib
@@ -11,29 +11,29 @@ def resource_files(repo, t9_ngram=None):
     repo = Path(repo)
     base = repo / "app/src/main/assets"
     generated = repo / "app/build/generated"
-    roots = [("rime_ice", generated / "chinese-assets/rime_ice"),
-             ("rime_chinese", base / "rime_chinese"),
-             ("rime_chinese", generated / "t9-grammar/rime_chinese"),
+    roots = [("cayboard_pinyin", generated / "chinese-assets/cayboard_pinyin"),
+             ("cayboard_chinese", base / "cayboard_chinese"),
+             ("cayboard_chinese", generated / "t9-grammar/cayboard_chinese"),
              # Optional word n-gram model (tools/ime_lab/ngram); absent until built.
-             ("rime_chinese", generated / "t9-ngram/rime_chinese")]
-    required = [base / "default.custom.yaml", base / "rime/default.yaml",
-                roots[0][1] / "rime_ice.dict.yaml", roots[0][1] / "cn_dicts/base.dict.yaml",
-                roots[0][1] / "cyime_t9_english.dict.yaml",
+             ("cayboard_chinese", generated / "t9-ngram/cayboard_chinese")]
+    required = [base / "default.custom.yaml", base / "cayboard_base/default.yaml",
+                roots[0][1] / "cayboard_pinyin.dict.yaml", roots[0][1] / "cn_dicts/base.dict.yaml",
+                roots[0][1] / "cayboard_t9_english.dict.yaml",
                 roots[1][1] / "t9_pinyin.schema.yaml", roots[1][1] / "t9_sentence.onnx",
                 roots[1][1] / "t9_sentence.vocab", roots[2][1] / "wanxiang-lts-zh-hans.gram"]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise ValueError("Prepared Rime resources missing (no APK build will be started): " + ", ".join(missing))
     files = {}
-    for path in sorted((base / "rime").rglob("*")):
+    for path in sorted((base / "cayboard_base").rglob("*")):
         if not path.is_file():
             continue
-        relative = path.relative_to(base / "rime")
+        relative = path.relative_to(base / "cayboard_base")
         if any(part.startswith(".") for part in relative.parts):
             continue
-        files["assets/rime/" + relative.as_posix()] = (path, None)
+        files["assets/cayboard_base/" + relative.as_posix()] = (path, None)
     files["assets/default.custom.yaml"] = (base / "default.custom.yaml", None)
-    # Same Chinese resource precedence and exclusions as tasks-rime-manifest.gradle.kts.
+    # Same Chinese resource precedence and exclusions as tasks-input-manifest.gradle.kts.
     # Japanese resources are unrelated to the sole deployed t9_pinyin schema.
     targets = {}
     for name, root in roots:
@@ -44,7 +44,7 @@ def resource_files(repo, t9_ngram=None):
                 continue
             relative = path.relative_to(root).as_posix()
             if (relative.endswith(".md") or relative.startswith("LICENSE") or relative.endswith(".custom.yaml")
-                    or (name == "rime_ice" and relative in ("pinyin_qwjrtk.schema.yaml", "pinyin_cyletix10.schema.yaml",
+                    or (name == "cayboard_pinyin" and relative in ("pinyin_qwjrtk.schema.yaml", "pinyin_cyletix10.schema.yaml",
                                                          "pinyin_colemak.schema.yaml", "pinyin_typewise.schema.yaml"))):
                 continue
             targets[relative] = ("assets/" + name + "/" + relative, path)
@@ -53,7 +53,7 @@ def resource_files(repo, t9_ngram=None):
         t9_ngram = Path(t9_ngram)
         if not t9_ngram.is_file():
             raise ValueError("Word model not found: " + str(t9_ngram))
-        targets["t9_ngram.lm"] = ("assets/rime_chinese/t9_ngram.lm", t9_ngram)
+        targets["t9_ngram.lm"] = ("assets/cayboard_chinese/t9_ngram.lm", t9_ngram)
     for destination, (entry, path) in targets.items():
         files[entry] = (path, destination)
     return files
@@ -97,7 +97,7 @@ def snapshot_resources(repo, output, t9_ngram=None):
             records.append(item)
             if destination is not None:
                 manifest.append((destination, f"{item['sha256']}\t{count}\t{entry[len('assets/'):] }\t{destination}"))
-        archive.writestr(zipfile.ZipInfo("assets/rime-bundled-manifest.tsv"),
+        archive.writestr(zipfile.ZipInfo("assets/cayboard-bundled-manifest.tsv"),
                          "\n".join(line for _, line in sorted(manifest)) + "\n")
         # An earlier source can change while a later large dictionary is copied.
         for path, size, modified in captured:

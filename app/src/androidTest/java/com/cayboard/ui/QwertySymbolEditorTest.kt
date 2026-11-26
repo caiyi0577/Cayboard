@@ -47,7 +47,7 @@ class QwertySymbolEditorTest {
             assertEquals(layouts, CustomKeyboardLayouts.load(context))
             assertEquals(schema, SettingsPreferences.getCurrentSchema(context))
             assertEquals(english, QwertySwipeSymbols.load(context, true))
-            for (id in listOf("rime_ice", "double_pinyin_flypy")) {
+            for (id in listOf("cayboard_pinyin", "double_pinyin_flypy")) {
                 KeysConfigHelper.setActiveKeyboardSchema(id)
                 assertEquals("★", KeysConfigHelper.getSwipeUpCommitValue("q", false))
                 assertEquals("q", KeysConfigHelper.getKeyCommitValue("q", false))

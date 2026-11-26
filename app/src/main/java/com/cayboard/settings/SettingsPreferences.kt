@@ -9,7 +9,7 @@ object SettingsPreferences {
         getPrefs(context).edit().putBoolean("sms_code_enabled", enabled).apply()
     }
 
-    private const val PREFS_NAME = "kime_settings"
+    const val PREFS_NAME = "cayboard_settings"
     const val KEY_ROUNDED_KEYBOARD_BOTTOM = "rounded_keyboard_bottom"
     fun roundedKeyboardBottom(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_ROUNDED_KEYBOARD_BOTTOM, false)
@@ -68,7 +68,7 @@ object SettingsPreferences {
         getPrefs(context).contains(KEY_PUNCTUATION_FULL_WIDTH)
 
     private const val KEY_CURRENT_SCHEMA = "current_schema"
-    /** 双写标记：仅新版本双写后置 true，本地值才可信（旧版本只写 rime，本地是过时迁移值） */
+    /** 双写标记：仅新版本双写后置 true，本地值才可信（旧版本只写 user.yaml，本地是过时迁移值） */
     private const val KEY_CURRENT_SCHEMA_DUAL = "current_schema_dual"
     private const val KEY_DEPLOYMENT_DONE = "deployment_done"
     private const val KEY_BUILTIN_SCHEMAS_MERGED = "builtin_schemas_merged"
@@ -105,11 +105,11 @@ object SettingsPreferences {
     private const val KEY_STT_MUSIC_MUTED_BY_VOICE = "stt_music_muted_by_voice"
     private const val KEY_STT_MUSIC_VOLUME_BEFORE_VOICE = "stt_music_volume_before_voice"
     
-    /** 默认主题 ID，可从 xime.yaml 的 style.color_scheme 初始化。 */
+    /** 默认主题 ID，可从 cayboard.yaml 的 style.color_scheme 初始化。 */
     @JvmStatic
     var defaultKeyboardTheme: String = com.cayboard.ui.theme.FixedKeyboardStyle.ID
 
-    /** 默认显示模式，可从 xime.yaml 的 style.dark_mode 初始化。 */
+    /** 默认显示模式，可从 cayboard.yaml 的 style.dark_mode 初始化。 */
     @JvmStatic
     var defaultDarkMode: Int = 1
     
@@ -452,27 +452,27 @@ object SettingsPreferences {
     
     fun getCurrentSchema(context: Context): String {
         val prefs = getPrefs(context)
-        // 双写标记已置：本地值是新版本写入的最新方案，进程重建后 rime 未初始化也能恢复
+        // 双写标记已置：本地值是新版本写入的最新方案，进程重建后引擎未初始化也能恢复
         if (prefs.getBoolean(KEY_CURRENT_SCHEMA_DUAL, false)) {
             val local = prefs.getString(KEY_CURRENT_SCHEMA, null)
             if (!local.isNullOrBlank()) return local
         }
-        // 未双写（旧版本升级/首次）：rime user.yaml 为权威，本地仅作迁移兜底
-        val fromRime = try {
-            if (com.cayboard.rime.RimeEngine.isInitialized()) {
-                com.cayboard.rime.RimeEngine.getInstance()
+        // 未双写（旧版本升级/首次）：user.yaml 为权威，本地仅作迁移兜底
+        val storedSchema = try {
+            if (com.cayboard.engine.InputEngine.isInitialized()) {
+                com.cayboard.engine.InputEngine.getInstance()
                     .getUserConfigString("var/previously_selected_schema")
             } else null
         } catch (_: Throwable) {
             null
         }
-        if (!fromRime.isNullOrBlank()) {
+        if (!storedSchema.isNullOrBlank()) {
             // 回写 SharedPreferences 并置双写标记，之后本地优先
             prefs.edit()
-                .putString(KEY_CURRENT_SCHEMA, fromRime)
+                .putString(KEY_CURRENT_SCHEMA, storedSchema)
                 .putBoolean(KEY_CURRENT_SCHEMA_DUAL, true)
                 .apply()
-            return fromRime
+            return storedSchema
         }
         val legacy = prefs.getString(KEY_CURRENT_SCHEMA, null)
         if (!legacy.isNullOrBlank()) return legacy
@@ -481,15 +481,15 @@ object SettingsPreferences {
 
     fun setCurrentSchema(context: Context, schemaId: String, language: InputLanguage = InputLanguage.forSchema(schemaId)) {
         InputModes.rememberMode(context, schemaId, language)
-        // 双写：SharedPreferences 保证进程重建后不依赖 rime 即可恢复，
-        // librime user.yaml 保持引擎侧状态一致（switchSchema 后由 librime 持久化）
+        // 双写：SharedPreferences 保证进程重建后不依赖引擎即可恢复，
+        // 引擎侧用户配置保持状态一致（switchSchema 后由引擎持久化）
         getPrefs(context).edit()
             .putString(KEY_CURRENT_SCHEMA, schemaId)
             .putBoolean(KEY_CURRENT_SCHEMA_DUAL, true)
             .apply()
         try {
-            if (com.cayboard.rime.RimeEngine.isInitialized()) {
-                com.cayboard.rime.RimeEngine.getInstance()
+            if (com.cayboard.engine.InputEngine.isInitialized()) {
+                com.cayboard.engine.InputEngine.getInstance()
                     .setUserConfigString("var/previously_selected_schema", schemaId)
             }
         } catch (_: Throwable) {
@@ -525,7 +525,7 @@ object SettingsPreferences {
         getPrefs(context).edit().putString(KEY_DEPLOYMENT_HASH, hash).apply()
     }
 
-    /** 上次完成 rime assets 同步的 versionCode（0 表示从未同步）。 */
+    /** 上次完成输入资源同步的 versionCode（0 表示从未同步）。 */
 
     /** 调试 verbose 日志总开关（仅 Debug 构建生效，Release 恒关闭）。 */
     fun isVerboseLoggingEnabled(context: Context): Boolean {
@@ -645,18 +645,30 @@ object SettingsPreferences {
     /** 新安装使用配置中的默认配色；保留已有主题选择及原迁移标记。 */
     fun applyForkThemeDefaults(context: Context) {
         val prefs = getPrefs(context)
-        if (prefs.getBoolean("cyime_soft_blue_v1", false)) return
+        val migrated = prefs.getBoolean(KEY_SOFT_BLUE_MIGRATED, false) ||
+            prefs.getBoolean(LEGACY_KEY_SOFT_BLUE_MIGRATED, false)
+        if (migrated) {
+            if (!prefs.getBoolean(KEY_SOFT_BLUE_MIGRATED, false)) {
+                prefs.edit().putBoolean(KEY_SOFT_BLUE_MIGRATED, true)
+                    .remove(LEGACY_KEY_SOFT_BLUE_MIGRATED).apply()
+            }
+            return
+        }
         val theme = prefs.getString(KEY_KEYBOARD_THEME, null)
         prefs.edit().apply {
             if (theme.isNullOrBlank()) putString(KEY_KEYBOARD_THEME, defaultKeyboardTheme)
             putInt(KEY_DARK_MODE, 1)
-            putBoolean("cyime_soft_blue_v1", true)
+            putBoolean(KEY_SOFT_BLUE_MIGRATED, true)
+            remove(LEGACY_KEY_SOFT_BLUE_MIGRATED)
         }.apply()
     }
 
+    private const val KEY_SOFT_BLUE_MIGRATED = "cayboard_soft_blue_v1"
+    private const val LEGACY_KEY_SOFT_BLUE_MIGRATED = com.cayboard.engine.compat.LegacyNames.OLD_SOFT_BLUE
+
     fun getKeyboardTheme(context: Context): String = com.cayboard.ui.theme.FixedKeyboardStyle.ID
 
-    const val KEY_VISUAL_STYLE = "cyime_visual_style"
+    const val KEY_VISUAL_STYLE = "cayboard_visual_style"
 
     /** 选过「流光玻璃」「毛玻璃」的按「原有外观」读（[com.cayboard.ui.theme.VisualStyle.offered]）；存的值不改。 */
     fun getVisualStyle(context: Context) = com.cayboard.ui.theme.VisualStyle.ORIGINAL
@@ -665,7 +677,7 @@ object SettingsPreferences {
         com.cayboard.ui.theme.IconAppearance.setKeyboardStyle(context, style)
     }
 
-    const val KEY_KEY_SHAPE = "cyime_key_shape"
+    const val KEY_KEY_SHAPE = "cayboard_key_shape"
 
     fun getKeyShape(context: Context) = com.cayboard.ui.theme.KeyShape.SQUARE
 

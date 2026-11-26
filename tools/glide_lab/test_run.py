@@ -12,14 +12,14 @@ import unittest
 from unittest import mock
 
 
-SPEC = importlib.util.spec_from_file_location("cyime_glide_runner", Path(__file__).with_name("run.py"))
+SPEC = importlib.util.spec_from_file_location("cayboard_glide_runner", Path(__file__).with_name("run.py"))
 runner = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(runner)
 
 
 def fixture():
     return {
-        "schema": "cyime.glide.fixture.v1",
+        "schema": "cayboard.glide.fixture.v1",
         "kind": "synthetic",
         "id": "sample",
         "language": "en",
@@ -36,13 +36,13 @@ def fixture():
 
 
 def report(cases, digest="same-bytes"):
-    return {"schema": "cyime.glide.report.v1", "fixture_sha256": {"sample": digest},
+    return {"schema": "cayboard.glide.report.v1", "fixture_sha256": {"sample": digest},
             "fixtures": [{"fixture": "sample", "cases": cases}]}
 
 
 class RunnerProtocolTest(unittest.TestCase):
     def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="cyime-glide-test-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="cayboard-glide-test-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
 
@@ -63,7 +63,7 @@ class RunnerProtocolTest(unittest.TestCase):
         self.assertEqual(data, loaded)
 
     def test_fixture_kind_language_and_schema_require_supported_protocol(self):
-        for name, value in (("schema", "cyime.glide.fixture.v0"), ("kind", "captured"),
+        for name, value in (("schema", "cayboard.glide.fixture.v0"), ("kind", "captured"),
                             ("language", "ja"), ("scheme", "pinyin")):
             with self.subTest(field=name):
                 data = fixture()
@@ -158,7 +158,7 @@ class RunnerProtocolTest(unittest.TestCase):
         self.assertEqual([{"fixture": "sample", "case": "trace-ab", "before_rank": 2, "after_rank": 1,
                            "before_passed": False, "after_passed": True}], changes)
         for baseline in (report(before["fixtures"][0]["cases"], "different-bytes"),
-                         {**before, "schema": "cyime.glide.report.v0"}):
+                         {**before, "schema": "cayboard.glide.report.v0"}):
             with self.subTest(baseline=baseline), self.assertRaises(ValueError):
                 runner.compare(after, baseline)
 

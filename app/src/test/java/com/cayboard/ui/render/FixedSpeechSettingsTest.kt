@@ -30,7 +30,7 @@ class FixedSpeechSettingsTest {
             }
             rule.onNodeWithText("X-ASR INT8").performScrollTo().assertIsDisplayed()
             rule.onNodeWithText("版本：2026-06-03").assertIsDisplayed()
-            System.getenv("CYIME_RENDER_OUT")?.let {dir ->
+            System.getenv("CAYBOARD_RENDER_OUT")?.let {dir ->
                 val view=rule.activity.window.decorView
                 val image=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
                 rule.runOnIdle {view.draw(android.graphics.Canvas(image))}

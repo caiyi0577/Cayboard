@@ -5,13 +5,13 @@ import com.cayboard.contacts.ContactCandidates
 import com.cayboard.contacts.ContactIndex
 import com.cayboard.contacts.ContactItem
 import com.cayboard.contacts.ContactSuggestions
-import com.cayboard.rime.RimeCandidate
-import com.cayboard.rime.RimeProcessResult
+import com.cayboard.engine.EngineCandidate
+import com.cayboard.engine.EngineProcessResult
 import com.cayboard.ui.keyboard.isT9Schema
 
 
 internal data class CandidateTransformResult(
-    val candidates: List<RimeCandidate>,
+    val candidates: List<EngineCandidate>,
     val actions: List<CandidateAction>,
 )
 
@@ -33,7 +33,7 @@ data class T9CandidateInjection(
 internal class CandidateTransformCoordinator(private val service: CayboardInputMethodService) {
 
     
-    fun transformFor(result: RimeProcessResult): CandidateTransformResult? {
+    fun transformFor(result: EngineProcessResult): CandidateTransformResult? {
         if (result.isAsciiMode) return null
         if (result.inputText.isEmpty() && result.candidates.isEmpty()) return null
         return transform(
@@ -49,7 +49,7 @@ internal class CandidateTransformCoordinator(private val service: CayboardInputM
     fun transform(
         inputText: String,
         preedit: String,
-        engineCandidates: List<RimeCandidate>,
+        engineCandidates: List<EngineCandidate>,
         asciiMode: Boolean,
         firstPage: Boolean = true,
     ): CandidateTransformResult? {
@@ -68,7 +68,7 @@ internal class CandidateTransformCoordinator(private val service: CayboardInputM
         transformed: CandidateTransformResult?,
         inputText: String,
         preedit: String,
-        engineCandidates: List<RimeCandidate>,
+        engineCandidates: List<EngineCandidate>,
         firstPage: Boolean,
     ): CandidateTransformResult? {
         val items = contactItems(inputText, preedit, firstPage, t9 = false)
@@ -81,7 +81,7 @@ internal class CandidateTransformCoordinator(private val service: CayboardInputM
             val from = merged.origin[i]
             val original = base.getOrNull(from)
             when {
-                original == null -> RimeCandidate(merged.texts[i], merged.comments[i])
+                original == null -> EngineCandidate(merged.texts[i], merged.comments[i])
                 original.comment == merged.comments[i] -> original
                 else -> original.copy(comment = merged.comments[i])
             }
@@ -105,7 +105,7 @@ internal class CandidateTransformCoordinator(private val service: CayboardInputM
 
 
     
-    fun transformForT9(result: RimeProcessResult): List<T9CandidateInjection>? {
+    fun transformForT9(result: EngineProcessResult): List<T9CandidateInjection>? {
         if (result.isAsciiMode) return null
         if (result.inputText.isEmpty() && result.candidates.isEmpty()) return null
         val contacts = contactItems(result.inputText, result.preeditText, !result.hasPrevPage, t9 = true).map {

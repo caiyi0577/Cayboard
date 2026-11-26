@@ -1,12 +1,12 @@
 {
-  "revision": "20261117.2",
+  "revision": "20261117.3",
   "core_unique_pairs": 910989,
   "core_words": 1696939,
   "supplement_weight": 1,
   "cy_builtin_files": 19,
   "cy_online_files": 37,
   "groups": {
-    "fixed_cy": {
+    "cayboard_corpus": {
       "entries": 265457,
       "sha256": "ab5579f6ce53515f243f9d9c6f54b412eb9b731bb034c342ddb267bd249d8141"
     },

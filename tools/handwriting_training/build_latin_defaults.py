@@ -31,7 +31,7 @@ def simplify(stroke, step):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mathwriting", default="D:/CyIME-Data/datasets/mathwriting/converted")
+    ap.add_argument("--mathwriting", default="D:/Cayboard-Data/datasets/mathwriting/converted")
     ap.add_argument("--per-label", type=int, default=8)
     ap.add_argument("--out", default=str(pathlib.Path(__file__).resolve().parents[2] / "app/src/main/assets/handwriting/latin_default_strokes.json"))
     args = ap.parse_args()

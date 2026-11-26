@@ -5,7 +5,7 @@ import android.content.ComponentCallbacks2
 import android.content.Context
 import android.os.PowerManager
 import android.os.SystemClock
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import com.cayboard.util.FileLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -144,7 +144,7 @@ internal object DictionaryPrefetch {
     @Volatile private var faultsAtShow = -1L
     /** Bumped on every show and hide: a retry from an earlier show stops once the keyboard has gone. */
     @Volatile private var showSerial = 0L
-    /** 九键词组模型的文件名（RimeEngine.prefetchCandidates 只给用它的方案列出）。 */
+    /** 九键词组模型的文件名（InputEngine.prefetchCandidates 只给用它的方案列出）。 */
     private const val T9_MODEL_FILE = "t9_ngram.lm"
     /**
      * 弹键盘这一刻引擎常在忙（刚准备输入框、冷启动还在加载）：读不到方案就隔一会儿再试，共约 5 秒，
@@ -155,7 +155,7 @@ internal object DictionaryPrefetch {
     /** Keyboard up (between onShow and onHide): a schema switch now is typed on right away. */
     @Volatile private var visible = false
 
-    fun onShow(context: Context, scope: CoroutineScope, engine: RimeEngine) {
+    fun onShow(context: Context, scope: CoroutineScope, engine: InputEngine) {
         val now = SystemClock.elapsedRealtime()
         faultsAtShow = majorFaults()
         val (conditions, memory) = readConditions(context)
@@ -179,7 +179,7 @@ internal object DictionaryPrefetch {
      * 换过来头几键全在等读盘。只管用词组模型的方案（九键、14 键、注音）；26 键照旧只在弹键盘时查。
      * 省电、发热、内存紧这些条件照旧挡着。在哪个线程调都行，活都在 IO 线程做。
      */
-    fun onSchemaSwitched(context: Context, scope: CoroutineScope, engine: RimeEngine, schemaId: String) {
+    fun onSchemaSwitched(context: Context, scope: CoroutineScope, engine: InputEngine, schemaId: String) {
         if (!visible || schemaId.isEmpty()) return
         val serial = showSerial
         scope.launch(Dispatchers.IO) {
@@ -209,7 +209,7 @@ internal object DictionaryPrefetch {
         ) to memory
     }
 
-    private fun fill(engine: RimeEngine, schema: String, candidates: List<String>, now: Long,
+    private fun fill(engine: InputEngine, schema: String, candidates: List<String>, now: Long,
                      memory: ActivityManager.MemoryInfo, switched: Boolean) {
         val full = candidates.any { File(it).name == T9_MODEL_FILE }
         val files = candidates.mapNotNull { path ->

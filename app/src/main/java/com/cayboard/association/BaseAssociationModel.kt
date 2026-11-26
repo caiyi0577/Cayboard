@@ -62,7 +62,7 @@ class BaseAssociationModel private constructor(
     companion object {
         const val ASSET = "association/lccc-base-v1.bin"
         const val WORD_COMPLETIONS_ASSET = "association/lccc-base-v1.completions.gz"
-        const val WORD_COMPLETIONS_HEADER = "# cyime-base-word-completions-v1"
+        const val WORD_COMPLETIONS_HEADER = "# cayboard-base-word-completions-v1"
         const val MAX_PER_CONTEXT = 16
         const val MAX_CONTEXTS = 60000
         /** Backed-off single-character rows whose next-word part is below this share are not used after a whole word. */

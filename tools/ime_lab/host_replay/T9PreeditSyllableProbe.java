@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -10,15 +10,15 @@ import java.util.regex.*;
  * i.e. syllables run together or a syllable gone. Arguments: library_dir, a disposable user directory and
  * the fixture JSON files; SEED=FILE restores a preset *.userdb.txt first. The syllable list comes from the
  * fixtures only, so syllables they never use are flagged too: compare two engines' outputs.
- * Compile and run together with T9MixedLearnProbe.java and ../android_replay/RimeEngine.java.
+ * Compile and run together with T9MixedLearnProbe.java and ../android_replay/InputEngine.java.
  */
 public final class T9PreeditSyllableProbe {
   public static void main(String[] a) throws Exception {
-    System.load(new File(a[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine e = new RimeEngine();
+    System.load(new File(a[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine e = new InputEngine();
     e.nativeInitialize(a[1], a[1]);
     e.nativeEnsureT9SchemaPatches("t9_pinyin");
-    if (System.getenv("SEED") != null) e.nativeHostRestoreUserDict(System.getenv("SEED"), "rime_ice");
+    if (System.getenv("SEED") != null) e.nativeHostRestoreUserDict(System.getenv("SEED"), "cayboard_pinyin");
     e.nativeCreateSession();
     Pattern p = Pattern.compile("\"text\":\\s*\"([^\"]+)\",\\s*\"pinyin\":\\s*\\[([^\\]]*)\\]");
     List<String[]> cases = new ArrayList<>();
@@ -39,9 +39,9 @@ public final class T9PreeditSyllableProbe {
     int steps = 0, bad = 0;
     for (String[] c : cases) {
       String d = T9MixedLearnProbe.digits(c[1]);
-      e.nativeT9ClearComposition(1); e.nativeT9FlushRimeInput();
+      e.nativeT9ClearComposition(1); e.nativeT9FlushInput();
       for (char k : d.toCharArray()) {
-        e.nativeProcessKey(k, 0); e.nativeT9FlushRimeInput();
+        e.nativeProcessKey(k, 0); e.nativeT9FlushInput();
         String pre = e.nativePinyinEditSnapshot()[4];
         String in = e.nativePinyinEditSnapshot()[0];
         steps++;

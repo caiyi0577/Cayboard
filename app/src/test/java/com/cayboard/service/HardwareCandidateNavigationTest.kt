@@ -1,7 +1,7 @@
 package com.cayboard.service
 
-import com.cayboard.rime.InputCommandQueue
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.InputCommandQueue
+import com.cayboard.engine.EngineCandidate
 import com.cayboard.settings.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
@@ -12,7 +12,7 @@ import org.junit.Test
 
 class HardwareCandidateNavigationTest {
     private val profile = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.T9,
-        EngineProfile.Rime("installed-backend"))
+        EngineProfile.Decoder("installed-backend"))
     private val composition = CandidateState(inputText = "ceshi", isComposing = true,
         candidates = listOf("测试", "侧室", "测视"), engineRevision = 4L)
     private fun snapshot(state: CandidateState = composition, english: Boolean = false) =
@@ -274,7 +274,7 @@ class HardwareCandidateNavigationTest {
 
     @Test fun expandedCandidatesAreNotTruncatedAndKeepTheirGlobalCommitIndices() {
         val navigation = HardwareCandidateNavigation()
-        val candidates = (0..17).map { RimeCandidate("候选$it", "编码$it") }
+        val candidates = (0..17).map { EngineCandidate("候选$it", "编码$it") }
         val source = snapshot(composition.copy(expandedCandidates = candidates, expandedCandidatesLoaded = true)).copy(expanded = true)
         assertEquals(candidates.map { it.text }, source.words)
         assertEquals(candidates.map { it.comment }, source.comments)
@@ -286,8 +286,8 @@ class HardwareCandidateNavigationTest {
     }
 
     @Test fun expandedSingleCharacterFilterUsesCodePointsAndOriginalGlobalIndices() {
-        val candidates = listOf(RimeCandidate("测试", "ce shi"), RimeCandidate("字", "zi"),
-            RimeCandidate("𠀀", "supplementary"), RimeCandidate("词语", "ci yu"), RimeCandidate("词", "ci"))
+        val candidates = listOf(EngineCandidate("测试", "ce shi"), EngineCandidate("字", "zi"),
+            EngineCandidate("𠀀", "supplementary"), EngineCandidate("词语", "ci yu"), EngineCandidate("词", "ci"))
         val source = snapshot(composition.copy(expandedCandidates = candidates, expandedCandidatesLoaded = true))
             .copy(expanded = true, singleCharOnly = true)
         assertEquals(listOf("字", "𠀀", "词"), source.words)
@@ -308,7 +308,7 @@ class HardwareCandidateNavigationTest {
     }
 
     @Test fun emptyExpandedFilterDoesNotFallBackToUnfilteredCandidatesOrTheEditor() {
-        val source = snapshot(composition.copy(expandedCandidates = listOf(RimeCandidate("测试", "ce shi")),
+        val source = snapshot(composition.copy(expandedCandidates = listOf(EngineCandidate("测试", "ce shi")),
             expandedCandidatesLoaded = true)).copy(expanded = true, singleCharOnly = true)
         assertEquals(emptyList<Int>(), source.expandedGlobalIndices)
         assertTrue(source.words.isEmpty())
@@ -318,7 +318,7 @@ class HardwareCandidateNavigationTest {
     }
 
     @Test fun expandedAppendKeepsTheSelectedGlobalCandidateAndSpaceConfirmation() {
-        val candidates = (0 until 128).map { RimeCandidate((0x4E00 + it).toChar().toString(), "code$it") }
+        val candidates = (0 until 128).map { EngineCandidate((0x4E00 + it).toChar().toString(), "code$it") }
         for (singleChar in listOf(false, true)) {
             val initial = snapshot(composition.copy(expandedCandidates = candidates.take(64), expandedCandidatesLoaded = true))
                 .copy(expanded = true, singleCharOnly = singleChar)
@@ -336,10 +336,10 @@ class HardwareCandidateNavigationTest {
     }
 
     @Test fun expandedReorderShrinkOrChangedExistingCommentInvalidatesTheSelection() {
-        val candidates = (0 until 64).map { RimeCandidate("词$it", "code$it") }
+        val candidates = (0 until 64).map { EngineCandidate("词$it", "code$it") }
         val initial = snapshot(composition.copy(expandedCandidates = candidates, expandedCandidatesLoaded = true)).copy(expanded = true)
         for (replacement in listOf(candidates.reversed(), candidates.dropLast(1),
-            candidates.toMutableList().also { it[1] = RimeCandidate(it[1].text, "changed") })) {
+            candidates.toMutableList().also { it[1] = EngineCandidate(it[1].text, "changed") })) {
             val navigation = HardwareCandidateNavigation()
             navigation.decide(HardwareCandidateKey.RIGHT, initial, true)
             val changed = initial.copy(state = initial.state.copy(expandedCandidates = replacement))
@@ -350,7 +350,7 @@ class HardwareCandidateNavigationTest {
 
     @Test fun expandedVerticalArrowsPageTheLocalViewportEvenAtNativePageBoundaries() {
         val source = snapshot(composition.copy(hasPrevPage = false, hasNextPage = false,
-            expandedCandidates = listOf(RimeCandidate("测", "ce")), expandedCandidatesLoaded = true)).copy(expanded = true)
+            expandedCandidates = listOf(EngineCandidate("测", "ce")), expandedCandidatesLoaded = true)).copy(expanded = true)
         val navigation = HardwareCandidateNavigation()
         assertEquals(HardwareCandidateDecision.Page(-1), navigation.decide(HardwareCandidateKey.UP, source, true))
         assertEquals(HardwareCandidateDecision.Page(1), navigation.decide(HardwareCandidateKey.DOWN, source, true))
@@ -381,7 +381,7 @@ class HardwareCandidateNavigationTest {
     }
 
     private val pinyin26 = InputProfile(InputLanguage.CHINESE, InputScheme.PINYIN, InputLayout.QWERTY,
-        EngineProfile.Rime("installed-backend"))
+        EngineProfile.Decoder("installed-backend"))
     private val twentyCandidates = CandidateState(inputText = "shi", isComposing = true,
         candidates = (1..20).map { "候选$it" }, hasNextPage = true, engineRevision = 7L)
 
@@ -520,7 +520,7 @@ class HardwareCandidateNavigationTest {
         assertEquals(HardwareCandidateDecision.Consume,
             physicalCandidateDecision(HardwareCandidateKey.SPACE, nothing, null))
         // The engine has candidates but the expanded single-character filter shows none: not "nothing".
-        val filtered = snapshot(composition.copy(expandedCandidates = listOf(RimeCandidate("测试", "ce shi")),
+        val filtered = snapshot(composition.copy(expandedCandidates = listOf(EngineCandidate("测试", "ce shi")),
             expandedCandidatesLoaded = true)).copy(expanded = true, singleCharOnly = true)
         assertEquals(HardwareCandidateDecision.Consume,
             physicalCandidateDecision(HardwareCandidateKey.SPACE, filtered, true))

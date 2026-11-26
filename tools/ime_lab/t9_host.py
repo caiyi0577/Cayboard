@@ -57,7 +57,7 @@ class HostCommands:
 
 
 def inspect_user_dict(path):
-    """Validate a Rime userdb snapshot (*.userdb.txt) before any engine work."""
+    """Validate an input-engine userdb snapshot (*.userdb.txt) before engine work."""
     path = Path(path).resolve()
     if not path.is_file():
         raise ValueError("User dictionary snapshot not found: " + str(path))
@@ -74,14 +74,14 @@ def inspect_user_dict(path):
             if (fields[0].strip(), fields[1]) in keys:
                 raise ValueError(f"{path}:{number}: duplicate user dictionary entry")
             keys.add((fields[0].strip(), fields[1]))
-            # librime keeps c<0 entries as deletions; the runner counts only live (c>=0) entries after restore.
+            # The engine keeps c<0 entries as deletions; count only live (c>=0) entries after restore.
             if int(commits[1]) >= 0:
                 entries += 1
             else:
                 deleted += 1
     name = metadata.get("/db_name", "").removesuffix(".userdb")
     if metadata.get("/db_type") != "userdb" or not name or not entries:
-        raise ValueError("Not a nonempty Rime userdb snapshot with /db_name and /db_type userdb: " + str(path))
+        raise ValueError("Not a nonempty userdb snapshot with /db_name and /db_type userdb: " + str(path))
     if "/tick" in metadata and not re.fullmatch(r"\d+", metadata["/tick"]):
         raise ValueError("User dictionary snapshot has a non-numeric /tick: " + str(path))
     return path, {"db_name": name, "entries": entries, "deleted_entries": deleted, "tick": metadata.get("/tick")}
@@ -111,11 +111,11 @@ def filesystem_type(path):
     return kind
 
 
-# Host engine library: librime_jni.so from build_host.py (Linux), librime_jni.dll from build_host_windows.py.
+# Host engine library: cayboard_jni.so from build_host.py (Linux), cayboard_jni.dll from build_host_windows.py.
 NATIVE_GLOB = "*.dll" if os.name == "nt" else "*.so"
-NATIVE_LIBRARY = "librime_jni.dll" if os.name == "nt" else "librime_jni.so"
+NATIVE_LIBRARY = "cayboard_jni.dll" if os.name == "nt" else "cayboard_jni.so"
 # Windows runs natively (no WSL, user rule 2026-11-10); --backend wsl remains only for one-off cross-checks.
-DEFAULT_WINDOWS_CACHE = Path(r"D:\CyIME-Data\cache\cyime-t9-host-win")
+DEFAULT_WINDOWS_CACHE = Path(r"D:\Cayboard-Data\cache\cayboard-t9-host-win")
 
 
 def reuse_engine(source, output, cache):
@@ -167,7 +167,7 @@ def reuse_engine(source, output, cache):
 def run_host(args):
     # Check both Windows backing disks and the Linux cache before allocating outputs.
     import importlib.util
-    spec = importlib.util.spec_from_file_location("cyime_storage_guard", REPO / "scripts/storage_guard.py")
+    spec = importlib.util.spec_from_file_location("cayboard_storage_guard", REPO / "scripts/storage_guard.py")
     guard = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(guard)
     guard.check_storage(REPO)
@@ -225,7 +225,7 @@ def run_host(args):
     commands = HostCommands(output / "commands.log")
     try:
         cache = (Path(args.host_cache).expanduser() if args.host_cache else
-                 DEFAULT_WINDOWS_CACHE if os.name == "nt" else Path.home() / ".cache/cyime-t9-host")
+                 DEFAULT_WINDOWS_CACHE if os.name == "nt" else Path.home() / ".cache/cayboard-t9-host")
         resources = output / "resources.zip"
         engine_from = getattr(args, "engine_from", None)
         if engine_from is not None:
@@ -272,7 +272,7 @@ def run_host(args):
         source_dir.mkdir(parents=True)
         classes.mkdir()
         sources = []
-        for source in (HERE / "android_replay/ChatReplay.java", HERE / "android_replay/RimeEngine.java"):
+        for source in (HERE / "android_replay/ChatReplay.java", HERE / "android_replay/InputEngine.java"):
             target = source_dir / source.name
             target.write_bytes(source.read_bytes())
             sources.append(target)
@@ -292,7 +292,7 @@ def run_host(args):
         print(f"Replaying {len(fixture['cases'])} cases locally; immediate and settled candidates.", flush=True)
         try:
             commands.run([build.get("java", "java"), "-cp", str(classes) + os.pathsep + str(jar),
-                          "com.cyime.audit.ChatReplay", "--host", "--resources", resources,
+                          "com.cayboard.audit.ChatReplay", "--host", "--resources", resources,
                           "--lib-dir", library_dir, "--root", live_root, "--corpus", output / "fixture.json",
                           "--output", output / "replay.jsonl", "--modes", "continuous,paused",
                           "--key-delay-ms", args.key_delay_ms,
@@ -349,7 +349,7 @@ def add_arguments(parser):
     parser.add_argument("--host-cache", help="Linux cache path for host source snapshots, dependencies and engine builds")
     parser.add_argument("--json-jar", type=Path, help="Existing org.json JAR (normally found in Gradle cache)")
     parser.add_argument("--user-dict", type=Path,
-                        help="Rime userdb snapshot (*.userdb.txt) merged into the fresh user directory before "
+                        help="Input-engine userdb snapshot (*.userdb.txt) merged into the fresh user directory before "
                              "replay; recorded as user_state=preset_user_dict and never compared with empty-user runs")
     parser.add_argument("--t9-ngram", type=Path,
                         help="Word model (t9_ngram.lm) to replay instead of the one in app/build/generated/t9-ngram; "

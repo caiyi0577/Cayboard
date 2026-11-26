@@ -23,7 +23,7 @@ def main():
     for name,row in rows.items():
         pcm,sr=sf.read(row['path'],dtype='float32');assert sr==16000 and pcm.ndim==1
         # Optional fixed attenuation reproduces a quiet microphone with the same clips.
-        (pcm*float(os.environ.get('CYIME_REPLAY_GAIN','1'))).astype('<f4').tofile(out/(name+'.raw.f32'))
+        (pcm*float(os.environ.get('CAYBOARD_REPLAY_GAIN','1'))).astype('<f4').tofile(out/(name+'.raw.f32'))
     spec=importlib.util.spec_from_file_location('glide',ROOT/'tools/glide_lab/run.py')
     helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
     cache=Path(os.environ.get('GRADLE_USER_HOME',str(Path.home()/'.gradle')))/'caches/modules-2/files-2.1'
@@ -40,11 +40,11 @@ def main():
     if a.language=='zh':
         first=so.OnlineRecognizer.from_paraformer(encoder=str(para/'encoder.int8.onnx'),decoder=str(para/'decoder.int8.onnx'),tokens=str(para/'tokens.txt'),num_threads=1,enable_endpoint_detection=False)
         second=so.OfflineRecognizer.from_sense_voice(model=str(sense/'model.int8.onnx'),tokens=str(sense/'tokens.txt'),language='zh',use_itn=True,num_threads=1)
-        # 整句定稿 with the optional X-ASR model (CYIME_REPLAY_FINALIZER=<model dir>), as SherpaSpeechEngine loads it.
+        # 整句定稿 with the optional X-ASR model (CAYBOARD_REPLAY_FINALIZER=<model dir>), as SherpaSpeechEngine loads it.
         # X-ASR fails below 1440 samples; pad short input with silence to 4000 like SherpaSpeechEngine.
-        fit=(lambda a:np.pad(a,(0,max(0,4000-len(a))))) if os.environ.get('CYIME_REPLAY_FINALIZER') else (lambda a:a)
-        if os.environ.get('CYIME_REPLAY_FINALIZER'):
-            x=Path(os.environ['CYIME_REPLAY_FINALIZER'])
+        fit=(lambda a:np.pad(a,(0,max(0,4000-len(a))))) if os.environ.get('CAYBOARD_REPLAY_FINALIZER') else (lambda a:a)
+        if os.environ.get('CAYBOARD_REPLAY_FINALIZER'):
+            x=Path(os.environ['CAYBOARD_REPLAY_FINALIZER'])
             second=so.OfflineRecognizer.from_transducer(encoder=str(x/'encoder-epoch-99-avg-1.int8.onnx'),decoder=str(x/'decoder-epoch-99-avg-1.onnx'),joiner=str(x/'joiner-epoch-99-avg-1.int8.onnx'),tokens=str(x/'tokens.txt'),num_threads=2)
     else:
         folder=Path('D:/models/ASRInput/sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01')

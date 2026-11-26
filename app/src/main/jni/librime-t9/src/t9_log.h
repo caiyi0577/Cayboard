@@ -86,7 +86,7 @@ struct ScopedTimer {
 
 #if defined(__ANDROID__) && defined(T9_ENABLE_VERBOSE_LOG)
     #define T9_DICT_LOG(...) \
-        __android_log_print(ANDROID_LOG_INFO, "RimePerf", "[T9Dict] " __VA_ARGS__)
+        __android_log_print(ANDROID_LOG_INFO, "CayboardPerf", "[T9Dict] " __VA_ARGS__)
 #else
     #define T9_DICT_LOG(...) do { } while (0)
 #endif
@@ -109,8 +109,8 @@ struct ScopedTimer {
     #define BUFLOG(...) T9_LOG_DEBUG("T9Buffer",       __VA_ARGS__)
     #define T9FLOG(...) T9_LOG_DEBUG("T9Filter",       __VA_ARGS__)
 
-    // 统一 RimePerf 标签日志（用于性能测试，与 engine.cc/menu.cc 等标签一致）
-    #define T9_LOG_PERF(...) T9_LOG_DEBUG("RimePerf", __VA_ARGS__)
+    // 统一 CayboardPerf 标签日志（用于性能测试，与 engine.cc/menu.cc 等标签一致）
+    #define T9_LOG_PERF(...) T9_LOG_DEBUG("CayboardPerf", __VA_ARGS__)
     #define T9_PERFLOG(...) T9_LOG_PERF(__VA_ARGS__)
 #else
     // Release 构建：日志完全消除（零开销）
@@ -144,7 +144,7 @@ struct ScopedTimer {
 
     #define T9_PERF_SCOPED_TIMER(name) \
         ::rime::t9_log_detail::ScopedTimer \
-            _t9_perf_timer_##__LINE__("RimePerf", name)
+            _t9_perf_timer_##__LINE__("CayboardPerf", name)
 #else
     #define T9_SCOPED_TIMER_TAG(tag, name) ((void)0)
     #define T9_PERF_SCOPED_TIMER(name)    ((void)0)

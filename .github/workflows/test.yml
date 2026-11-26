@@ -76,7 +76,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run Unit Tests
-        run: ./gradlew :app:testDebugUnitTest :plugin-core:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
         
       - name: Generate Test Report
         if: always()
@@ -90,9 +90,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
-          path: |
-            app/build/test-results/testDebugUnitTest/
-            plugin-core/build/test-results/
+          path: app/build/test-results/testDebugUnitTest/
           retention-days: 7
 
   instrumented-tests:

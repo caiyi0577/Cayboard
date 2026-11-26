@@ -57,7 +57,7 @@ import java.io.File
 
 /**
  * 九键有候选时 0 键变「下一项」：平时的箭头，以及左滑「上一项」时的样子（键内渐变还是上方浮窗）。
- * 旁边放退格键对照图标大小。各主题 × 玻璃开关 × 手机/平板键宽，拼成一张图。只在设了 CYIME_RENDER_OUT 时出图。
+ * 旁边放退格键对照图标大小。各主题 × 玻璃开关 × 手机/平板键宽，拼成一张图。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w600dp-h500dp-xhdpi")
@@ -66,7 +66,7 @@ class T9ZeroKeyRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderZeroKey() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)
@@ -153,7 +153,7 @@ class T9ZeroKeyRenderTest {
             canvas.drawBitmap(swiping, labelWidth + cellWidth + 12f, top, null)
         }
         File(out!!).mkdirs()
-        File(out, "${System.getenv("CYIME_RENDER_NAME") ?: "t9-zero-key"}.png").outputStream().use {
+        File(out, "${System.getenv("CAYBOARD_RENDER_NAME") ?: "t9-zero-key"}.png").outputStream().use {
             sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }

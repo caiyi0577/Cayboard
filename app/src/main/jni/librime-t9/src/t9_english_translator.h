@@ -1,5 +1,5 @@
-#ifndef CYIME_T9_ENGLISH_TRANSLATOR_H_
-#define CYIME_T9_ENGLISH_TRANSLATOR_H_
+#ifndef CAYBOARD_T9_ENGLISH_TRANSLATOR_H_
+#define CAYBOARD_T9_ENGLISH_TRANSLATOR_H_
 #ifndef T9_ALGO_ONLY_BUILD
 #include <rime/gear/table_translator.h>
 #include <rime/gear/poet.h>

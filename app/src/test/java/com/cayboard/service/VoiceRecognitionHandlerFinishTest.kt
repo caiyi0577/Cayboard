@@ -55,7 +55,7 @@ class VoiceRecognitionHandlerFinishTest {
     private val stateChanges = mutableListOf<InputUIState>()
     private var recordingStoppedCount = 0
     private var voiceCompleteCount = 0
-    private var currentState = InputUIState(currentSchemaId = "rime_ice")
+    private var currentState = InputUIState(currentSchemaId = "cayboard_pinyin")
     private var wholeSentence = false
     private var autoPunctuation = false
     /** 繁体输出时注入的简转繁；测试里用逐字对照代替 OpenCC。 */

@@ -79,7 +79,7 @@ object DictionaryHelper {
 
     fun loadDictionary(context: Context, schemaId: String): List<DictEntry> {
         val dictName = SchemaManager.getReferencedDictName(context, schemaId) ?: schemaId
-        val dir = SchemaManager.getRimeDir(context)
+        val dir = SchemaManager.getInputDataDir(context)
         return try {
             collectEntries(dictName) { name ->
                 val f = File(dir, "$name.dict.yaml")

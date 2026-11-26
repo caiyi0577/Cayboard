@@ -4,10 +4,10 @@ The 性能与省电 page's 「自动」 tier now comes from this benchmark inste
 Its tier lines (PerformanceTiers.cpuThresholds) must come from real devices, not from guesses. One flagship
 already holds three kinds of cores, so pinning the same benchmark to each cluster gives three data points per
 device: prime/big cores (flagship class), middle cores (upper mid-range phones), little cores (A5x class, what
-budget phones run on). This script runs exactly what the app runs: the same libcyime_cpubench.so from the
+budget phones run on). This script runs exactly what the app runs: the same libcayboard_cpubench.so from the
 installed APK, through app_process with the same Kotlin entry point (CpuBenchmark.main), pinned with taskset.
 
-It changes nothing on the device: no setting, no IME, no tap. It copies the .so to /data/local/tmp/cyime-cpubench/
+It changes nothing on the device: no setting, no IME, no tap. It copies the .so to /data/local/tmp/cayboard-cpubench/
 (shell may not map files under /data/app) and deletes that folder at the end. If the screen is off it wakes the
 device and puts it back to sleep afterwards (AGENTS.md allows this; it only reads, nothing is unlocked or tapped).
 
@@ -16,7 +16,7 @@ someone is using it. Let the device cool down first (it refuses while the therma
 saving is on, because both lower the clocks).
 
 Usage:
-  python -I tools/ime_lab/cpu_bench_calibrate.py --serial TABLET_SERIAL --out D:/CyIME-Data/eval/cpu-bench-20261104
+  python -I tools/ime_lab/cpu_bench_calibrate.py --serial TABLET_SERIAL --out D:/Cayboard-Data/eval/cpu-bench-20261104
 Writes <out>/<serial>.json and prints a table (median of --rounds runs; each run is itself a median of 5 passes).
 Also prints what the app has stored (dev op cpu_bench_state) when a 装到我的设备 build has measured already.
 """
@@ -31,8 +31,8 @@ import time
 
 PACKAGE = "com.cayboard"
 MAIN = "com.cayboard.runtime.adaptation.CpuBenchmark"
-LIB = "libcyime_cpubench.so"
-TMP = "/data/local/tmp/cyime-cpubench"
+LIB = "libcayboard_cpubench.so"
+TMP = "/data/local/tmp/cayboard-cpubench"
 RECEIVER = PACKAGE + "/com.cayboard.service.DevLearningReceiver"
 ACTION = PACKAGE + ".DEV_LEARNING"
 ABI_DIRS = {"arm64-v8a": "arm64", "armeabi-v7a": "arm", "x86_64": "x86_64", "x86": "x86"}

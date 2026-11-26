@@ -44,7 +44,7 @@ import java.io.File
 /**
  * 日语 26 键长音键三选一：L 键（默认，不加键）、L 右侧单独键、代替 Shift（点按 ー，按住是 Shift）。
  * ー 键点按送 -（进罗马字转换）；代替 Shift 时按住没打别的键松手是 Shift 点按。设置页三张卡片带图例。
- * 设了 CYIME_RENDER_OUT 时出手机、平板和设置页的图。
+ * 设了 CAYBOARD_RENDER_OUT 时出手机、平板和设置页的图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -143,7 +143,7 @@ class JapaneseChoonpuKeyRenderTest {
     }
 
     private fun shot(name: String) {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         if (out.isNullOrEmpty()) return
         File(out).mkdirs()
         val body = rule.onNodeWithTag("layout-body", true).fetchSemanticsNode().boundsInRoot

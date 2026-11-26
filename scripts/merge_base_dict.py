@@ -4,8 +4,8 @@
 用法：
     python3 scripts/merge_base_dict.py \
         --base /path/to/rime-frost-schemas/cn_dicts/base.dict.yaml \
-        --main app/src/main/assets/rime/pinyin_simp.dict.yaml \
-        --out app/src/main/assets/rime/pinyin_simp_ext.dict.yaml
+        --main app/src/main/assets/cayboard_base/pinyin_simp.dict.yaml \
+        --out app/src/main/assets/cayboard_base/pinyin_simp_ext.dict.yaml
 
 规则：
 - 去重键 = (词条, 规范化编码)；已有词条（含不同注音）全部保留，只追加 base 中

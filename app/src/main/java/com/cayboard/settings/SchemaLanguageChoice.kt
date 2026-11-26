@@ -11,7 +11,7 @@ import android.content.Context
 object SchemaLanguageChoice {
     private const val PREFIX = "schema_language_"
 
-    /** 能选的语言。英文和西班牙、德、法、俄、韩语直接打字母、不经过 Rime 方案，不列。 */
+    /** 能选的语言。英文和西班牙、德、法、俄、韩语直接打字母、不经过候选方案，不列。 */
     val choices: List<InputLanguage>
         get() = InputLanguage.supported.filter { it != InputLanguage.ENGLISH && !it.typesLettersDirectly }
 
@@ -43,15 +43,15 @@ object SchemaLanguageChoice {
         else -> applyTo(meta, chosen())
     }
 
-    /** 方案文件来自 APK（内置资源清单、assets/rime）或由 Cayboard 生成。 */
+    /** 方案文件来自 APK（内置资源清单、assets/cayboard_base）或由 Cayboard 生成。 */
     fun isAppProvided(context: Context, schemaId: String): Boolean =
-        com.cayboard.rime.RimeConfigHelper.isAppSchema(context, schemaId) || schemaId in rimeAssetSchemaIds(context)
+        com.cayboard.engine.EngineConfig.isAppSchema(context, schemaId) || schemaId in bundledSchemaIds(context)
 
-    @Volatile private var rimeAssetSchemaIdsCache: Set<String>? = null
-    private fun rimeAssetSchemaIds(context: Context): Set<String> = rimeAssetSchemaIdsCache ?: runCatching {
-        context.assets.list("rime").orEmpty().filter { it.endsWith(".schema.yaml") }
+    @Volatile private var bundledSchemaIdsCache: Set<String>? = null
+    private fun bundledSchemaIds(context: Context): Set<String> = bundledSchemaIdsCache ?: runCatching {
+        context.assets.list("cayboard_base").orEmpty().filter { it.endsWith(".schema.yaml") }
             .map { it.removeSuffix(".schema.yaml") }.toSet()
-    }.getOrNull()?.also { rimeAssetSchemaIdsCache = it }.orEmpty()
+    }.getOrNull()?.also { bundledSchemaIdsCache = it }.orEmpty()
 
     internal fun applyTo(meta: SchemaMeta, chosen: InputLanguage?): SchemaMeta = when {
         !meta.languageAssignable -> meta

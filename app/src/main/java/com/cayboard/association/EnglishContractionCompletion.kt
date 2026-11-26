@@ -4,7 +4,7 @@ package com.cayboard.association
  * 英文补全里的缩写（表是滑行共用的 english_contractions.txt）：
  * - 打全了去撇号的写法（im、whats、its）：缩写排在补全第一个，候选栏最前面仍是打的原词（im、its）；
  * - 补全里冒出来的去撇号写法本身不是词的（dont、whats）换成缩写，本身也是常用词的（its、were、well、ill）原样留着。
- * 不认识的写法原样返回，中文里夹英文（Rime）不走这里。
+ * 不认识的写法原样返回；中文组合里夹英文时不走这里。
  */
 internal object EnglishContractionCompletion {
     /** 本身也是常用英文词的去撇号写法：补全里不换成缩写。 */

@@ -15,13 +15,13 @@ import java.nio.file.attribute.BasicFileAttributes
  * 类目语义（清除安全性从高到低）：
  * - cache        cacheDir 整体（图片/临时下载缓存），清除后按需重建
  * - logs         filesDir/logs（保留 FileLogger 当日活跃文件，其句柄仍被持有）
- * - schema_cache rime/build 编译产物 + rime/logs；清除后复位部署标记，
+ * - schema_cache cayboard_input/build 编译产物 + cayboard_input/logs；清除后复位部署标记，
  *                下次启动 ensureDeployment 自动全量重建，词库/自定义配置不受影响
  * - clipboard    Room 数据库文件（clipboard.db*）；清除走 ClipboardManager 的
  *                剪贴板历史清空
  * - models       filesDir/models 中的本机模型文件
  *
- * 各类目按顺序统计，同一文件的硬链接（如九键词组模型同时在 models/ 和 rime/）只计入先出现的类目，
+ * 各类目按顺序统计，同一文件的硬链接（如九键词组模型同时在 models/ 和 cayboard_input/）只计入先出现的类目，
  * 总数与系统设置里的应用数据对得上。
  */
 object StorageStats {
@@ -50,9 +50,9 @@ object StorageStats {
     // ── 路径 ──
 
     fun modelsDir(context: Context): File = File(context.filesDir, "models")
-    fun rimeDir(context: Context): File = File(context.filesDir, "rime")
-    fun rimeBuildDir(context: Context): File = File(context.filesDir, "rime/build")
-    fun rimeLogsDir(context: Context): File = File(context.filesDir, "rime/logs")
+    fun inputDataDir(context: Context): File = File(context.filesDir, "cayboard_input")
+    fun engineBuildDir(context: Context): File = File(context.filesDir, "cayboard_input/build")
+    fun engineLogsDir(context: Context): File = File(context.filesDir, "cayboard_input/logs")
     fun logsDir(context: Context): File = File(context.filesDir, "logs")
     /** 旧版本的语音模型目录；新版首次使用时迁到 models/，没迁走的残留也算模型。 */
     fun legacyAsrModelsDir(context: Context): File = File(context.filesDir, "asr_models")
@@ -82,10 +82,10 @@ object StorageStats {
     /** 汇总各类目占用（IO 耗时，须在后台线程调用）。 */
     fun collectCategories(context: Context): List<Category> {
         val counter = SizeCounter()
-        // 顺序决定硬链接归属：模型在前，rime/ 里指向同一份模型的链接不再计入方案。
+        // 顺序决定硬链接归属：模型在前，输入数据目录里指向同一份模型的链接不再计入方案。
         val modelsSize = counter.count(modelsDir(context)) + counter.count(legacyAsrModelsDir(context))
-        val buildSize = counter.count(rimeBuildDir(context)) + counter.count(rimeLogsDir(context))
-        val schemasSize = counter.count(rimeDir(context)) + counter.count(SchemaManager.getMarketDir(context))
+        val buildSize = counter.count(engineBuildDir(context)) + counter.count(engineLogsDir(context))
+        val schemasSize = counter.count(inputDataDir(context)) + counter.count(SchemaManager.getMarketDir(context))
         val clipboardSize = ClipboardDatabase.storageFiles(context).sumOf { counter.count(it) }
         val logsSize = counter.count(logsDir(context))
         val cacheSize = counter.count(context.cacheDir) + counter.count(context.externalCacheDir)
@@ -177,11 +177,11 @@ object StorageStats {
     }
 
     /**
-     * 清除 rime 编译产物与日志。必须同时复位部署标记：ensureDeployment 在
+     * 清除输入引擎编译产物与日志。必须同时复位部署标记：ensureDeployment 在
      * 部署 hash 命中时会直接跳过编译，build 缺失而 hash 残留会导致引擎无产物可用。
      */
     private fun clearSchemaCache(context: Context): Boolean {
-        val ok = deleteContents(rimeBuildDir(context)) && deleteContents(rimeLogsDir(context))
+        val ok = deleteContents(engineBuildDir(context)) && deleteContents(engineLogsDir(context))
         SettingsPreferences.setDeploymentHash(context, "")
         SettingsPreferences.setDeploymentDone(context, false)
         return ok

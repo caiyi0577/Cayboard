@@ -14,7 +14,7 @@ from test_t9_replay_compare import write_manifest, write_run
 NAMES = ["joint_decodes", "joint_cache_hits", "dict_table_queries", "beam_evaluations", "gram_lookups"]
 START = datetime(2026, 10, 10, 1, 0, tzinfo=timezone.utc)
 SCHEMA = "__build_info:\n  rime_version: 1.17.0\n  timestamps:\n    default: {stamp}\n    t9_pinyin.schema: {stamp}\n" \
-         "cyime:\n  candidate_policy: true\n"
+         "cayboard:\n  candidate_policy: true\n"
 
 
 def instrument(path, work=None, latency_us=4000, user_dict=None, settle=None, inspect=None, tag=None):
@@ -45,7 +45,7 @@ def instrument(path, work=None, latency_us=4000, user_dict=None, settle=None, in
     changes = {"replay_sha256": compare.sha256(path / "replay.jsonl")}
     if user_dict:
         changes.update(user_state="preset_user_dict",
-                       user_dict_snapshot={"sha256": user_dict["sha256"], "db_name": "rime_ice",
+                       user_dict_snapshot={"sha256": user_dict["sha256"], "db_name": "cayboard_pinyin",
                                            "entries": user_dict["entries"], "file": "user-dict.userdb.txt"})
     write_manifest(path, **changes)
 
@@ -360,7 +360,7 @@ class SpeedGateTest(unittest.TestCase):
         self.assertEqual(compare.combine_exit_codes(0, 0), 0)
 
     def test_preset_user_dict_runs_never_mix_with_empty_or_other_snapshots(self):
-        seed = {"sha256": "a" * 64, "db_name": "rime_ice", "entries": 3}
+        seed = {"sha256": "a" * 64, "db_name": "cayboard_pinyin", "entries": 3}
         preset = self.run_dir("preset", user_dict=seed)
         self.assertEqual(compare.load_run(preset)["manifest"]["user_state"], "preset_user_dict")
         self.assertEqual(compare.compare_runs(preset, self.run_dir("preset2", user_dict=seed))["status"], "complete")
@@ -371,7 +371,7 @@ class SpeedGateTest(unittest.TestCase):
             compare.compare_runs(preset, other)
 
     def test_preset_state_must_match_what_the_runner_restored(self):
-        seed = {"sha256": "a" * 64, "db_name": "rime_ice", "entries": 3}
+        seed = {"sha256": "a" * 64, "db_name": "cayboard_pinyin", "entries": 3}
         preset = self.run_dir("preset", user_dict=seed)
         manifest = audit.read_json(preset / "run.json")
         manifest["user_dict_snapshot"]["entries"] = 4

@@ -33,7 +33,7 @@ object CylmNative {
         override fun close() = close(handle)
     }
 
-    /** A candidate with its reading: [pinyin] = syllables ("bei xian qi le", usable as the Rime code when committed),
+    /** A candidate with its reading: [pinyin] = syllables ("bei xian qi le", usable as the input code when committed),
      *  [spans] = the key range of each word in the input ([start, end) pairs). */
     data class Candidate(val text: String, val pinyin: String, val spans: List<IntRange>)
 

@@ -43,7 +43,7 @@ import java.io.File
 /**
  * 14 键按住 Shift 拖到字母上：双字母键拆回单字母键，显示手指停的那个字母；松手恢复 14 键。
  * 另外 jk、l、m 下滑时的样子（应该都是方向盘）。
- * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CYIME_RENDER_OUT 时出图。
+ * 浅、深、纯黑、纯白，玻璃开关，手机/平板宽度。只在设了 CAYBOARD_RENDER_OUT 时出图。
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34], application = android.app.Application::class, qualifiers = "w1000dp-h900dp-xhdpi")
@@ -52,7 +52,7 @@ class FourteenShiftDragRenderTest {
     @get:Rule val rule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     @Test fun renderShiftDrag() {
-        val out = System.getenv("CYIME_RENDER_OUT")
+        val out = System.getenv("CAYBOARD_RENDER_OUT")
         assumeTrue(!out.isNullOrEmpty())
         val app = ApplicationProvider.getApplicationContext<Application>()
         KeysConfigHelper.loadConfig(app)

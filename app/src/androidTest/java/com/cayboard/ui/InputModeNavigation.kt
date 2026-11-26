@@ -3,14 +3,14 @@ package com.cayboard.ui
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import com.cayboard.rime.RimeEngine
+import com.cayboard.engine.InputEngine
 import com.cayboard.settings.InputModes
 
 /** Follow the two-level navigation instead of relying on every mode being in the globe menu. */
 internal fun ComposeTestRule.chooseModeThroughLanguageAndPanel(id: String) {
     mainClock.autoAdvance = true
     waitForIdle()
-    val engine = RimeEngine.getInstance()
+    val engine = InputEngine.getInstance()
     val language = InputModes.languageOf(id)
     val globe = onAllNodesWithTag("language-key-control", useUnmergedTree = true).onLast()
     globe.performTouchInput { down(center) }

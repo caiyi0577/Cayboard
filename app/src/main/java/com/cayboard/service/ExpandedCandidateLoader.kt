@@ -1,6 +1,6 @@
 package com.cayboard.service
 
-import com.cayboard.rime.RimeCandidate
+import com.cayboard.engine.EngineCandidate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 internal class ExpandedCandidateLoader(
     private val scope: CoroutineScope,
     private val worker: CoroutineDispatcher,
-    private val readBatch: (revision: Long, offset: Int, count: Int) -> List<RimeCandidate>?,
+    private val readBatch: (revision: Long, offset: Int, count: Int) -> List<EngineCandidate>?,
 ) {
     private var request = 0L
     private var job: Job? = null
@@ -27,8 +27,8 @@ internal class ExpandedCandidateLoader(
         revision: Long,
         isCurrent: () -> Boolean,
         singleCharacters: () -> Boolean = { false },
-        initial: List<RimeCandidate> = emptyList(),
-        publish: (List<RimeCandidate>) -> Unit,
+        initial: List<EngineCandidate> = emptyList(),
+        publish: (List<EngineCandidate>) -> Unit,
     ) {
         cancel()
         if (revision == 0L) return
@@ -62,7 +62,7 @@ internal class ExpandedCandidateLoader(
         const val SINGLE_CHARACTER_SEARCH_LIMIT = 6000
 
         /** 平时读到 [MAX_CANDIDATES]；「单字」开着且单字不够时放宽到 [SINGLE_CHARACTER_SEARCH_LIMIT]。 */
-        fun readLimit(candidates: List<RimeCandidate>, singleCharacters: Boolean): Int =
+        fun readLimit(candidates: List<EngineCandidate>, singleCharacters: Boolean): Int =
             if (singleCharacters && candidates.size >= MAX_CANDIDATES &&
                 candidates.count { it.text.isSingleCharacter() } < SINGLE_CHARACTER_TARGET
             ) SINGLE_CHARACTER_SEARCH_LIMIT else MAX_CANDIDATES

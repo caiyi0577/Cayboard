@@ -1,4 +1,4 @@
-import com.cayboard.rime.RimeEngine;
+import com.cayboard.engine.InputEngine;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -7,8 +7,8 @@ import java.util.List;
 /** args: libDir userDir cases.tsv. Each case: schema TAB keys TAB expected TAB label. Prints rank of expected. */
 public class ArkProbe {
   public static void main(String[] args) throws Exception {
-    System.load(new File(args[0], "librime_jni.so").getAbsolutePath());
-    RimeEngine engine = new RimeEngine();
+    System.load(new File(args[0], "cayboard_jni.so").getAbsolutePath());
+    InputEngine engine = new InputEngine();
     engine.nativeInitialize(args[1], args[1]);
     try {
       engine.nativeEnsureT9SchemaPatches("t9_pinyin");
@@ -31,10 +31,10 @@ public class ArkProbe {
           current = c[0];
         }
         boolean t9 = c[0].equals("t9_pinyin");
-        if (t9) { engine.nativeT9ClearComposition(1); engine.nativeT9FlushRimeInput(); }
+        if (t9) { engine.nativeT9ClearComposition(1); engine.nativeT9FlushInput(); }
         for (char k : c[1].toCharArray()) {
           engine.nativeProcessKey(k, 0);
-          if (t9) engine.nativeT9FlushRimeInput();
+          if (t9) engine.nativeT9FlushInput();
         }
         if (t9) {
           long start = System.currentTimeMillis();
@@ -49,7 +49,7 @@ public class ArkProbe {
           if (i < 3) top.append(i == 0 ? "" : "/").append(rows[i][0]);
         }
         System.out.println("CASE\t" + c[3] + "\t" + c[0] + "\t" + c[2] + "\t" + rank + "\t" + top);
-        if (t9) { engine.nativeT9ClearComposition(1); engine.nativeT9FlushRimeInput(); }
+        if (t9) { engine.nativeT9ClearComposition(1); engine.nativeT9FlushInput(); }
         else engine.nativeProcessKey(0xff1b, 0);
       }
     } finally { engine.nativeDestroy(); }

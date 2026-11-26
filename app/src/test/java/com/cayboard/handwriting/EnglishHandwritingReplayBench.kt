@@ -10,7 +10,7 @@ import java.io.File
  * 英文手写整段回放：训练模式导出的英文词句，按键盘里的做法切成「停顿一次识别一段」，每段用 App 同一份切分
  * （OverlappedHandwritingRecognizer，参数同 HandwritingKeyboardLayout）逐个字母识别再拼起来，和原文比字母错误率。
  * 单字母打分由电脑上的同源 ONNX 脚本给出（每行一个 JSON 请求）。
- * 只在设置了 CYIME_HW_REPLAY=<python>;<打分脚本>;<导出目录>;<模式 och|lat|latb>;<停顿毫秒> 时运行，平时跳过。
+ * 只在设置了 CAYBOARD_HW_REPLAY=<python>;<打分脚本>;<导出目录>;<模式 och|lat|latb>;<停顿毫秒> 时运行，平时跳过。
  */
 class EnglishHandwritingReplayBench {
     private class Scorer(python: String, script: String) {
@@ -41,7 +41,7 @@ class EnglishHandwritingReplayBench {
             f.forEachLine(Charsets.UTF_8) { line ->
                 if (line.isBlank()) return@forEachLine
                 val o = JSONObject(line)
-                if (o.optString("type") != (System.getenv("CYIME_HW_REPLAY_TYPE") ?: "english") || !seen.add(o.getString("id"))) return@forEachLine
+                if (o.optString("type") != (System.getenv("CAYBOARD_HW_REPLAY_TYPE") ?: "english") || !seen.add(o.getString("id"))) return@forEachLine
                 val strokes = mutableListOf<List<Pair<Float, Float>>>()
                 val times = mutableListOf<Pair<Long, Long>>()
                 val arr = o.getJSONArray("strokes")
@@ -71,7 +71,7 @@ class EnglishHandwritingReplayBench {
     }
 
     @Test fun replay() {
-        val spec = System.getenv("CYIME_HW_REPLAY")
+        val spec = System.getenv("CAYBOARD_HW_REPLAY")
         assumeTrue(!spec.isNullOrEmpty())
         val (python, script, dir, mode, pause) = spec!!.split(';')
         val pauseMs = pause.toLong()
@@ -98,7 +98,7 @@ class EnglishHandwritingReplayBench {
                     else scorer.score(mode, seg, k).map { HandwritingCandidate(it.char, (2f * it.score - 1f).coerceAtLeast(0.0001f)) }
                 }.segments
                 text.append(segments.joinToString("") { it.candidates.firstOrNull()?.char.orEmpty() })
-                if (System.getenv("CYIME_HW_REPLAY_DEBUG") != null) for (seg in segments) println("HW_SEG ${s.label.take(12)} " +
+                if (System.getenv("CAYBOARD_HW_REPLAY_DEBUG") != null) for (seg in segments) println("HW_SEG ${s.label.take(12)} " +
                     "[${range.first + seg.startStroke}+${seg.strokeCount}] " + seg.candidates.take(4).joinToString(" ") { "%s:%.2f".format(it.char, it.score) })
             }
             val target = s.label.filterNot { it == ' ' }

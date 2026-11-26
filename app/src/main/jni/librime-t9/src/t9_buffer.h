@@ -130,27 +130,27 @@ struct T9Buffer {
     // @param manual_delimiter 手动分隔符字符（从 speller.delimiter 配置读取，默认 '\''）
     std::string ToBufferString(char manual_delimiter = '\'') const;
 
-    // 计算发给 RIME 引擎的预编辑字符串（对应 Kotlin toPreeditString）
+    // 计算发给 引擎的预编辑字符串（对应 Kotlin toPreeditString）
     std::string ToPreeditString(char manual_delimiter = '\'') const;
 
-    // 生成 RIME 引擎输入字符串
-    std::string ToRimeInputString(char manual_delimiter = '\'') const;
+    // 生成 引擎输入字符串
+    std::string ToEngineInputString(char manual_delimiter = '\'') const;
 
     // ── 静态常量 ──
 
     static const T9Buffer EMPTY;
 
 private:
-    // ToRimeInputString 辅助方法（分支提取，提升可读性和可测试性）
+    // ToEngineInputString 辅助方法（分支提取，提升可读性和可测试性）
 
     // 无 selections 时的 RIME 输入（含 separator / consumed_count 处理）
-    std::string BuildRimeInputForEmptySelections(char manual_delimiter) const;
+    std::string BuildEngineInputForEmptySelections(char manual_delimiter) const;
 
     // 有 selections 且 unassigned 非空时的输入
-    std::string BuildRimeInputWithUnassigned() const;
+    std::string BuildEngineInputWithUnassigned() const;
 
     // 有 selections 且完全消费时的输入（全简拼/混合/全全拼）
-    std::string BuildRimeInputFullyConsumed() const;
+    std::string BuildEngineInputFullyConsumed() const;
 };
 
 // 辅助：判断选择是否为简拼（单字母）
