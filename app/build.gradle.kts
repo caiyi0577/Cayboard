@@ -293,7 +293,7 @@ dependencies {
     implementation(libs.exp4j)
 
     // ZXing for QR code generation
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.28.0")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.32.0")
 
     implementation(libs.kotlinx.serialization.json)
 
